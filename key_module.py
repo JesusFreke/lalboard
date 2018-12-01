@@ -37,11 +37,11 @@ def vertical_key_post(post_length, groove_height, magnet_height):
     fillet(edges(post, ["front"], ["top", "bottom"]), sizeOf(post).z/2)
 
     magnet_hole = place(tapered_cube(1.55, 1.7, sizeOf(post).z - .2, "magnet_hole"),
-                        midAt(atMid(post)), midAt(magnet_height), maxAt(atMax(post)))
+                        midAt(atMid(post)), midAt(magnet_height + key_thickness/2), maxAt(atMax(post)))
 
     groove_size = .6
     groove = place(box(sizeOf(post).x, groove_size, groove_size, name="groove"),
-                   midAt(atMid(post)), minAt(groove_height), minAt(atMin(post)))
+                   midAt(atMid(post)), minAt(groove_height + key_thickness/2), minAt(atMin(post)))
     return difference(post, magnet_hole, groove)
 
 
@@ -70,7 +70,7 @@ def side_key(key_height):
         key_height=key_height,
         key_protrusion=False,
         key_displacement=False,
-        groove_height=.7,
+        groove_height=2.7,
         magnet_height=5.45)
 
 
