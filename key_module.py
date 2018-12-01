@@ -74,8 +74,16 @@ def side_key(key_height):
         magnet_height=5.45)
 
 
-def design():
+def short_side_key():
     side_key(5)
+
+
+def long_side_key():
+    side_key(11)
+
+
+def design():
+    long_side_key()
 
 
 def run(context):
