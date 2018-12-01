@@ -32,13 +32,9 @@ def tapered_cube(bottom, top, height, name):
     return loft(bottom_face, top_face, name=name)
 
 
-
 def vertical_key_post(post_length, groove_height, magnet_height):
     post = box(post_width, post_length, key_thickness, name="post")
-    fillet(get_edges(
-        [get_face(post, "front")],
-        [get_face(post, "top"), get_face(post, "bottom")]),
-        sizeOf(post).z/2)
+    fillet(edges(post, ["front"], ["top", "bottom"]), sizeOf(post).z/2)
 
     magnet_hole = place(tapered_cube(1.55, 1.7, sizeOf(post).z - .2, "magnet_hole"),
                         midAt(atMid(post)), midAt(magnet_height), maxAt(atMax(post)))
@@ -63,10 +59,8 @@ def vertical_key(post_length, key_width, key_height, key_protrusion, key_displac
                      midAt(atMid(post)), midAt(atMid(key_base)), minAt(atMax(post)))
     dished_key = difference(key_base, key_dish, name="dished_key")
 
-    faces = (find_coincident_faces(dished_key, get_face(key_dish, "side"))[0],
-             get_face(dished_key, "left"), get_face(dished_key, "right"), get_face(dished_key, "back"))
-    fillet(get_edges(faces, faces), .5, False)
-    union(dished_key, post)
+    face_list = [get_face(key_dish, "side"), "left", "right", "back"]
+    fillet(edges(dished_key, face_list, face_list), .5, False)
 
 
 def side_key(key_height):
