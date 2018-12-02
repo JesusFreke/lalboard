@@ -45,25 +45,33 @@ def vertical_key_post(post_length, groove_height, magnet_height):
     return difference(post, magnet_hole, groove)
 
 
-def vertical_key(post_length, key_width, key_height, key_protrusion, key_displacement, groove_height, magnet_height):
-    post = vertical_key_post(post_length, groove_height, magnet_height)
+def vertical_key(post_length, key_width, key_height, key_protrusion, key_displacement, groove_height, magnet_height,
+                 name):
+    with Joiner(union, name) as join:
+        post = join(vertical_key_post(post_length, groove_height, magnet_height))
 
-    if key_protrusion:
-        place(box(post_width, post_width, key_protrusion),
-              midAt(atMid(post)), maxAt(atMax(post)), minAt(atMin(post)))
+        key_base = place(box(13, key_height, 10, name="key_base"),
+                         midAt(atMid(post)), minAt(atMax(post)), minAt(atMin(post)))
 
-    key_base = place(box(13, key_height, 10, name="key_base"),
-                     midAt(atMid(post)), minAt(atMax(post)), minAt(atMin(post)))
+        key_dish = place(rx(cylinder(sizeOf(key_base).y, 15), 90),
+                         midAt(atMid(post)), midAt(atMid(key_base)), minAt(atMax(post)))
+        dished_key = difference(key_base, key_dish, name="dished_key")
+        join(scale(dished_key, (key_width/13, 1, 1), center=midOf(dished_key).asArray()))
 
-    key_dish = place(rx(cylinder(sizeOf(key_base).y, 15), 90),
-                     midAt(atMid(post)), midAt(atMid(key_base)), minAt(atMax(post)))
-    dished_key = difference(key_base, key_dish, name="dished_key")
+        if key_displacement:
+            ty(dished_key, key_displacement)
 
-    face_list = [get_face(key_dish, "side"), "left", "right", "back"]
-    fillet(edges(dished_key, face_list, face_list), .5, False)
+        if key_protrusion:
+            riser = join(place(box(post_width, post_width, key_protrusion, name="riser"),
+                               midAt(atMid(post)), minAt(atMax(post)), minAt(atMin(post))))
+            place(dished_key, z=minAt(atMax(riser)))
+
+        face_list = [get_face(key_dish, "side"), "left", "right", "back"]
+        fillet(edges(dished_key, face_list, face_list), .5, False)
+    return join.result()
 
 
-def side_key(key_height):
+def side_key(key_height, name):
     vertical_key(
         post_length=10,
         key_width=13,
@@ -71,19 +79,44 @@ def side_key(key_height):
         key_protrusion=False,
         key_displacement=False,
         groove_height=2.7,
-        magnet_height=5.45)
+        magnet_height=5.45,
+        name=name)
 
 
 def short_side_key():
-    side_key(5)
+    side_key(5, "short_side_key")
 
 
 def long_side_key():
-    side_key(11)
+    side_key(11, "long_side_key")
+
+
+def thumb_side_key(key_width, key_height, name):
+    vertical_key(
+        post_length=11.5,
+        key_width=key_width,
+        key_height=key_height,
+        key_protrusion=6.5,
+        key_displacement=-3,
+        groove_height=6.6,
+        magnet_height=9.05,
+        name=name)
+
+
+def outer_upper_thumb_key():
+    thumb_side_key(25, 16, "outer_upper_thumb_key")
+
+
+def outer_lower_thumb_key():
+    thumb_side_key(20, 20, "outer_lower_thumb_key")
+
+
+def inner_thumb_key():
+    thumb_side_key(20, 16, "inner_thumb_key")
 
 
 def design():
-    long_side_key()
+    outer_lower_thumb_key()
 
 
 def run(context):
