@@ -17,19 +17,21 @@ import adsk.fusion
 
 from fscad import *
 
-key_radius = 8
-outer_radius = 12.5
 key_thickness = 1.8
 post_width = 4.5
 
 
-def tapered_cube(bottom, top, height, name):
-    bottom_face = rect(1.55, 1.55, name="bottom")
-    top_face = place(rect(1.7, 1.7, name="top"),
+def tapered_box(bottom_x, bottom_y, top_x, top_y, height, name):
+    bottom_face = rect(bottom_x, bottom_y)
+    top_face = place(rect(top_x, top_y),
                      midAt(atMid(bottom_face)),
                      midAt(atMid(bottom_face)),
                      midAt(height))
     return loft(bottom_face, top_face, name=name)
+
+
+def tapered_cube(bottom, top, height, name):
+    return tapered_box(bottom, bottom, top, top, height, name)
 
 
 def vertical_key_post(post_length, groove_height, magnet_height):
@@ -69,6 +71,40 @@ def vertical_key(post_length, key_width, key_height, key_protrusion, key_displac
         face_list = [get_face(key_dish, "side"), "left", "right", "back"]
         fillet(edges(dished_key, face_list, face_list), .5, False)
     return join.result()
+
+
+def center_key():
+    size = 6.1 * 2
+    key_radius = 7.5
+    key_thickness = 2.5
+    post_length = 8.4
+    post_radius = 2.3
+
+    with Joiner(union, name="center_key") as join:
+        key = join(cylinder(key_thickness, key_radius, name="key"))
+
+        post = join(place(cylinder(post_length, post_radius, name="post"), z=minAt(atMax(key))))
+
+        back_stop = join(place(box(3.5, 5.7, 4, name="back_stop"),
+                      midAt(atMid(key)), minAt(atMid(key)), minAt(atMax(key))))
+
+        side_stop_start = place(box(5.9, 3.5, 4, name="side_stop_start"),
+                                minAt(atMid(key)), midAt(atMid(key)), minAt(atMax(key)))
+        side_stop_end = place(box(3.4, 5.9, 4, name="side_stop_end"),
+                              maxAt(atMax(side_stop_start)), maxAt(atMid(key)), minAt(atMin(side_stop_start)))
+        side_stop = union(side_stop_start, side_stop_end, name="side_stop")
+        join(duplicate(scale, ((1, 1, 1), (-1, 1, 1)), side_stop))
+
+    center_key_base = join.result()
+
+    post_flat_face = place(box(minOf(side_stop_end).x*2, key_radius, post_length, name="post_flat_face"),
+                           midAt(atMid(post)), maxAt(-2), minAt(atMax(key)))
+    magnet_hole = place(rx(tapered_box(1.7, 1.8, 1.45, 1.8, 2, name="magnet_hole"),
+                           -90),
+                        midAt(atMid(post)), minAt(atMax(post_flat_face)), midAt(post_length + key_thickness - 4.2))
+
+    return intersection(difference(center_key_base, post_flat_face, magnet_hole),
+                        cylinder(post_length + key_thickness, key_radius, name="trim"))
 
 
 def side_key(key_height, name):
@@ -116,7 +152,7 @@ def inner_thumb_key():
 
 
 def design():
-    outer_lower_thumb_key()
+    center_key()
 
 
 def run(context):
