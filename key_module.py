@@ -150,7 +150,7 @@ def make_led_cavity(block, base_height):
 
     cavity = union(body, slot, lens_hole, name="led_cavity")
     get_placement([body, slot],
-                  midAt(atMid(block)), midAt(atMid(block)), maxAt(atMax(block))) \
+                  midAt(lambda i: atMid(block)(i) - .125), midAt(atMid(block)), maxAt(atMax(block))) \
         .apply(cavity)
     cavity = intersection(cavity, duplicate_of(block))
 
@@ -218,8 +218,31 @@ def vertical_key_base(base_height, pressed_key_angle=20):
     magnet_cutout = place(rx(tapered_box(1.45, 1.8, 1.7, 1.8, 1.8, name="magnet"), 90),
                           midAt(atMid(front)), minAt(atMin(front)), maxAt(lambda i: atMax(front)(i) - .45))
 
+    define_point(vertical_key_base, midOf(magnet_cutout).x, midOf(vertical_key_base).y, midOf(vertical_key_base).z,
+                 name="midpoint")
+
     return (vertical_key_base,
-            pare_occurrence(union(pt_cavity, led_cavity, magnet_cutout, name="vertical_key_base_negative")))
+            pare_occurrence(union(pt_cavity, led_cavity, magnet_cutout, key_pivot, name="vertical_key_base_negative")))
+
+
+@autokeep
+def cluster():
+    base = box(24.9, 24.9, 2, name="base")
+    key_base, key_base_negatives = vertical_key_base(2)
+
+    grouped_key_base = group(key_base, key_base_negatives)
+
+    grouped_key_base = get_placement(key_base,
+                  pointAt("midpoint", atMid(base)), minAt(atMin(base)), minAt(atMin(base)))\
+        .apply(grouped_key_base)
+
+    key_base_mirror = duplicate_of(grouped_key_base)
+    scale(key_base_mirror, (-1, 1, 1), center=pointOf(key_base, "midpoint").asArray())
+    duplicate(lambda o, v: rz(o, v, center=midOf(base).asArray()), (90, 270), grouped_key_base)
+    duplicate(lambda o, v: rz(o, v, center=midOf(base).asArray()), (0, 180), key_base_mirror)
+
+    cluster = union(base, *find_all_duplicates(key_base), name="cluster")
+    return difference(cluster, *find_all_duplicates(key_base_negatives))
 
 
 def side_key(key_height, name):
@@ -269,8 +292,11 @@ def inner_thumb_key():
 def mydesign():
     start = datetime.datetime.now()
 
+    set_parametric(False)
+
     with keep_subtree(False):
-        positive, negative = vertical_key_base(2)
+        cluster()
+        #vertical_key_base(2)
 
     end = datetime.datetime.now()
     print((end-start).total_seconds())
