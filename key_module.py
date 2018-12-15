@@ -14,6 +14,7 @@
 
 import adsk.core
 import adsk.fusion
+import datetime
 
 from fscad import *
 
@@ -107,6 +108,120 @@ def center_key():
                         cylinder(post_length + key_thickness, key_radius, name="trim"))
 
 
+def small_pin(length):
+    return cylinder(length, .4, name="small_pin")
+
+
+@autokeep
+def make_pt_cavity(block, base_height):
+    lens_height = 4.5
+    lens_radius = .75
+
+    body = box(1.8, 5, sizeOf(block).z, name="body")
+    lens_hole = place(ry(cylinder(sizeOf(block).y, lens_radius, name="lens_hole"), 90),
+                      minAt(atMax(body)), midAt(atMid(body)), midAt(lens_height))
+    lens_slot = place(box(lens_radius + .05, lens_radius * 2 + .1, sizeOf(block).y, name="lens_slot"),
+                      minAt(atMax(body)), midAt(atMid(body)), minAt(atMin(lens_hole)))
+    cavity = union(body, lens_hole, lens_slot, name="phototransistor_cavity")
+
+    get_placement([body, lens_slot],
+                  midAt(atMid(block)), midAt(atMid(block)), minAt(atMin(block)))\
+        .apply(cavity)
+    cavity = intersection(cavity, duplicate_of(block))
+
+    legs = union(duplicate(ty, (0, -2.54), place(small_pin(base_height),
+                                                 midAt(atMid(body)),
+                                                 midAt(lambda i: atMid(body)(i) + 2.54/2),
+                                                 maxAt(atMin(body)))),
+                 name="phototransistor_legs")
+    return union(cavity, legs)
+
+
+@autokeep
+def make_led_cavity(block, base_height):
+    lens_radius = .75
+    lens_height = 2.9
+
+    body = box(1.8, 5.1, sizeOf(block).z - 1.6, name="body")
+    slot = place(box(1.1, sizeOf(body).y, sizeOf(body).z, name="slot"),
+                 maxAt(atMin(body)), midAt(atMid(body)), minAt(atMin(body)))
+    lens_hole = place(ry(cylinder(sizeOf(block).y, lens_radius, name="lens_hole"), 90),
+                      maxAt(atMin(body)), midAt(atMid(body)), midAt(lens_height))
+
+    cavity = union(body, slot, lens_hole, name="led_cavity")
+    get_placement([body, slot],
+                  midAt(atMid(block)), midAt(atMid(block)), maxAt(atMax(block))) \
+        .apply(cavity)
+    cavity = intersection(cavity, duplicate_of(block))
+
+    legs = duplicate(ty, (0, -2.54),
+                     place(small_pin(base_height + 1.6),
+                           midAt(lambda i: atMax(body)(i) - .9),
+                           midAt(lambda i: atMid(body)(i) + 2.54/2),
+                           maxAt(atMin(body))),
+                     name="phototransistor_legs")
+    return union(cavity, legs)
+
+
+@autokeep
+def vertical_key_base(base_height, pressed_key_angle=20):
+    front = box(5, 2.2, 6.4, name="front")
+
+    pt_base = place(box(5, 6.15, 6.4, name="phototransistor_base"),
+                    maxAt(atMin(front)), maxAt(atMax(front)), minAt(atMin(front)))
+    led_base = place(box(6, 6.15, 6.4, name="led_base"),
+                     minAt(atMax(front)), maxAt(atMax(front)), minAt(atMin(front)))
+
+    target_tip_thickness = .8
+
+    base_elements = front, pt_base, led_base
+    base_size = sizeOf(*base_elements)
+    base = box(base_size.x, base_size.y, base_height, name="base")
+    place(base,
+          minAt(atMin(*base_elements)),
+          minAt(atMin(*base_elements)),
+          maxAt(atMin(*base_elements)))
+
+    pt_cavity = make_pt_cavity(pt_base, base_height)
+    led_cavity = make_led_cavity(led_base, base_height)
+
+    key_pivot = place(ry(cylinder(sizeOf(front).x, 1, name="key_pivot"), 90),
+                      midAt(atMid(front)), maxAt(atMin(front)), midAt(atMin(front)))
+
+    sloped_key = place(box(sizeOf(front).x, sizeOf(key_pivot).y, sizeOf(front).z * 2, name="sloped_key"),
+                       midAt(atMid(key_pivot)), midAt(atMid(key_pivot)), minAt(atMid(key_pivot)))
+    sloped_key = union(sloped_key, key_pivot)
+    rx(sloped_key, pressed_key_angle, center=(0, midOf(sloped_key).y, 0))
+
+    target_tip_thickness = .8
+    back_base = difference(
+        place(rect(sizeOf(front).x, sizeOf(led_base).y - sizeOf(front).y - sizeOf(key_pivot).y - target_tip_thickness,
+                   name="back_base"),
+              midAt(atMid(front)), minAt(lambda i: atMin(led_base)(i) + target_tip_thickness)),
+        duplicate_of(sloped_key))
+
+    back_sloped = extrude_to(back_base, sloped_key, name="back_sloped")
+    remaining_back = place(box(sizeOf(front).x, target_tip_thickness, sizeOf(back_sloped).z, name="remaining_back"),
+                           midAt(atMid(front)), maxAt(atMin(back_sloped)), minAt(atMin(back_sloped)))
+    back = union(remaining_back, back_sloped, name="back")
+
+    top_face = get_face(back, get_face(remaining_back, "top"))
+
+    vertical_key_base = difference(
+        union(pt_base, led_base, front, back, base, name="vertical_key_base"),
+        sloped_key)
+
+    retaining_ridge = place(rx(box(sizeOf(back).x, .5, .5, name="retaining_ridge"), 45),
+                            midAt(atMid(back)), midAt(atMax(top_face)), maxAt(atMax(back)))
+    vertical_key_base = union(vertical_key_base, retaining_ridge)
+
+    magnet_cutout = place(rx(tapered_box(1.45, 1.8, 1.7, 1.8, 1.8, name="magnet"), 90),
+                          midAt(atMid(front)), minAt(atMin(front)), maxAt(lambda i: atMax(front)(i) - .45))
+
+    return (vertical_key_base,
+            pare_occurrence(union(pt_cavity, led_cavity, magnet_cutout, name="vertical_key_base_negative")))
+
+
 def side_key(key_height, name):
     vertical_key(
         post_length=10,
@@ -151,9 +266,15 @@ def inner_thumb_key():
     thumb_side_key(20, 16, "inner_thumb_key")
 
 
-def design():
-    center_key()
+def mydesign():
+    start = datetime.datetime.now()
+
+    with keep_subtree(False):
+        positive, negative = vertical_key_base(2)
+
+    end = datetime.datetime.now()
+    print((end-start).total_seconds())
 
 
 def run(context):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    run_design(mydesign, message_box_on_error=False, document_name=__name__)
