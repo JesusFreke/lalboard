@@ -26,6 +26,15 @@ def small_pin(length):
     return Cylinder(length, .4, name="small_pin")
 
 
+def tapered_box(bottom_x, bottom_y, top_x, top_y, height, name):
+    bottom_face = Rect(bottom_x, bottom_y, "tapered_box_bottom")
+    top_face = Rect(top_x, top_y, "tapered_box_top")
+    top_face.place(~top_face == ~bottom_face,
+                   ~top_face == ~bottom_face,
+                   ~top_face == height)
+    return Loft(bottom_face, top_face, name=name)
+
+
 def make_pt_cavity(block: Component, base_height):
     lens_height = 4.5
     lens_radius = .75
@@ -76,26 +85,73 @@ def make_led_cavity(block, base_height):
     return Union(cavity, legs)
 
 
-def vertical_key_base(base_height):
+def vertical_key_base(base_height, pressed_key_angle=20):
     front = Box(5, 2.2, 6.4, "front")
+
     pt_base = Box(5, 6.15, 6.4, "phototransistor_base")
     pt_base.place(+pt_base == -front, +pt_base == +front, -pt_base == -front)
+    pt_cavity = make_pt_cavity(pt_base, base_height)
 
     led_base = Box(6, 6.15, 6.4, "led_base")
     led_base.place(-led_base == +front, +led_base == +front, -led_base == -front)
-
-    pt_cavity = make_pt_cavity(pt_base, base_height)
     led_cavity = make_led_cavity(led_base, base_height)
 
-    return Union(front,
-                 Difference(pt_base, pt_cavity),
-                 Difference(led_base, led_cavity))
+    temp = Union(front.copy(), pt_base.copy(), led_base.copy())
+    base = Box(temp.size().x, temp.size().y, base_height, name="base")
+    base.place(-base == -temp,
+               -base == -temp,
+               +base == -temp)
+
+    key_pivot = Cylinder(front.size().x, 1, name="key-pivot").ry(90)
+    key_pivot.place(~key_pivot == ~front,
+                    +key_pivot == -front,
+                    ~key_pivot == -front)
+
+    sloped_key = Box(front.size().x, key_pivot.size().y, front.size().z * 2, "sloped_key")
+    sloped_key.place(~sloped_key == ~key_pivot,
+                     ~sloped_key == ~key_pivot,
+                     -sloped_key == ~key_pivot)
+    sloped_key = Union(sloped_key, key_pivot).rx(pressed_key_angle, center=(0, sloped_key.mid().y, 0))
+
+    target_tip_thickness = .8
+    back_bottom = Rect(front.size().x, led_base.size().y - front.size().y - key_pivot.size().y - target_tip_thickness,
+                       "back_bottom")
+    back_bottom.place(~back_bottom == ~front,
+                      (-back_bottom == -led_base) + target_tip_thickness)
+    back_bottom = Difference(back_bottom, sloped_key.copy())
+    back_sloped = ExtrudeTo(back_bottom, sloped_key, "back_sloped")
+
+    remaining_back = Box(front.size().x, target_tip_thickness, back_sloped.size().z, "remaining_back")
+    remaining_back.place(~remaining_back == ~front,
+                         +remaining_back == -back_sloped,
+                         -remaining_back == -back_sloped)
+    back = Union(remaining_back, back_sloped, name="back")
+
+    retaining_ridge = Box(back.size().x, .5, .5, "retaining_ridge").rx(45)
+    retaining_ridge.place(~retaining_ridge == ~back,
+                          ~retaining_ridge == +BRepComponent(remaining_back.top),
+                          +retaining_ridge == +back)
+
+    result = Union(pt_base, led_base, front, back, base, name="vertical_key_base")
+    result = Difference(result, sloped_key)
+    result = Union(result, retaining_ridge)
+
+    magnet_cutout = tapered_box(1.45, 1.8, 1.7, 1.8, 1.8, name="magnet_cutout").rx(90)
+    magnet_cutout.place(~magnet_cutout == ~front,
+                        -magnet_cutout == -front,
+                        (+magnet_cutout == +front) - .45)
+
+    return result, Union(pt_cavity, led_cavity, magnet_cutout, key_pivot, name="vertical_key_base_negative")
 
 
 def _design():
     start = time.time()
 
-    vertical_key_base(2).scale(.1, .1, .1).create_occurrence(False)
+    set_parametric(False)
+
+    result, negative = vertical_key_base(2)
+
+    Difference(result, negative).scale(.1, .1, .1).create_occurrence(True)
 
     end = time.time()
     print(end-start)
