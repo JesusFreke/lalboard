@@ -129,7 +129,7 @@ def vertical_key_base(base_height, pressed_key_angle=20):
 
     retaining_ridge = Box(back.size().x, .5, .5, "retaining_ridge").rx(45)
     retaining_ridge.place(~retaining_ridge == ~back,
-                          ~retaining_ridge == +BRepComponent(remaining_back.top),
+                          ~retaining_ridge == +remaining_back.top,
                           +retaining_ridge == +back)
 
     result = Union(pt_base, led_base, front, back, base, name="vertical_key_base")
