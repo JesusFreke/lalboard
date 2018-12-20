@@ -141,7 +141,36 @@ def vertical_key_base(base_height, pressed_key_angle=20):
                         -magnet_cutout == -front,
                         (+magnet_cutout == +front) - .45)
 
+    result.add_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
+
     return result, Union(pt_cavity, led_cavity, magnet_cutout, key_pivot, name="vertical_key_base_negative")
+
+
+def cluster():
+    base = Box(24.9, 24.9, 2, "base")
+    key_base, key_base_negative = vertical_key_base(2)
+
+    key_base_negative.place(~key_base.point("midpoint") == ~base,
+                            -key_base == -base,
+                            -key_base == -base)
+    key_base.place(~key_base.point("midpoint") == ~base,
+                   -key_base == -base,
+                   -key_base == -base)
+
+    key_bases = (
+        key_base.copy().scale(-1, 1, 1, center=key_base.point("midpoint")),
+        key_base.copy().rz(90, base.mid()),
+        key_base.copy().scale(-1, 1, 1, center=key_base.point("midpoint")).rz(180, base.mid()),
+        key_base.rz(270, base.mid())
+    )
+    key_base_negatives = (
+        key_base_negative.copy().scale(-1, 1, 1, center=key_bases[0].point("midpoint")),
+        key_base_negative.copy().rz(90, base.mid()),
+        key_base_negative.copy().scale(-1, 1, 1, center=key_bases[0].point("midpoint")).rz(180, base.mid()),
+        key_base_negative.rz(270, base.mid())
+    )
+
+    return Difference(Union(base, *key_bases), *key_base_negatives)
 
 
 def _design():
@@ -149,9 +178,8 @@ def _design():
 
     set_parametric(False)
 
-    result, negative = vertical_key_base(2)
-
-    Difference(result, negative).scale(.1, .1, .1).create_occurrence(True)
+    result = cluster()
+    result.scale(.1, .1, .1).create_occurrence(True)
 
     end = time.time()
     print(end-start)
