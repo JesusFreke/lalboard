@@ -204,13 +204,94 @@ def cluster():
         key_base_negative.rz(270, base.mid())
     )
 
-    return Difference(Union(base, *key_bases), *key_base_negatives)
+    combined_cluster = Union(base, *key_bases)
+
+    center_floor = Box(1, 1, 1.9, "center_floor")
+    center_floor.place(~center_floor == ~base,
+                       ~center_floor == ~base,
+                       -center_floor == +base)
+
+    for face in (center_floor.left, center_floor.right, center_floor.front, center_floor.back):
+        center_floor = ExtrudeTo(center_floor.find_faces(face)[0], combined_cluster.copy(False))
+
+    combined_cluster.add(center_floor)
+
+    center_hole = Cylinder(combined_cluster.size().z, 2.5, name="center_hole")
+    center_hole.place(~center_hole == ~base,
+                      ~center_hole == ~base,
+                      -center_hole == -base)
+    flat = Box(center_hole.size().x, center_hole.size().y - .5, center_hole.size().z, "flat")
+    flat.place(~flat == ~center_hole,
+               -flat == -center_hole,
+               ~flat == ~center_hole)
+    center_hole = Intersection(center_hole, flat)
+
+    central_magnet_riser = Box(4.55, .1, combined_cluster.max().z - center_floor.max().z, "central_magnet_riser")
+    central_magnet_riser.place(~central_magnet_riser == ~base,
+                               -central_magnet_riser == +center_hole,
+                               -central_magnet_riser == +center_floor)
+    central_magnet_riser = ExtrudeTo(central_magnet_riser.back, combined_cluster.copy(False))
+
+    central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
+    central_magnet_cutout.place(~central_magnet_cutout == ~central_magnet_riser,
+                                -central_magnet_cutout == -central_magnet_riser,
+                                (+central_magnet_cutout == +central_magnet_riser) - .8)
+
+    combined_cluster.add(central_magnet_riser)
+
+    # TODO: is there a better way to find the desired children?
+    bottom_left_negative_cavity = key_base_negatives[0].children()[1]
+    bottom_right_negative_cavity = key_base_negatives[0].children()[0]
+    left_negative_cavity = key_base_negatives[3].children()[1]
+    right_negative_cavity = key_base_negatives[1].children()[0]
+
+    central_led_cavity = make_led_cavity().scale(-1, 1, 1)
+    central_led_cavity.place(-central_led_cavity == +left_negative_cavity,
+                             -central_led_cavity == +bottom_left_negative_cavity,
+                             (~central_led_cavity.point("lens_center") == +center_floor) + 1.6)
+
+    central_pt_cavity = make_pt_cavity().scale(-1, 1, 1)
+    central_pt_cavity.place(+central_pt_cavity == -right_negative_cavity,
+                            -central_pt_cavity == +bottom_right_negative_cavity,
+                            (~central_pt_cavity.point("lens_center") == +center_floor) + 1.6)
+
+    central_led_base = Box(2.8,
+                           central_led_cavity.max().y - center_floor.min().y,
+                           combined_cluster.max().z - center_floor.max().z)
+    central_led_base.place(-central_led_base == -center_floor,
+                           -central_led_base == -center_floor,
+                           -central_led_base == +center_floor)
+
+    central_pt_base = Box(2.8,
+                          central_pt_cavity.max().y - center_floor.min().y,
+                          combined_cluster.max().z - center_floor.max().z)
+    central_pt_base.place(+central_pt_base == +center_floor,
+                          -central_pt_base == -center_floor,
+                          -central_pt_base == +center_floor)
+
+    combined_cluster.add(central_led_base)
+    combined_cluster.add(central_pt_base)
+
+    extruded_led_cavity = ExtrudeTo(central_led_cavity.faces("lens_hole"), combined_cluster.copy(False))
+    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(central_led_cavity.faces("legs")),
+                                    combined_cluster.copy(False))
+    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(central_led_cavity.faces("top")),
+                                    combined_cluster.copy(False))
+
+    extruded_pt_cavity = ExtrudeTo(central_pt_cavity.faces("lens_hole"), combined_cluster.copy(False))
+    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(central_pt_cavity.faces("legs")),
+                                   combined_cluster.copy(False))
+    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(central_pt_cavity.faces("top")),
+                                   combined_cluster.copy(False))
+
+    return Difference(combined_cluster, *key_base_negatives, center_hole, central_magnet_cutout,
+                      extruded_led_cavity, extruded_pt_cavity)
 
 
 def _design():
     start = time.time()
 
-    result = cluster().scale(.1, .1, .1).create_occurrence(True)
+    result = cluster().scale(.1, .1, .1).create_occurrence(False)
     #result = vertical_key_base(2)
     #Difference(result[0], result[1]).scale(.1, .1, .1).create_occurrence(True)
 
