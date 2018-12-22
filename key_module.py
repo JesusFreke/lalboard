@@ -333,7 +333,7 @@ def cluster_pcb(cluster):
     return base
 
 
-def cluster_pcb_base(cluster_pcb_bottom: Component):
+def cluster_pcb_sketch(cluster_pcb_bottom: Component):
     rects = []
     for edge in cluster_pcb_bottom.bodies()[0].brep.edges:
         if not isinstance(edge.geometry, adsk.core.Circle3D):
@@ -356,22 +356,139 @@ def cluster_pcb_base(cluster_pcb_bottom: Component):
         sketch.include(face)
 
 
+def extended_cluster():
+    base_cluster = cluster()
+
+
+def ball_socket_ball():
+    return Sphere(3, "ball")
+
+
+def ball_socket_base(base_height):
+    ball = ball_socket_ball()
+    ball_radius = ball.size().x / 2
+
+    # the radio of the total diameter of the ball to sink into the base. The size of the hole for the downwards-facing
+    # pin is determined by the intersection of the top of the base with the sphere, so sinking the ball lower results
+    # in a larger opening and more range of motion for the pin, but also a shorter standoff
+    ball_sink_ratio = .05
+
+    # tall enough to reach the middle of the ball
+    base = Cylinder(
+        ball_radius - (ball_radius * 2 * ball_sink_ratio), ball_radius + .8, name="ball_socket_base")
+    base = Threads(base, ((0, 0), (.99, .99), (0, .99)), 1)
+    ball.place(~ball == ~base,
+               ~ball == ~base,
+               (-ball == -base) - (ball_radius * ball_sink_ratio * 2))
+
+    base = Difference(base, ball)
+
+    bottom_radius = None
+    for edge in base.bodies()[0].brep.edges:
+        if isinstance(edge.geometry, adsk.core.Circle3D) and edge.geometry.center.z == 0:
+            bottom_radius = edge.geometry.radius
+    assert(bottom_radius is not None)
+
+    # This is the cone that a line from the center of the ball would form if it swept along the hole. This is actually
+    # a bit wider of a cone than we actually need. Due to the thickness of the pin, it will actually sweep a narrower
+    # cone.
+    cone_inverse_slope = bottom_radius / ball.mid().z
+    ball_socket_opening = Cylinder(
+        ball.mid().z + base_height, cone_inverse_slope * (ball.mid().z + base_height), 0, "ball_socket_opening")
+
+    ball_socket_opening.place(~ball_socket_opening == ~ball,
+                              ~ball_socket_opening == ~ball,
+                              +ball_socket_opening == ~ball)
+
+    return base, Union(ball_socket_opening, ball)
+
+
+def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
+    left_point_to_mid = point.vectorTo(circle.mid())
+    left_point_to_mid.scaleBy(.5)
+    point.translateBy(left_point_to_mid)
+    intersecting_circle = Circle(left_point_to_mid.length)
+    intersecting_circle.place(~intersecting_circle == point,
+                              ~intersecting_circle == point,
+                              ~intersecting_circle == point)
+
+    vertices = list(Intersection(circle, intersecting_circle).bodies()[0].brep.vertices)
+    return vertices
+
+
+def cluster_front(cluster: Component, base_height):
+    extension_y_size = 13
+
+    socket_base, opening = ball_socket_base(2)
+
+    opening.place(~socket_base == ~cluster,
+                  (~socket_base == -cluster) - extension_y_size / 2)
+
+    socket_base.place(~socket_base == ~cluster,
+                      (~socket_base == -cluster) - extension_y_size / 2)
+
+    socket_base_circle = Circle(socket_base.size().x/2)
+    socket_base_circle.place(~socket_base_circle == ~socket_base,
+                             ~socket_base_circle == ~socket_base)
+    left_point = Point3D.create(cluster.min().x, cluster.min().y, 0)
+    left_tangents = find_tangent_intersection_on_circle(socket_base_circle, left_point)
+    if left_tangents[0].geometry.x < left_tangents[1].geometry.x:
+        left_tangent_point = left_tangents[0].geometry
+    else:
+        left_tangent_point = left_tangents[1].geometry
+
+    right_tangent_point = Point3D.create(cluster.mid().x + (cluster.mid().x - left_tangent_point.x),
+                                         left_tangent_point.y, left_tangent_point.z)
+
+    base = Polygon((cluster.min().x, cluster.min().y),
+                   left_tangent_point, right_tangent_point,
+                   (cluster.max().x, cluster.min().y))
+
+    base = Extrude(base, base_height)
+    rounded_end = Cylinder(base_height, socket_base.size().x/2, name="rounded_end")
+    rounded_end.place(~rounded_end == ~socket_base,
+                      ~rounded_end == ~socket_base,
+                      -rounded_end == -base)
+    base = Union(base, rounded_end)
+
+    base.place(~base == ~cluster,
+               +base == -cluster,
+               -base == -cluster)
+
+    opening.place(z=-socket_base == +base)
+    socket_base.place(z=-socket_base == +base)
+
+    return Difference(Union(base, socket_base), opening)
+
+
 def _design():
     start = time.time()
 
-    clus = cluster()
+    #clus = cluster()
+    #Union(clus, cluster_front(clus)).create_occurrence(scale=.1)
+
+    #ball_socket_cap()
+
     #result = vertical_key_base(2)
     #Difference(result[0], result[1]).scale(.1, .1, .1).create_occurrence(True)
 
-    pcb = cluster_pcb(clus)
+    #pcb = cluster_pcb(clus)
 
     #cluster_pcb_base(BRepComponent(pcb.faces("bottom")[0].brep))
 
-    pcb.scale(.1, .1, .1).create_occurrence(False)
+    #pcb.scale(.1, .1, .1).create_occurrence(False)
 
 
     #clus.scale(.1, .1, .1).create_occurrence(False)
     #pcb.scale(.1, .1, .1).create_occurrence(True)
+
+    #base, opening = ball_socket_base(2)
+    #Difference(base, opening).create_occurrence(.1, True)
+
+    clust = cluster()
+    #pcb = cluster_pcb(clust)
+
+    Union(clust, cluster_front(clust, 2)).create_occurrence(.1, True)
 
 
 
