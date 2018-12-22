@@ -17,6 +17,7 @@ import adsk.fusion
 import time
 
 from fscad import *
+from fscad import Circle
 
 key_thickness = 1.8
 post_width = 4.5
@@ -103,6 +104,16 @@ def make_led_cavity():
 
     return cavity
 
+def hole_array(radius, pitch, count):
+    hole = Circle(radius)
+    union = None
+    for i in range(0, count):
+        hole_copy = hole.copy().tx(pitch * i)
+        if not union:
+            union = Union(hole_copy)
+        else:
+            union.add(hole_copy)
+    return union
 
 def vertical_key_base(base_height, pressed_key_angle=20):
     front = Box(5, 2.2, 6.4, "front")
@@ -288,12 +299,82 @@ def cluster():
                       extruded_led_cavity, extruded_pt_cavity)
 
 
+def cluster_pcb(cluster):
+    center = Circle(5)
+    center.place(~center == ~cluster,
+                 ~center == ~cluster,
+                 ~center == -cluster)
+
+    bottom = cluster.find_faces(center)[0]
+
+    base = Extrude(Union(BRepComponent(bottom.brep), center).bodies()[0].faces[0], 2)
+
+    base_extension = Box(base.size().x, 6, base.size().z)
+    base_extension.place(~base_extension == ~base,
+                         -base_extension == +base,
+                         -base_extension == -base)
+
+    connector_holes = hole_array(.4, 1.5, 7)
+    connector_holes.place(~connector_holes == ~base_extension,
+                          (~connector_holes == +base_extension) - 1.3,
+                          ~connector_holes == +base_extension)
+    extension_holes = ExtrudeTo(connector_holes, base_extension.bottom)
+
+    through_holes = hole_array(.4, 3, 7)
+    through_holes.place(~through_holes == ~base_extension,
+                        (~through_holes == ~connector_holes) - 4,
+                        ~through_holes == +base_extension)
+    through_holes = ExtrudeTo(through_holes, base_extension.bottom)
+
+    base_extension = Difference(base_extension, extension_holes, through_holes)
+
+    base = Union(base, base_extension)
+    base.add_faces("bottom", *base.find_faces(bottom))
+    return base
+
+
+def cluster_pcb_base(cluster_pcb_bottom: Component):
+    rects = []
+    for edge in cluster_pcb_bottom.bodies()[0].brep.edges:
+        if not isinstance(edge.geometry, adsk.core.Circle3D):
+            continue
+
+        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 2:
+            rect_size = 1.25
+        else:
+            rect_size = 2
+
+        rect = Rect(rect_size, rect_size)
+        rect.place(~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center)
+        rects.append(rect)
+    split_face = SplitFace(cluster_pcb_bottom, Union(*rects))
+    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
+    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
+    for face in occurrence.bRepBodies[0].faces:
+        sketch.include(face)
+
+
 def _design():
     start = time.time()
 
-    result = cluster().scale(.1, .1, .1).create_occurrence(False)
+    clus = cluster()
     #result = vertical_key_base(2)
     #Difference(result[0], result[1]).scale(.1, .1, .1).create_occurrence(True)
+
+    pcb = cluster_pcb(clus)
+
+    #cluster_pcb_base(BRepComponent(pcb.faces("bottom")[0].brep))
+
+    pcb.scale(.1, .1, .1).create_occurrence(False)
+
+
+    #clus.scale(.1, .1, .1).create_occurrence(False)
+    #pcb.scale(.1, .1, .1).create_occurrence(True)
+
+
+
 
     end = time.time()
     print(end-start)
