@@ -507,6 +507,8 @@ def cluster_back(cluster: Component, pcb: Component, base_height: float):
                      ~pcb_relief == holes_mid_point,
                      -pcb_relief == -base)
 
+    base = Fillet(base.shared_edges([base.back], [base.left, base.right]), socket_base.size().x/2)
+
     return Difference(Union(base, socket_base, other_socket_base), opening, other_opening), pcb_relief
 
 
