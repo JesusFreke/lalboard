@@ -40,6 +40,10 @@ def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.8, 1.7, 1.8, depth, name=name).rx(90)
 
 
+def vertical_magnet_cutout(depth=1.6, name="magnet_cutout"):
+    return tapered_box(1.55, 1.55, 1.7, 1.7, depth, name)
+
+
 def make_pt_cavity():
     lens_height = 4.5
     lens_radius = .75
@@ -597,6 +601,79 @@ def center_key():
                         post_flat_face, magnet)
 
     return result
+
+
+def vertical_key_post(post_length, groove_height, magnet_height):
+    post = Box(post_width, post_length, key_thickness, name="post")
+    end = Cylinder(post_width, key_thickness/2).ry(90)
+    end.place(~end == ~post,
+              ~end == -post,
+              ~end == ~post)
+    Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
+
+    magnet = vertical_magnet_cutout()
+    magnet.place(~magnet == ~post,
+                 ~magnet == magnet_height + key_thickness/2,
+                 +magnet == +post)
+
+    groove_size = .6
+    groove = Box(post.size().x, groove_size*2, groove_size, name="groove")
+    groove.place(~groove == ~post,
+                 (-groove == -post) + groove_height,
+                 -groove == -post)
+    return Difference(Union(post, end), magnet, groove)
+
+
+def vertical_key(post_length, key_width, key_height, key_protrusion, key_displacement, groove_height, magnet_height,
+                 name):
+    post = vertical_key_post(post_length, groove_height, magnet_height)
+
+    key_base = Box(13, key_height, 10, name="key_base")
+    key_base.place(~key_base == ~post,
+                   -key_base == +post,
+                   -key_base == -post)
+
+    key_dish = Cylinder(key_base.size().y, 15).rx(90)
+    key_dish.place(~key_dish == ~post,
+                   ~key_dish == ~key_base,
+                   -key_dish == +post)
+
+    dished_key = Difference(key_base, key_dish, name="dished_key")
+    dished_key = Scale(dished_key, sx=key_width/13, center=dished_key.mid(), name="dished_key")
+
+    dished_key = Fillet(
+        dished_key.shared_edges([key_dish.side, key_base.back],
+                                [key_base.left, key_base.right, key_base.back]), .5, False)
+
+    if key_displacement:
+        dished_key.ty(key_displacement)
+
+    if key_protrusion:
+        riser = Box(post_width, post_width, key_protrusion, name="riser")
+        riser.place(~riser == ~post, -riser == +post, -riser == -post)
+        dished_key.place(z=-dished_key == +riser)
+        return Union(post, dished_key, riser)
+    return Union(post, dished_key)
+
+
+def side_key(key_height, name):
+    return vertical_key(
+        post_length=10,
+        key_width=13,
+        key_height=key_height,
+        key_protrusion=False,
+        key_displacement=False,
+        groove_height=2.987,
+        magnet_height=5.45,
+        name=name)
+
+
+def short_side_key():
+    return side_key(5, "short_side_key")
+
+
+def long_side_key():
+    return side_key(11, "long_side_key")
 
 
 def _design():
