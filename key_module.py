@@ -512,6 +512,18 @@ def cluster_back(cluster: Component, pcb: Component, base_height: float):
     return Difference(Union(base, socket_base, other_socket_base), opening, other_opening), pcb_relief
 
 
+def pcb_holder(pcb) -> Component:
+    holder = Box(pcb.size().x + 10.2, pcb.size().y + 10.2, pcb.size().z)
+    holder.place(~holder == ~pcb,
+                 ~holder == ~pcb,
+                 ~holder == ~pcb)
+
+    pcb_outline = Box(pcb.size().x + .2, pcb.size().y + .2, pcb.size().z)
+    pcb_outline.place(~pcb_outline == ~holder,
+                      ~pcb_outline == ~holder,
+                      ~pcb_outline == ~holder)
+    return Difference(holder, pcb_outline)
+
 def _design():
     start = time.time()
 
