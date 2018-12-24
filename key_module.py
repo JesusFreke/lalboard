@@ -369,6 +369,9 @@ def ball_socket_ball():
 
 
 def ball_socket_base(base_height):
+
+    pin_hole_radius = 2.4
+
     ball = ball_socket_ball()
     ball_radius = ball.size().x / 2
 
@@ -385,24 +388,18 @@ def ball_socket_base(base_height):
                ~ball == ~base,
                (-ball == -base) - (ball_radius * ball_sink_ratio * 2))
 
-    base = Difference(base, ball)
+    pin_hole = Cylinder(base.size().z, pin_hole_radius)
+    base = Difference(base, ball, pin_hole)
 
-    bottom_radius = None
-    for edge in base.bodies[0].brep.edges:
-        if isinstance(edge.geometry, adsk.core.Circle3D) and edge.geometry.center.z == 0:
-            bottom_radius = edge.geometry.radius
-    assert(bottom_radius is not None)
-
-    # This is the cone that a line from the center of the ball would form if it swept along the hole. This is actually
-    # a bit wider of a cone than we actually need. Due to the thickness of the pin, it will actually sweep a narrower
-    # cone.
-    cone_inverse_slope = bottom_radius / ball.mid().z
+    # This is the cone that a line from the center of the ball would form if it swept along the hole.
+    # cone_inverse_slope = pin_hole_radius / (ball.mid().z - base.find_faces(pin_hole.side)[0].size().z / 2)
     ball_socket_opening = Cylinder(
-        ball.mid().z + base_height, cone_inverse_slope * (ball.mid().z + base_height), 0, "ball_socket_opening")
+        base_height + base.find_faces(pin_hole)[0].size().z/2, ball_radius + .8 + .59, pin_hole_radius,
+        "ball_socket_opening")
 
     ball_socket_opening.place(~ball_socket_opening == ~ball,
                               ~ball_socket_opening == ~ball,
-                              +ball_socket_opening == ~ball)
+                              (-ball_socket_opening == -base) - base_height)
 
     return base, Union(ball_socket_opening, ball)
 
