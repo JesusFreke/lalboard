@@ -521,6 +521,65 @@ def pcb_holder(pcb) -> Component:
                       ~pcb_outline == ~holder)
     return Difference(holder, pcb_outline)
 
+
+def center_key():
+    size = 6.1 * 2
+    key_radius = 7.5
+    key_thickness = 2.5
+    post_length = 8.4
+    post_radius = 2.3
+
+    key = Cylinder(key_thickness, key_radius, name="key")
+    post = Cylinder(post_length, post_radius, name="post")
+    post.place(~post == ~key,
+               ~post == ~key,
+               -post == +key)
+
+    back_stop = Box(3.5, 5.7, 4, name="back_stop")
+    back_stop.place(~back_stop == ~key,
+                    -back_stop == ~key,
+                    -back_stop == +key)
+
+    side_stop_start = Box(5.9, 3, 4, name="side_stop_start")
+    side_stop_start.place(-side_stop_start == ~key,
+                          ~side_stop_start == ~key,
+                          -side_stop_start == +key)
+
+    side_stop_end = Box(3.4, 5.9, 4, name="side_stop_end")
+    side_stop_end.place(+side_stop_end == +side_stop_start,
+                        +side_stop_end == ~key,
+                        -side_stop_end == -side_stop_start)
+
+    side_stop = Union(side_stop_start, side_stop_end, name="side_stop")
+    other_side_stop = side_stop.copy(False)
+    other_side_stop.scale(-1, 1, 1, center=key.mid())
+
+    post_flat_face_right = Rect(post_length, key_radius).ry(90)
+    post_flat_face_right.place(~post_flat_face_right == ~post,
+                               +post_flat_face_right == -2,
+                               -post_flat_face_right == +key)
+    post_flat_face_right.align_to(side_stop, Vector3D.create(1, 0, 0))
+
+    post_flat_face_left = post_flat_face_right.copy()
+    post_flat_face_left.align_to(other_side_stop, Vector3D.create(-1, 0, 0))
+
+    post_flat_face = Loft(post_flat_face_left, post_flat_face_right, name="post_flat_face")
+
+    magnet = horizontal_magnet_cutout(1.8)
+    magnet.place(~magnet == ~post,
+                 -magnet == +post_flat_face,
+                 (~magnet == +post) - 4.2)
+
+    result = Difference(Union(key, post, back_stop, side_stop, other_side_stop),
+                        post_flat_face, magnet)
+
+    bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
+    bounding_cylinder.place(~bounding_cylinder == ~result,
+                            ~bounding_cylinder == ~result,
+                            -bounding_cylinder == -result)
+    return Intersection(result, bounding_cylinder)
+
+
 def _design():
     start = time.time()
 
