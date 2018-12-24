@@ -529,28 +529,51 @@ def center_key():
     post_length = 8.4
     post_radius = 2.3
 
+    fillet_radius = .6
+
     key = Cylinder(key_thickness, key_radius, name="key")
     post = Cylinder(post_length, post_radius, name="post")
     post.place(~post == ~key,
                ~post == ~key,
                -post == +key)
+    post = Fillet(post.shared_edges(post.top, post.side), fillet_radius)
 
     back_stop = Box(3.5, 5.7, 4, name="back_stop")
     back_stop.place(~back_stop == ~key,
                     -back_stop == ~key,
                     -back_stop == +key)
+    fillet_edges = back_stop.shared_edges(
+        [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left],
+        [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left])
+    back_stop = Fillet(fillet_edges, fillet_radius, True)
 
-    side_stop_start = Box(5.9, 3, 4, name="side_stop_start")
+    side_stop_start = Box(6.2, 3, 4, name="side_stop_start")
     side_stop_start.place(-side_stop_start == ~key,
                           ~side_stop_start == ~key,
                           -side_stop_start == +key)
 
-    side_stop_end = Box(3.4, 5.9, 4, name="side_stop_end")
+    side_stop_end = Box(3.7, 5.9, 4, name="side_stop_end")
     side_stop_end.place(+side_stop_end == +side_stop_start,
                         +side_stop_end == ~key,
                         -side_stop_end == -side_stop_start)
 
     side_stop = Union(side_stop_start, side_stop_end, name="side_stop")
+
+    bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
+    bounding_cylinder.place(~bounding_cylinder == ~key,
+                            ~bounding_cylinder == ~key,
+                            -bounding_cylinder == -key)
+
+    side_stop = Intersection(side_stop, bounding_cylinder)
+
+    vertical_fillet_edges = side_stop.shared_edges(
+        [side_stop_start.back, side_stop_end.left, side_stop_end.right, side_stop_end.front],
+        [side_stop_start.back, side_stop_end.left, side_stop_end.right, side_stop_end.front])
+    horizontal_fillet_edges = side_stop.shared_edges(side_stop_start.top, [
+        side_stop_start.front, side_stop_start.back, side_stop_start.right, side_stop_start.left,
+        side_stop_end.front, side_stop_end.back, side_stop_end.right, side_stop_end.left, bounding_cylinder.side])
+    side_stop = Fillet(list(vertical_fillet_edges) + list(horizontal_fillet_edges), fillet_radius, True)
+
     other_side_stop = side_stop.copy(False)
     other_side_stop.scale(-1, 1, 1, center=key.mid())
 
@@ -573,11 +596,7 @@ def center_key():
     result = Difference(Union(key, post, back_stop, side_stop, other_side_stop),
                         post_flat_face, magnet)
 
-    bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
-    bounding_cylinder.place(~bounding_cylinder == ~result,
-                            ~bounding_cylinder == ~result,
-                            -bounding_cylinder == -result)
-    return Intersection(result, bounding_cylinder)
+    return result
 
 
 def _design():
