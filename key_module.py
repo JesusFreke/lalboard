@@ -66,7 +66,7 @@ def make_pt_cavity():
     cavity.add_faces("top", *cavity.find_faces(body.top))
 
     cavity.add_point("lens_center",
-                     (cavity.mid().x, cavity.mid().y, lens_hole.bodies()[0].faces[0].brep.centroid.z))
+                     (cavity.mid().x, cavity.mid().y, lens_hole.bodies[0].faces[0].brep.centroid.z))
 
     return cavity
 
@@ -100,7 +100,7 @@ def make_led_cavity():
     cavity.add_faces("top", *cavity.find_faces((body.top, slot.top)))
 
     cavity.add_point("lens_center",
-                     (cavity.mid().x, cavity.mid().y, lens_hole.bodies()[0].faces[0].brep.centroid.z))
+                     (cavity.mid().x, cavity.mid().y, lens_hole.bodies[0].faces[0].brep.centroid.z))
 
     return cavity
 
@@ -177,8 +177,6 @@ def vertical_key_base(base_height, pressed_key_angle=20):
                         -magnet_cutout == -front,
                         (+magnet_cutout == +front) - .45)
 
-    result.add_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
-
     extruded_led_cavity = ExtrudeTo(led_cavity.faces("lens_hole"), result.copy(False))
     extruded_led_cavity = ExtrudeTo(
         extruded_led_cavity.find_faces(led_cavity.faces("legs")), result.copy(False))
@@ -187,8 +185,11 @@ def vertical_key_base(base_height, pressed_key_angle=20):
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("legs")), result.copy(False))
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("top")), result.copy(False))
 
-    return result, Union(
-        extruded_pt_cavity, extruded_led_cavity, magnet_cutout, key_pivot, name="vertical_key_base_negative")
+    result = Difference(result, extruded_pt_cavity, extruded_led_cavity, magnet_cutout, key_pivot)
+
+    result.add_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
+
+    return result, Difference(result.bounding_box.make_box(), result.copy(False), name="vertical_key_base_negative")
 
 
 def cluster():
@@ -251,20 +252,23 @@ def cluster():
     combined_cluster.add(central_magnet_riser)
 
     # TODO: is there a better way to find the desired children?
-    bottom_left_negative_cavity = key_base_negatives[0].children()[1]
-    bottom_right_negative_cavity = key_base_negatives[0].children()[0]
-    left_negative_cavity = key_base_negatives[3].children()[1]
-    right_negative_cavity = key_base_negatives[1].children()[0]
+    bottom_cavity = key_base_negatives[0]
+    left_cavity = key_base_negatives[3]
+    right_cavity = key_base_negatives[1]
 
     central_led_cavity = make_led_cavity().scale(-1, 1, 1)
-    central_led_cavity.place(-central_led_cavity == +left_negative_cavity,
-                             -central_led_cavity == +bottom_left_negative_cavity,
+    central_led_cavity.place(-central_led_cavity == -center_floor,
+                             -central_led_cavity == -center_floor,
                              (~central_led_cavity.point("lens_center") == +center_floor) + 1.6)
+    central_led_cavity.align_to(left_cavity.bodies[0], Vector3D.create(-1, 0, 0))
+    central_led_cavity.align_to(bottom_cavity.bodies[0], Vector3D.create(0, -1, 0))
 
     central_pt_cavity = make_pt_cavity().scale(-1, 1, 1)
-    central_pt_cavity.place(+central_pt_cavity == -right_negative_cavity,
-                            -central_pt_cavity == +bottom_right_negative_cavity,
+    central_pt_cavity.place(+central_pt_cavity == +center_floor,
+                            -central_pt_cavity == -center_floor,
                             (~central_pt_cavity.point("lens_center") == +center_floor) + 1.6)
+    central_pt_cavity.align_to(right_cavity.bodies[0], Vector3D.create(1, 0, 0))
+    central_pt_cavity.align_to(bottom_cavity.bodies[0], Vector3D.create(0, -1, 0))
 
     central_led_base = Box(2.8,
                            central_led_cavity.max().y - center_floor.min().y,
@@ -307,7 +311,7 @@ def cluster_pcb(cluster):
 
     bottom = cluster.find_faces(center)[0]
 
-    base = Extrude(Union(BRepComponent(bottom.brep), center).bodies()[0].faces[0], 2)
+    base = Extrude(Union(BRepComponent(bottom.brep), center).bodies[0].faces[0], 2)
 
     base_extension = Box(base.size().x, 6, base.size().z)
     base_extension.place(~base_extension == ~base,
@@ -335,7 +339,7 @@ def cluster_pcb(cluster):
 
 def cluster_pcb_sketch(cluster_pcb_bottom: Component):
     rects = []
-    for edge in cluster_pcb_bottom.bodies()[0].brep.edges:
+    for edge in cluster_pcb_bottom.bodies[0].brep.edges:
         if not isinstance(edge.geometry, adsk.core.Circle3D):
             continue
 
@@ -384,7 +388,7 @@ def ball_socket_base(base_height):
     base = Difference(base, ball)
 
     bottom_radius = None
-    for edge in base.bodies()[0].brep.edges:
+    for edge in base.bodies[0].brep.edges:
         if isinstance(edge.geometry, adsk.core.Circle3D) and edge.geometry.center.z == 0:
             bottom_radius = edge.geometry.radius
     assert(bottom_radius is not None)
@@ -412,7 +416,7 @@ def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
                               ~intersecting_circle == point,
                               ~intersecting_circle == point)
 
-    vertices = list(Intersection(circle, intersecting_circle).bodies()[0].brep.vertices)
+    vertices = list(Intersection(circle, intersecting_circle).bodies[0].brep.vertices)
     return vertices
 
 
@@ -461,37 +465,72 @@ def cluster_front(cluster: Component, base_height):
     return Difference(Union(base, socket_base), opening)
 
 
+def cluster_back(cluster: Component, pcb: Component, base_height: float):
+    # TODO: use a fillet to round off the outer corners
+    # TODO: we may need to push out the sockets a bit more, so the lower base can screw in all the way, without hitting
+    # the pcb. On the other hand, the back is most likely going to be higher than the front, so maybe not a problem.
+    base = Box(cluster.size().x, 15, base_height)
+    base.place(~base == ~cluster,
+               -base == +cluster,
+               -base == -cluster)
+
+    socket_base, opening = ball_socket_base(2)
+    opening.place(-socket_base == -cluster,
+                  +socket_base == +base,
+                  -socket_base == +base)
+    socket_base.place(-socket_base == -cluster,
+                      +socket_base == +base,
+                      -socket_base == +base)
+
+    other_socket_base = socket_base.copy()
+    other_opening = opening.copy()
+    other_opening.place(+other_socket_base == +cluster)
+    other_socket_base.place(+other_socket_base == +cluster)
+
+    hole_bounding_box = None
+    for body in pcb.bodies:
+        for face in body.faces:
+            if isinstance(face.brep.geometry, adsk.core.Cylinder):
+                if face.brep.centroid.y > cluster.max().y:
+                    if hole_bounding_box is None:
+                        hole_bounding_box = face.bounding_box.raw_bounding_box
+                    else:
+                        hole_bounding_box.combine(face.bounding_box.raw_bounding_box)
+
+    holes_mid_point = Point3D.create((hole_bounding_box.minPoint.x + hole_bounding_box.maxPoint.x) / 2,
+                                     (hole_bounding_box.minPoint.y + hole_bounding_box.maxPoint.y) / 2,
+                                     (hole_bounding_box.minPoint.z + hole_bounding_box.maxPoint.z) / 2)
+    pcb_relief = Box(hole_bounding_box.maxPoint.x - hole_bounding_box.minPoint.x + 2,
+                     hole_bounding_box.maxPoint.y - hole_bounding_box.minPoint.y + 2,
+                     base_height/2)
+    pcb_relief.place(~pcb_relief == holes_mid_point,
+                     ~pcb_relief == holes_mid_point,
+                     -pcb_relief == -base)
+
+    return Difference(Union(base, socket_base, other_socket_base), opening, other_opening), pcb_relief
+
+
 def _design():
     start = time.time()
 
-    #clus = cluster()
-    #Union(clus, cluster_front(clus)).create_occurrence(scale=.1)
-
-    #ball_socket_cap()
-
-    #result = vertical_key_base(2)
-    #Difference(result[0], result[1]).scale(.1, .1, .1).create_occurrence(True)
-
-    #pcb = cluster_pcb(clus)
-
-    #cluster_pcb_base(BRepComponent(pcb.faces("bottom")[0].brep))
-
-    #pcb.scale(.1, .1, .1).create_occurrence(False)
-
-
-    #clus.scale(.1, .1, .1).create_occurrence(False)
-    #pcb.scale(.1, .1, .1).create_occurrence(True)
-
-    #base, opening = ball_socket_base(2)
-    #Difference(base, opening).create_occurrence(.1, True)
+    #base, diff = vertical_key_base(2)
+    #Difference(base, diff).create_occurrence(True, scale=.1)
 
     clust = cluster()
-    #pcb = cluster_pcb(clust)
-
-    Union(clust, cluster_front(clust, 2)).create_occurrence(.1, True)
+    clust.rz(180, center=clust.mid())
 
 
+    #clust.create_occurrence(True, scale=.1)
+    pcb = cluster_pcb(clust)
+    #pcb.create_occurrence(False, scale=.1)
 
+    cluster_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
+
+    clust = Union(clust, cluster_front(clust, 2))
+
+    back, pcb_relief = cluster_back(clust, pcb, 2)
+
+    Difference(Union(clust, back), pcb_relief).create_occurrence(False, scale=.1)
 
     end = time.time()
     print(end-start)
