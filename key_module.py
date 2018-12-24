@@ -324,9 +324,9 @@ def cluster_pcb(cluster):
                           ~connector_holes == +base_extension)
     extension_holes = ExtrudeTo(connector_holes, base_extension.bottom)
 
-    through_holes = hole_array(.4, 3, 7)
+    through_holes = hole_array(.4, 1.5, 7)
     through_holes.place(~through_holes == ~base_extension,
-                        (~through_holes == ~connector_holes) - 4,
+                        (-through_holes == ~connector_holes) - 1.3-2.2,
                         ~through_holes == +base_extension)
     through_holes = ExtrudeTo(through_holes, base_extension.bottom)
 
@@ -343,7 +343,7 @@ def cluster_pcb_sketch(cluster_pcb_bottom: Component):
         if not isinstance(edge.geometry, adsk.core.Circle3D):
             continue
 
-        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 2:
+        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 5:
             rect_size = 1.25
         else:
             rect_size = 2
