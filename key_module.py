@@ -583,7 +583,17 @@ def pcb_holder(pcb) -> Component:
     pcb_outline.place(~pcb_outline == ~holder,
                       ~pcb_outline == ~holder,
                       ~pcb_outline == ~holder)
-    return Difference(holder, pcb_outline)
+
+    screw = Cylinder(holder.size().z, 1.75)
+    screw.place((~screw == +holder) - 3,
+                (~screw == +holder) - 3,
+                -screw == -holder)
+
+    return Difference(holder, pcb_outline,
+                      screw,
+                      screw.copy().scale(-1, 1, 1, center=holder.mid()),
+                      screw.copy().scale(1, -1, 1, center=holder.mid()),
+                      screw.copy().scale(-1, -1, 1, center=holder.mid()))
 
 
 def center_key():
