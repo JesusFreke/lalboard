@@ -382,13 +382,13 @@ def cluster_pcb(cluster):
                          -base_extension == -base)
 
     connector_holes = hole_array(.4, 1.5, 7)
-    connector_holes.place((~connector_holes == ~base_extension) + 2.3,
+    connector_holes.place((~connector_holes == ~base_extension) - 1.8375,
                           (~connector_holes == +base_extension) - 2.2,
                           ~connector_holes == +base_extension)
     extension_holes = ExtrudeTo(connector_holes, base_extension.bottom)
 
     through_holes = hole_array(.4, 2.1, 7)
-    through_holes.place((~through_holes == ~base_extension) + 2.3,
+    through_holes.place(~through_holes == ~connector_holes,
                         (-through_holes == ~connector_holes) - 1.3-2.5,
                         ~through_holes == +base_extension)
     through_holes = ExtrudeTo(through_holes, base_extension.bottom)
