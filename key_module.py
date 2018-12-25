@@ -246,7 +246,11 @@ def cluster():
     central_magnet_riser.place(~central_magnet_riser == ~base,
                                -central_magnet_riser == +center_hole,
                                -central_magnet_riser == +center_floor)
-    central_magnet_riser = ExtrudeTo(central_magnet_riser.back, combined_cluster.copy(False))
+    extruded_central_magnet_riser = ExtrudeTo(central_magnet_riser.back, combined_cluster.copy(False))
+
+    central_magnet_riser = Fillet(extruded_central_magnet_riser.shared_edges(
+        [central_magnet_riser.top, central_magnet_riser.front],
+        [central_magnet_riser.front, central_magnet_riser.left, central_magnet_riser.right]), .6)
 
     central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~central_magnet_riser,
