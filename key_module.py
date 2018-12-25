@@ -664,11 +664,7 @@ def center_key():
 
 def vertical_key_post(post_length, groove_height, magnet_height):
     post = Box(post_width, post_length, key_thickness, name="post")
-    end = Cylinder(post_width, key_thickness/2).ry(90)
-    end.place(~end == ~post,
-              ~end == -post,
-              ~end == ~post)
-    Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
+    post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
 
     magnet = vertical_magnet_cutout()
     magnet.place(~magnet == ~post,
@@ -678,9 +674,9 @@ def vertical_key_post(post_length, groove_height, magnet_height):
     groove_size = .6
     groove = Box(post.size().x, groove_size*2, groove_size, name="groove")
     groove.place(~groove == ~post,
-                 (-groove == -post) + groove_height,
+                 (-groove == -post) + groove_height + key_thickness/2,
                  -groove == -post)
-    return Difference(Union(post, end), magnet, groove)
+    return Difference(post, magnet, groove)
 
 
 def vertical_key(post_length, key_width, key_height, key_protrusion, key_displacement, groove_height, magnet_height,
@@ -761,7 +757,6 @@ def _design():
     start = time.time()
 
     full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False)
-
     # center_key().create_occurrence(False, .1)
     # short_side_key().create_occurrence(False, .1)
 
