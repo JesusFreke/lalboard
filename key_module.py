@@ -14,7 +14,10 @@
 
 import adsk.core
 import adsk.fusion
+import math
 import time
+
+from adsk.core import Matrix2D, Vector2D
 
 from fscad import *
 from fscad import Circle
@@ -167,9 +170,61 @@ def vertical_key_base(base_height, pressed_key_angle=20):
                          -remaining_back == -back_sloped)
     back = Union(remaining_back, back_sloped, name="back")
 
-    retaining_ridge = Box(back.size().x, .5, .5, "retaining_ridge").rx(45)
+
+    def rotated(vector, angle):
+        vector = vector.copy()
+        matrix = Matrix3D.create()
+        matrix.setToRotation(math.radians(angle), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
+        vector.transformBy(matrix)
+        return vector
+
+    def vectorTo(point, vector, length):
+        vector = vector.copy()
+        vector.scaleBy(length)
+        point = point.copy()
+        point.translateBy(vector)
+        return point
+
+    retaining_ridge_thickness = .3
+    retaining_ridge_lower_angle = 45
+    retaining_ridge_height = .3
+
+    origin = Point3D.create(0, 0, 0)
+    up = Vector3D.create(0, 1, 0)
+    right = rotated(up, -90)
+    down = rotated(right, -90)
+    left = rotated(down, -90)
+
+    lines = []
+    lines.append(adsk.core.InfiniteLine3D.create(
+        origin,
+        rotated(down, -20)))
+    lines.append(adsk.core.InfiniteLine3D.create(
+        origin,
+        left))
+
+    point = vectorTo(origin, rotated(left, -20), retaining_ridge_thickness)
+    lines.append(adsk.core.InfiniteLine3D.create(
+        point,
+        rotated(down, -20)))
+
+    point = lines[1].intersectWithCurve(lines[2])[0]
+    lines.append(adsk.core.InfiniteLine3D.create(
+        vectorTo(point, rotated(down, -20), retaining_ridge_height),
+        rotated(down, retaining_ridge_lower_angle)))
+
+    points = []
+    for i in range(-1, 3):
+        points.append(lines[i].intersectWithCurve(lines[i+1])[0])
+
+    retaining_ridge = Polygon(*points, name="retaining_ridge_profile")
+    retaining_ridge = Extrude(retaining_ridge, back.size().x)
+
+    retaining_ridge.rz(-90)
+    retaining_ridge.ry(-90)
+
     retaining_ridge.place(~retaining_ridge == ~back,
-                          ~retaining_ridge == +remaining_back.top,
+                          -retaining_ridge == +remaining_back.top,
                           +retaining_ridge == +back)
 
     result = Union(pt_base, led_base, front, back, base, name="vertical_key_base")
@@ -667,7 +722,7 @@ def side_key(key_height, name):
         key_height=key_height,
         key_protrusion=False,
         key_displacement=False,
-        groove_height=2.987,
+        groove_height=2.99,
         magnet_height=5.45,
         name=name)
 
