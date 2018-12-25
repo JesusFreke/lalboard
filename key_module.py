@@ -374,22 +374,22 @@ def cluster_pcb(cluster):
 
     bottom = cluster.find_faces(center)[0]
 
-    base = Extrude(Union(BRepComponent(bottom.brep), center).bodies[0].faces[0], 2)
+    base = Extrude(Union(BRepComponent(bottom.brep), center).bodies[0].faces[0], 1.2)
 
-    base_extension = Box(base.size().x, 6, base.size().z)
+    base_extension = Box(base.size().x, 7, base.size().z)
     base_extension.place(~base_extension == ~base,
                          -base_extension == +base,
                          -base_extension == -base)
 
     connector_holes = hole_array(.4, 1.5, 7)
-    connector_holes.place(~connector_holes == ~base_extension,
-                          (~connector_holes == +base_extension) - 1.3,
+    connector_holes.place((~connector_holes == ~base_extension) + 2.3,
+                          (~connector_holes == +base_extension) - 2.2,
                           ~connector_holes == +base_extension)
     extension_holes = ExtrudeTo(connector_holes, base_extension.bottom)
 
-    through_holes = hole_array(.4, 1.5, 7)
-    through_holes.place(~through_holes == ~base_extension,
-                        (-through_holes == ~connector_holes) - 1.3-2.2,
+    through_holes = hole_array(.4, 2.1, 7)
+    through_holes.place((~through_holes == ~base_extension) + 2.3,
+                        (-through_holes == ~connector_holes) - 1.3-2.5,
                         ~through_holes == +base_extension)
     through_holes = ExtrudeTo(through_holes, base_extension.bottom)
 
@@ -406,12 +406,14 @@ def cluster_pcb_sketch(cluster_pcb_bottom: Component):
         if not isinstance(edge.geometry, adsk.core.Circle3D):
             continue
 
-        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 5:
-            rect_size = 1.25
+        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 3:
+            rect_size = (1.25, 1.25)
+        elif cluster_pcb_bottom.max().y - edge.geometry.center.y < 6:
+            rect_size = (1.75, 2)
         else:
-            rect_size = 2
+            rect_size = (2, 2)
 
-        rect = Rect(rect_size, rect_size)
+        rect = Rect(*rect_size)
         rect.place(~rect == edge.geometry.center,
                    ~rect == edge.geometry.center,
                    ~rect == edge.geometry.center)
@@ -526,10 +528,9 @@ def cluster_front(cluster: Component, base_height):
 
 
 def cluster_back(cluster: Component, pcb: Component, base_height: float):
-    # TODO: use a fillet to round off the outer corners
-    # TODO: we may need to push out the sockets a bit more, so the lower base can screw in all the way, without hitting
-    # the pcb. On the other hand, the back is most likely going to be higher than the front, so maybe not a problem.
-    base = Box(cluster.size().x, 15, base_height)
+    socket_base, opening = ball_socket_base(2)
+
+    base = Box(cluster.size().x, pcb.max().y - cluster.max().y + 6.5 + socket_base.size().y/2, base_height)
     base.place(~base == ~cluster,
                -base == +cluster,
                -base == -cluster)
