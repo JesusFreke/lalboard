@@ -735,27 +735,35 @@ def long_side_key():
     return side_key(11, "long_side_key")
 
 
-def _design():
-    start = time.time()
-
-    #base, diff = vertical_key_base(2)
-    #Difference(base, diff).create_occurrence(True, scale=.1)
-
+def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False):
     clust = cluster()
     clust.rz(180, center=clust.mid())
 
-
-    #clust.create_occurrence(True, scale=.1)
     pcb = cluster_pcb(clust)
-    #pcb.create_occurrence(False, scale=.1)
-
-    cluster_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
     clust = Union(clust, cluster_front(clust, 2))
 
     back, pcb_relief = cluster_back(clust, pcb, 2)
 
-    Difference(Union(clust, back), pcb_relief).create_occurrence(False, scale=.1)
+    Difference(Union(clust, back), pcb_relief).create_occurrence(create_children, scale=.1)
+
+    if add_pcb:
+        pcb.create_occurrence(create_children, scale=.1)
+
+    if add_pcb_sketch:
+        cluster_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
+
+    if add_pcb_holder:
+        pcb_holder(pcb).create_occurrence(create_children, scale=.1)
+
+
+def _design():
+    start = time.time()
+
+    full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False)
+
+    # center_key().create_occurrence(False, .1)
+    # short_side_key().create_occurrence(False, .1)
 
     end = time.time()
     print(end-start)
