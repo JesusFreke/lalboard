@@ -702,7 +702,7 @@ def vertical_key(post_length, key_width, key_height, key_protrusion, key_displac
 
     dished_key = Fillet(
         dished_key.shared_edges([key_dish.side, key_base.back],
-                                [key_base.left, key_base.right, key_base.back]), .5, False)
+                                [key_base.left, key_base.right, key_base.back]), 1, False)
 
     if key_displacement:
         dished_key.ty(key_displacement)
