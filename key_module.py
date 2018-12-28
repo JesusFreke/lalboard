@@ -787,6 +787,43 @@ def jst_adaptor():
     return Difference(base, ExtrudeTo(holes, base))
 
 
+def ballscrew(screw_length):
+    screw_radius = 1.5
+    neck_length = 1
+
+    ball = ball_socket_ball()
+
+    tmp = Cylinder(ball.size().z/2, screw_radius)
+    tmp.place(~tmp == ~ball,
+              ~tmp == ~ball,
+              -tmp == ~ball)
+    screw_ball_intersection = Intersection(ball.copy(), tmp)
+    screw_ball_intersection.create_occurrence(True, .1)
+    screw_ball_intersection_height = screw_ball_intersection.shared_edges(
+        ball.bodies[0].faces[0], tmp.side)[0].brep.pointOnEdge.z
+
+    ball_flattener = Box(ball.size().x, ball.size().y, screw_ball_intersection_height - ball.min().z)
+    ball_flattener.place(~ball_flattener == ~ball,
+                         ~ball_flattener == ~ball,
+                         +ball_flattener == +ball)
+    flat_ball = Intersection(ball, ball_flattener)
+
+    screw = Cylinder(screw_length - neck_length, screw_radius)
+
+    screw_neck = Cylinder(neck_length, screw_radius)
+    screw_neck.place(~screw_neck == ~screw,
+                     ~screw_neck == ~screw,
+                     -screw_neck == +screw)
+
+    flat_ball.place(~flat_ball == ~screw,
+                    ~flat_ball == ~screw,
+                    -flat_ball == +screw_neck)
+
+    screw = Threads(screw, ((0, 0), (.99, .99), (0, .99)), 1.0)
+
+    return Union(screw, screw_neck, flat_ball)
+
+
 def _design():
     start = time.time()
 
@@ -796,6 +833,8 @@ def _design():
     # long_side_key().create_occurrence(True, .1)
 
     # jst_adaptor().create_occurrence(True, .1)
+
+    # ballscrew(10).create_occurrence(True, .1)
 
     end = time.time()
     print(end-start)
