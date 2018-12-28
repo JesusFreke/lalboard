@@ -684,16 +684,17 @@ def vertical_key_post(post_length, groove_height, magnet_height):
                  ~magnet == magnet_height + key_thickness/2,
                  +magnet == +post)
 
-    groove_size = .6
-    groove = Box(post.size().x, groove_size*2, groove_size, name="groove")
+    groove_width = .6
+    groove_depth = .7
+    groove = Box(post.size().x, groove_width, groove_depth, name="groove")
     groove.place(~groove == ~post,
                  (-groove == -post) + groove_height + key_thickness/2,
                  -groove == -post)
     return Difference(post, magnet, groove)
 
 
-def vertical_key(post_length, key_width, key_height, key_protrusion, key_displacement, groove_height, magnet_height,
-                 name):
+def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, key_displacement, groove_height,
+                 magnet_height, name):
     post = vertical_key_post(post_length, groove_height, magnet_height)
 
     key_base = Box(13, key_height, 10, name="key_base")
@@ -701,10 +702,11 @@ def vertical_key(post_length, key_width, key_height, key_protrusion, key_displac
                    -key_base == +post,
                    -key_base == -post)
 
-    key_dish = Cylinder(key_base.size().y, 15).rx(90)
+    key_dish = Cylinder(key_base.size().y * 2, 15).rx(90)
     key_dish.place(~key_dish == ~post,
-                   ~key_dish == ~key_base,
+                   -key_dish == -key_base,
                    -key_dish == +post)
+    key_dish.rx(key_angle, center=key_dish.min())
 
     dished_key = Difference(key_base, key_dish, name="dished_key")
     dished_key = Scale(dished_key, sx=key_width/13, center=dished_key.mid(), name="dished_key")
@@ -724,11 +726,12 @@ def vertical_key(post_length, key_width, key_height, key_protrusion, key_displac
     return Union(post, dished_key)
 
 
-def side_key(key_height, name):
+def side_key(key_height, key_angle, name):
     return vertical_key(
         post_length=10,
         key_width=13,
         key_height=key_height,
+        key_angle=key_angle,
         key_protrusion=False,
         key_displacement=False,
         groove_height=2.99,
@@ -737,11 +740,11 @@ def side_key(key_height, name):
 
 
 def short_side_key():
-    return side_key(5, "short_side_key")
+    return side_key(5, 0, "short_side_key")
 
 
 def long_side_key():
-    return side_key(11, "long_side_key")
+    return side_key(11, 10, "long_side_key")
 
 
 def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False):
@@ -772,6 +775,7 @@ def _design():
     full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False)
     # center_key().create_occurrence(False, .1)
     # short_side_key().create_occurrence(False, .1)
+    # long_side_key().create_occurrence(True, .1)
 
     end = time.time()
     print(end-start)
