@@ -436,7 +436,6 @@ def ball_socket_ball():
 
 
 def ball_socket_base(base_height):
-
     pin_hole_radius = 2.4
 
     ball = ball_socket_ball()
@@ -824,6 +823,50 @@ def ballscrew(screw_length):
     return Union(screw, screw_neck, flat_ball)
 
 
+def ballscrew_cap():
+    ball = ball_socket_ball()
+
+    ball_radius = ball.size().x / 2
+
+    hexagon_width = ball_radius + 2.5
+
+    base_polygon = RegularPolygon(6, hexagon_width, is_outer_radius=False)
+    base = Extrude(base_polygon, ball.size().x * .8 - .3)
+
+    screw_cavity = Cylinder(ball_radius * .8, ball_radius + 1 + .1)
+    screw_cavity.place(~screw_cavity == ~base,
+                       ~screw_cavity == ~base,
+                       +screw_cavity == +base)
+
+    base = Difference(base, screw_cavity)
+
+    base = Threads(base, ((0, 0), (.99, .99), (0, .99)), 1.0)
+
+    ball.place(~ball == ~base,
+               ~ball == ~base,
+               ~ball == -screw_cavity)
+
+    remaining_ball_height = ball_radius - ball.mid().z
+    extension_height = remaining_ball_height + 1
+    base = Extrude(base.find_faces(base_polygon), extension_height)
+
+    bottom_face = None
+    for face in base.end_faces:
+        if face.mid().z < 0:
+            bottom_face = face
+            break
+
+    base = Chamfer(base.shared_edges(base.side_faces, bottom_face), remaining_ball_height*2)
+
+    bottom_face = base.find_faces(bottom_face)[0]
+
+    base = Fillet(base.shared_edges(bottom_face.connected_faces, bottom_face.connected_faces), hexagon_width)
+
+    base = Difference(base, ball)
+
+    return base
+
+
 def _design():
     start = time.time()
 
@@ -835,6 +878,7 @@ def _design():
     # jst_adaptor().create_occurrence(True, .1)
 
     # ballscrew(10).create_occurrence(True, .1)
+    # ballscrew_cap().create_occurrence(True, .1)
 
     end = time.time()
     print(end-start)
