@@ -769,6 +769,24 @@ def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_
         pcb_holder(pcb).create_occurrence(create_children, scale=.1)
 
 
+def jst_adaptor():
+    jst_holes = hole_array(.35, 1.5, 7)
+
+    header_holes = hole_array(.35, 2.54, 7)
+    header_holes.place(~header_holes == ~jst_holes,
+                       (~header_holes == ~jst_holes) + 3,
+                       ~header_holes == ~jst_holes)
+
+    holes = Union(jst_holes, header_holes)
+
+    base = Box(22, holes.size().y + 2.2*2, 1.2)
+    base.place(~base == ~holes,
+               ~base == ~holes,
+               -base == ~holes)
+
+    return Difference(base, ExtrudeTo(holes, base))
+
+
 def _design():
     start = time.time()
 
@@ -776,6 +794,8 @@ def _design():
     # center_key().create_occurrence(False, .1)
     # short_side_key().create_occurrence(False, .1)
     # long_side_key().create_occurrence(True, .1)
+
+    # jst_adaptor().create_occurrence(True, .1)
 
     end = time.time()
     print(end-start)
