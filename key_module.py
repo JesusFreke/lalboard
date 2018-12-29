@@ -840,11 +840,11 @@ def ballscrew_cap():
 
     base = Difference(base, screw_cavity)
 
-    base = Threads(base, ((0, 0), (.99, .99), (0, .99)), 1.0)
+    base = Threads(base, ((0, 0), (.99, .99), (0, .99)), 1.0, reverse_axis=True)
 
     ball.place(~ball == ~base,
                ~ball == ~base,
-               ~ball == -screw_cavity)
+               (~ball == -screw_cavity) + .8)
 
     remaining_ball_height = ball_radius - ball.mid().z
     extension_height = remaining_ball_height + 1
@@ -856,7 +856,7 @@ def ballscrew_cap():
             bottom_face = face
             break
 
-    base = Chamfer(base.shared_edges(base.side_faces, bottom_face), remaining_ball_height*2)
+    base = Chamfer(base.shared_edges(base.side_faces, bottom_face), extension_height)
 
     bottom_face = base.find_faces(bottom_face)[0]
 
