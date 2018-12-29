@@ -883,7 +883,7 @@ def ballscrew_base(screw_length):
                  ~magnet == ~base,
                  +magnet == +base)
 
-    screw_hole = Cylinder(screw_length, 1.6)
+    screw_hole = Cylinder(screw_length, 1.65)
     screw_hole.place(~screw_hole == ~base,
                      ~screw_hole == ~base,
                      -screw_hole == -base)
