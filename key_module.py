@@ -872,17 +872,18 @@ def ballscrew_cap():
     return base
 
 
-def ballscrew_base(screw_height):
+def ballscrew_base(screw_length):
+    screw_length = screw_length - 2
     magnet = vertical_large_magnet_cutout()
 
     base_polygon = RegularPolygon(6, 5, is_outer_radius=False)
-    base = Extrude(base_polygon, screw_height + magnet.size().z)
+    base = Extrude(base_polygon, screw_length + magnet.size().z)
 
     magnet.place(~magnet == ~base,
                  ~magnet == ~base,
                  +magnet == +base)
 
-    screw_hole = Cylinder(screw_height, 1.6)
+    screw_hole = Cylinder(screw_length, 1.6)
     screw_hole.place(~screw_hole == ~base,
                      ~screw_hole == ~base,
                      -screw_hole == -base)
