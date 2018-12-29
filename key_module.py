@@ -48,7 +48,12 @@ def vertical_magnet_cutout(depth=1.6, name="magnet_cutout"):
 
 
 def vertical_large_magnet_cutout(name="magnet_cutout"):
-    return tapered_box(3, 3, 3.4, 3.4, 3.3, name=name)
+    base = Box(2.9, 2.9, 2, name=name + "_base")
+    taper = tapered_box(2.9, 2.9, 3.1, 3.1, 1.3, name=name + "_taper")
+    taper.place(~taper == ~base,
+                ~taper == ~base,
+                -taper == +base)
+    return Union(base, taper, name=name)
 
 
 def make_pt_cavity():
