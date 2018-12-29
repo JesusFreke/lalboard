@@ -47,6 +47,10 @@ def vertical_magnet_cutout(depth=1.6, name="magnet_cutout"):
     return tapered_box(1.55, 1.55, 1.7, 1.7, depth, name)
 
 
+def vertical_large_magnet_cutout(name="magnet_cutout"):
+    return tapered_box(3, 3, 3.4, 3.4, 3.3, name=name)
+
+
 def make_pt_cavity():
     lens_height = 4.5
     lens_radius = .75
@@ -869,6 +873,25 @@ def ballscrew_cap():
     return base
 
 
+def ballscrew_base(screw_height):
+    magnet = vertical_large_magnet_cutout()
+
+    base_polygon = RegularPolygon(6, 5, is_outer_radius=False)
+    base = Extrude(base_polygon, screw_height + magnet.size().z)
+
+    magnet.place(~magnet == ~base,
+                 ~magnet == ~base,
+                 +magnet == +base)
+
+    screw_hole = Cylinder(screw_height, 1.6)
+    screw_hole.place(~screw_hole == ~base,
+                     ~screw_hole == ~base,
+                     -screw_hole == -base)
+
+    base = Difference(base, magnet, screw_hole)
+    return Threads(base, ((0, 0), (.99, .99), (0, .99)), 1, reverse_axis=True)
+
+
 def thumb_base():
     base = Box(44, 47, 2)
 
@@ -979,6 +1002,8 @@ def _design():
     # ballscrew(10).create_occurrence(True, .1)
     # ballscrew(15).create_occurrence(True, .1)
     # ballscrew_cap().create_occurrence(True, .1)
+    # ballscrew_base(10).create_occurrence(True, .1)
+    # ballscrew_base(15).create_occurrence(True, .1)
 
     # thumb_base().create_occurrence(True, .1)
 
