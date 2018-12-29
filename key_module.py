@@ -111,6 +111,7 @@ def make_led_cavity():
 
     return cavity
 
+
 def hole_array(radius, pitch, count):
     hole = Circle(radius)
     union = None
@@ -122,17 +123,18 @@ def hole_array(radius, pitch, count):
             union.add(hole_copy)
     return union
 
-def vertical_key_base(base_height, pressed_key_angle=20):
-    front = Box(5, 2.2, 6.4, "front")
 
-    pt_base = Box(5, 6.15, 6.4, "phototransistor_base")
+def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20):
+    front = Box(5, 2.2, 6.4 + extra_height, "front")
+
+    pt_base = Box(5, 6.15, front.size().z, "phototransistor_base")
     pt_base.place(+pt_base == -front, +pt_base == +front, -pt_base == -front)
     pt_cavity = make_pt_cavity()
     pt_cavity.place(~pt_cavity.point("lens_center") == ~pt_base,
                     ~pt_cavity.point("lens_center") == ~pt_base,
                     (~pt_cavity.point("lens_center") == +pt_base) - 1.9)
 
-    led_base = Box(6, 6.15, 6.4, "led_base")
+    led_base = Box(6, 6.15, front.size().z, "led_base")
     led_base.place(-led_base == +front, +led_base == +front, -led_base == -front)
     led_cavity = make_led_cavity()
     led_cavity.place((~led_cavity.point("lens_center") == ~led_base) - .125,
@@ -867,6 +869,104 @@ def ballscrew_cap():
     return base
 
 
+def thumb_base():
+    base = Box(44, 47, 2)
+
+    key_stand_lower = Box(15, 2.2, 3)
+    key_stand_lower.place((-key_stand_lower == -base) + 12.5,
+                          (-key_stand_lower == -base) + 12.3,
+                          -key_stand_lower == +base)
+
+    key_stand_transition_top = Rect(15, 1.8)
+    key_stand_transition_top.place(~key_stand_transition_top == ~key_stand_lower,
+                                   -key_stand_transition_top == -key_stand_lower,
+                                   (~key_stand_transition_top == +key_stand_lower) + 1)
+    key_stand_transition = Loft(BRepComponent(key_stand_lower.top.brep), key_stand_transition_top)
+    key_stand_upper = Box(15, 1.8, 4 + 1.8/2)
+    key_stand_upper.place(~key_stand_upper == ~key_stand_lower,
+                          -key_stand_upper == -key_stand_lower,
+                          -key_stand_upper == +key_stand_transition)
+    key_stand_upper = Fillet(key_stand_upper.shared_edges(
+        key_stand_upper.top,
+        [key_stand_upper.front, key_stand_upper.back]),
+        key_stand_upper.size().y/2)
+
+    magnet = horizontal_magnet_cutout(1.8)
+    magnet.place(~magnet == ~key_stand_lower,
+                 -magnet == -key_stand_lower,
+                 (-magnet == +base) + 1)
+
+    mid_key_stop = Box(15, 3, 5.1)
+    mid_key_stop.place(~mid_key_stop == ~key_stand_lower,
+                       (~mid_key_stop == +key_stand_lower) + 23,
+                       -mid_key_stop == +base)
+
+    mid_pt_base = Box(5, 5.9, 5.1)
+    mid_pt_base.place((+mid_pt_base == ~key_stand_lower) - 1.5,
+                      (~mid_pt_base == +key_stand_lower) + 9,
+                      -mid_pt_base == +base)
+    pt_cavity = make_pt_cavity()
+    pt_cavity.place(~pt_cavity.point("lens_center") == ~mid_pt_base,
+                    ~pt_cavity.point("lens_center") == ~mid_pt_base,
+                    (~pt_cavity.point("lens_center") == +mid_pt_base) - 1.8)
+    extruded_pt_cavity = ExtrudeTo(pt_cavity.faces("top"), mid_pt_base)
+    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("lens_hole")), mid_pt_base)
+    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("legs")), base)
+
+    mid_led_base = Box(5.5, 5.9, 5.1)
+    mid_led_base.place((-mid_led_base == ~key_stand_lower) + 1.5,
+                       (~mid_led_base == ~mid_pt_base),
+                       -mid_led_base == +base)
+    led_cavity = make_led_cavity()
+    led_cavity.place(~led_cavity.point("lens_center") == ~mid_led_base,
+                     ~led_cavity.point("lens_center") == ~mid_led_base,
+                     ~led_cavity.point("lens_center") == pt_cavity.point("lens_center").point)
+    extruded_led_cavity = ExtrudeTo(led_cavity.faces("top"), mid_led_base)
+    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("lens_hole")), mid_led_base)
+    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("legs")), base.bottom)
+
+    upper_outer_base, upper_outer_base_negatives = vertical_key_base(
+        base.size().z, extra_height=4, pressed_key_angle=10)
+    upper_outer_base.rz(-90)
+    upper_outer_base_negatives.rz(-90)
+    upper_outer_base_negatives.place((-upper_outer_base == -base) + 1.05,
+                                     (+upper_outer_base == +base) - 4,
+                                     -upper_outer_base == -base)
+
+    upper_outer_base.place((-upper_outer_base == -base) + 1.05,
+                           (+upper_outer_base == +base) - 4,
+                           -upper_outer_base == -base)
+
+    lower_outer_base = upper_outer_base.copy(False)
+    lower_outer_base_negatives = upper_outer_base_negatives.copy(False)
+    lower_outer_base_negatives.place(y=(-lower_outer_base == -base) + 1)
+    lower_outer_base.place(y=(-lower_outer_base == -base) + 1)
+
+    inner_base = lower_outer_base.copy(False)
+    inner_base_negatives = lower_outer_base_negatives.copy(False)
+    inner_base.rz(180 + 20)
+    inner_base_negatives.rz(180 + 20)
+    inner_base_negatives.place((+inner_base == +base) - .65,
+                               (+inner_base == +base) - 1.5)
+    inner_base.place((+inner_base == +base) - .65,
+                     (+inner_base == +base) - 1.5)
+
+    upper_base = lower_outer_base.copy(False)
+    upper_base_negatives = lower_outer_base_negatives.copy(False)
+    upper_base.rz(180)
+    upper_base_negatives.rz(180)
+    upper_base_negatives.place((+upper_base == +base) - .55,
+                               (-upper_base == -base) + 12)
+    upper_base.place((+upper_base == +base) - .55,
+                     (-upper_base == -base) + 12)
+
+    return Difference(Union(base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base,
+                            mid_led_base, upper_outer_base, lower_outer_base, inner_base, upper_base),
+                      magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives,
+                      lower_outer_base_negatives, inner_base_negatives, upper_base_negatives)
+
+
+
 def _design():
     start = time.time()
 
@@ -879,6 +979,8 @@ def _design():
 
     # ballscrew(10).create_occurrence(True, .1)
     # ballscrew_cap().create_occurrence(True, .1)
+
+    # thumb_base().create_occurrence(True, .1)
 
     end = time.time()
     print(end-start)
