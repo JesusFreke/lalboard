@@ -176,7 +176,6 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20):
                          -remaining_back == -back_sloped)
     back = Union(remaining_back, back_sloped, name="back")
 
-
     def rotated(vector, angle):
         vector = vector.copy()
         matrix = Matrix3D.create()
@@ -983,11 +982,79 @@ def thumb_base():
     upper_base.place((+upper_base == +base) - .55,
                      (-upper_base == -base) + 12)
 
-    return Difference(Union(base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base,
-                            mid_led_base, upper_outer_base, lower_outer_base, inner_base, upper_base),
-                      magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives,
-                      lower_outer_base_negatives, inner_base_negatives, upper_base_negatives)
+    lower_ball_socket, lower_ball_socket_negatives = ball_socket_base(2)
+    lower_ball_socket_negatives.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
+                                      ~lower_ball_socket == (key_stand_lower.min().y + base.min().y) / 2,
+                                      -lower_ball_socket == +base)
+    lower_ball_socket.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
+                            ~lower_ball_socket == (key_stand_lower.min().y + base.min().y) / 2,
+                            -lower_ball_socket == +base)
 
+    upper_ball_socket, upper_ball_socket_negatives = ball_socket_base(2)
+    upper_ball_socket_negatives.place(~upper_ball_socket == ~mid_key_stop,
+                                      (~upper_ball_socket == +mid_key_stop) + 7,
+                                      -upper_ball_socket == +base)
+    upper_ball_socket.place(~upper_ball_socket == ~mid_key_stop,
+                            (~upper_ball_socket == +mid_key_stop) + 7,
+                            -upper_ball_socket == +base)
+    upper_ball_socket_extension = Cylinder(base.size().z, upper_ball_socket.size().y/2)
+    upper_ball_socket_extension.place(~upper_ball_socket_extension == ~upper_ball_socket,
+                                      ~upper_ball_socket_extension == ~upper_ball_socket,
+                                      -upper_ball_socket_extension == -base)
+
+    side_ball_socket, side_ball_socket_negatives = ball_socket_base(2)
+
+    upper_circle = Cylinder(1, 7)
+    upper_circle.place(~upper_circle == upper_outer_base.min(),
+                       ~upper_circle == upper_outer_base.min(),
+                       ~upper_circle == -base)
+    lower_circle = Cylinder(1, 7)
+    lower_circle.place(~lower_circle == lower_outer_base.min(),
+                       ~lower_circle == lower_outer_base.max(),
+                       ~lower_circle == -base)
+
+    side_ball_socket_placement = Intersection(upper_circle, lower_circle)
+    side_ball_socket_center = None
+    for edge in side_ball_socket_placement.shared_edges(upper_circle.side, lower_circle.side):
+        if edge.brep.pointOnEdge.x < upper_outer_base.min().x:
+            side_ball_socket_center = edge.brep.pointOnEdge
+
+    side_ball_socket_negatives.place(~side_ball_socket == side_ball_socket_center,
+                                     ~side_ball_socket == side_ball_socket_center,
+                                     -side_ball_socket == +base)
+    side_ball_socket.place(~side_ball_socket == side_ball_socket_center,
+                           ~side_ball_socket == side_ball_socket_center,
+                           -side_ball_socket == +base)
+    side_ball_socket_base = Cylinder(base.size().z, side_ball_socket.size().x/2)
+    side_ball_socket_base.place(~side_ball_socket_base == ~side_ball_socket,
+                                ~side_ball_socket_base == ~side_ball_socket,
+                                -side_ball_socket_base == -base)
+
+
+    extension_point = Box(1, 100, 2).rz(45).closest_points(side_ball_socket_base)[1]
+    extension_point2 = Point3D.create(extension_point.x,
+                                      2 * side_ball_socket_base.mid().y - extension_point.y,
+                                      extension_point.z)
+
+    side_extension_face = Rect(extension_point2.y - extension_point.y, base.size().z).rx(90).rz(90)
+    side_extension_face.place(~side_extension_face == extension_point.x,
+                              ~side_extension_face == ~side_ball_socket_base,
+                              -side_extension_face == -base)
+    side_extension_face2 = Rect(extension_point2.y - extension_point.y + (base.min().x - extension_point.x) * 2,
+                                base.size().z)
+    side_extension_face2.rx(90).rz(90)
+    side_extension_face2.place(~side_extension_face2 == -base,
+                               ~side_extension_face2 == ~side_ball_socket_base,
+                               -side_extension_face2 == -base)
+    side_extension = Loft(side_extension_face, side_extension_face2)
+
+    return Difference(Union(base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base,
+                            mid_led_base, upper_outer_base, lower_outer_base, inner_base, upper_base,
+                            lower_ball_socket, upper_ball_socket, upper_ball_socket_extension, side_ball_socket,
+                            side_extension, side_ball_socket_base),
+                      magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives,
+                      lower_outer_base_negatives, inner_base_negatives, upper_base_negatives,
+                      lower_ball_socket_negatives, upper_ball_socket_negatives, side_ball_socket_negatives)
 
 
 def _design():
