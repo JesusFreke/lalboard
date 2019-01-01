@@ -133,7 +133,7 @@ def hole_array(radius, pitch, count):
     return union
 
 
-def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20):
+def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrored=False):
     front = Box(5, 2.2, 6.4 + extra_height, "front")
 
     pt_base = Box(5, 6.15, front.size().z, "phototransistor_base")
@@ -258,7 +258,12 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20):
 
     result.add_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
 
-    return result, Difference(result.bounding_box.make_box(), result.copy(False), name="vertical_key_base_negative")
+    negatives = Difference(result.bounding_box.make_box(), result.copy(False), name="vertical_key_base_negative")
+    if mirrored:
+        negatives = negatives.scale(-1, 1, 1, center=result.mid())
+        result = result.scale(-1, 1, 1, center=result.mid())
+
+    return result, negatives
 
 
 def cluster():
@@ -954,7 +959,7 @@ def thumb_base():
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("legs")), base.bottom)
 
     upper_outer_base, upper_outer_base_negatives = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=10)
+        base.size().z, extra_height=4, pressed_key_angle=10, mirrored=True)
     upper_outer_base.rz(-90)
     upper_outer_base_negatives.rz(-90)
     upper_outer_base_negatives.place((-upper_outer_base == -base) + 1.05,
@@ -1035,7 +1040,6 @@ def thumb_base():
     side_ball_socket_base.place(~side_ball_socket_base == ~side_ball_socket,
                                 ~side_ball_socket_base == ~side_ball_socket,
                                 -side_ball_socket_base == -base)
-
 
     extension_point = Box(1, 100, 2).rz(45).closest_points(side_ball_socket_base)[1]
     extension_point2 = Point3D.create(extension_point.x,
