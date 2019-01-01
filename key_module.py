@@ -1088,13 +1088,205 @@ def thumb_base():
                                -side_extension_face2 == -base)
     side_extension = Loft(side_extension_face, side_extension_face2)
 
-    return Difference(Union(base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base,
-                            mid_led_base, upper_outer_base, lower_outer_base, inner_base, upper_base,
-                            lower_ball_socket, upper_ball_socket, upper_ball_socket_extension, side_ball_socket,
-                            side_extension, side_ball_socket_base),
-                      magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives,
-                      lower_outer_base_negatives, inner_base_negatives, upper_base_negatives,
-                      lower_ball_socket_negatives, upper_ball_socket_negatives, side_ball_socket_negatives)
+    result = Difference(
+        Union(
+            base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base, mid_led_base,
+            upper_outer_base, lower_outer_base, inner_base, upper_base, lower_ball_socket, upper_ball_socket,
+            upper_ball_socket_extension, side_ball_socket, side_extension, side_ball_socket_base),
+        magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives, lower_outer_base_negatives,
+        inner_base_negatives, upper_base_negatives, lower_ball_socket_negatives, upper_ball_socket_negatives,
+        side_ball_socket_negatives)
+
+    result = SplitFace(result, base.bottom)
+    result.add_faces("bottom", *result.find_faces(base.bottom))
+
+    return result
+
+
+def thumb_pcb(thumb_base: Component):
+    bottom = thumb_base.faces("bottom")[0]
+    pcb_thickness = 1.2
+
+    cone_centers = []
+    for edge in bottom.brep.edges:
+        if ((isinstance(edge.geometry, adsk.core.Circle3D) or isinstance(edge.geometry, adsk.core.Arc3D)) and
+                edge.geometry.radius > 1):
+            center = edge.geometry.center.asArray()
+            if center not in cone_centers:
+                cone_centers.append(center)
+
+    standoff_cutouts = []
+    for cone_center in cone_centers:
+        cone_center = Point3D.create(*cone_center)
+        circle = Cylinder(pcb_thickness, 8.2)
+        circle.place(~circle == cone_center,
+                     ~circle == cone_center,
+                     +circle == ~bottom)
+        standoff_cutouts.append(circle)
+        if cone_center.y - bottom.min().y < 10:
+            cutout = Box(8.2*2, 8.2, pcb_thickness)
+            cutout.place(~cutout == ~circle,
+                         +cutout == cone_center,
+                         +cutout == ~bottom)
+            standoff_cutouts.append(cutout)
+            cutout = Box(bottom.max().x - cone_center.x, 12, pcb_thickness)
+            cutout.place(+cutout == +bottom,
+                         -cutout == -bottom,
+                         +cutout == ~bottom)
+            standoff_cutouts.append(cutout)
+        elif bottom.max().y - cone_center.y < 5:
+            cutout = Box(8.2*2, 8.2, pcb_thickness)
+            cutout.place(~cutout == ~circle,
+                         -cutout == cone_center,
+                         +cutout == ~bottom)
+            standoff_cutouts.append(cutout)
+
+    jst_holes = hole_array(.35, 1.5, 7)
+    jst_holes.place(~jst_holes == ~bottom,
+                    (~jst_holes == +bottom) - 11,
+                    ~jst_holes == ~bottom)
+
+    through_holes = hole_array(.35, 2.54, 7)
+    through_holes.place(~through_holes == ~jst_holes,
+                        (~through_holes == ~jst_holes) - 19,
+                        ~jst_holes == ~bottom)
+
+    base = Union(Extrude(BRepComponent(brep().copy(bottom.brep)), 1.2))
+
+    result = Difference(base, *standoff_cutouts, ExtrudeTo(jst_holes, base), ExtrudeTo(through_holes, base))
+    result.add_faces("bottom", *result.find_faces(bottom))
+
+    jst_relief = Box(jst_holes.size().x + 2, jst_holes.size().y + 4.5, 1)
+    jst_relief.place(~jst_relief == ~jst_holes,
+                     (+jst_relief == +jst_holes) + 1.5,
+                     -jst_relief == +result)
+
+    through_hole_relief = Box(through_holes.size().x + 3, through_holes.size().y + 4, 1)
+    through_hole_relief.place(~through_hole_relief == ~through_holes,
+                              (-through_hole_relief == -through_holes) - 1,
+                              -through_hole_relief == +result)
+
+    return result, Union(jst_relief, through_hole_relief)
+
+
+def thumb_pcb_sketch(pcb_bottom):
+    rects = []
+    for edge in pcb_bottom.bodies[0].brep.edges:
+        if not isinstance(edge.geometry, adsk.core.Circle3D):
+            continue
+
+        if edge.geometry.radius < .4 and pcb_bottom.max().y - edge.geometry.center.y < 12:
+            rect_size = (1.25, 1.25)
+        else:
+            rect_size = (2, 2)
+
+        rect = Rect(*rect_size)
+        rect.place(~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center)
+        rects.append(rect)
+    split_face = SplitFace(pcb_bottom, Union(*rects))
+    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
+    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
+    for face in occurrence.bRepBodies[0].faces:
+        sketch.include(face)
+
+
+def full_thumb():
+    base = thumb_base()
+    pcb, relief = thumb_pcb(base)
+    thumb_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
+
+    base = Difference(base, relief)
+
+    base.create_occurrence(False, .1)
+    pcb.create_occurrence(True, .1)
+
+
+def place_header(header: Component, x: int, y: int) -> Point3D:
+    pin_size = min(header.size().x, header.size().y)
+
+    header.place((-header == x * 2.54) + pin_size / 2,
+                 (-header == y * 2.54) + pin_size / 2,
+                 ~header == 0)
+
+
+def central_pcb():
+    base = Box(50, 50, 1.2)
+
+    teensy_left1 = hole_array(.4, 2.54, 6).rz(90)
+    place_header(teensy_left1, 0, 0)
+    teensy_left2 = hole_array(.4, 2.54, 8).rz(90)
+    place_header(teensy_left2, 0, 7)
+
+    teensy_back = hole_array(.4, 2.54, 6)
+    place_header(teensy_back, 2, 11)
+
+    teensy_right = hole_array(.4, 2.54, 10).rz(90)
+    place_header(teensy_right, 6, 0)
+
+    driver_right = hole_array(.4, 2.54, 10).rz(90)
+    place_header(driver_right, -2, 0)
+
+    driver_left = driver_right.copy()
+    place_header(driver_left, -5, 0)
+
+    conn1 = hole_array(.35, 1.5, 7)
+    conn1.place((+conn1 == -driver_left) - 2.54,
+                (-conn1 == -driver_left) + 2.54,
+                ~conn1 == ~driver_left)
+    conns = [conn1]
+    prev = conn1
+    for i in range(0, 4):
+        conn = prev.copy()
+        conn.place(~conn == ~prev,
+                   (~conn == ~prev) + 2.54 * 2,
+                   ~conn == ~prev)
+        conns.append(conn)
+        prev = conn
+
+    i2c_conn = hole_array(.35, 1.5, 7).rz(90)
+    place_header(i2c_conn, 8, 5)
+
+    all_holes = Union(
+        teensy_left1, teensy_left2, teensy_back, teensy_right, driver_right, driver_left, *conns, i2c_conn)
+
+    all_holes.place((+all_holes == +base) - 2.12,
+                    (-all_holes == -base) + 5.55,
+                    ~all_holes == +base)
+
+    result = Difference(base, ExtrudeTo(all_holes, base))
+    result.add_faces("bottom", *result.find_faces(base.bottom))
+    return result
+
+
+def central_pcb_sketch(pcb_bottom):
+    rects = []
+    for edge in pcb_bottom.bodies[0].brep.edges:
+        if not isinstance(edge.geometry, adsk.core.Circle3D):
+            continue
+
+        if edge.geometry.radius < .4:
+            rect_size = (1.25, 1.25)
+        else:
+            rect_size = (2, 2)
+
+        rect = Rect(*rect_size)
+        rect.place(~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center)
+        rects.append(rect)
+    split_face = SplitFace(pcb_bottom, Union(*rects))
+    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
+    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
+    for face in occurrence.bRepBodies[0].faces:
+        sketch.include(face)
+
+
+def full_central_pcb():
+    pcb = central_pcb()
+    pcb.create_occurrence(False, .1)
+    central_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
 
 def _design():
@@ -1114,7 +1306,9 @@ def _design():
     # ballscrew_base(15).create_occurrence(True, .1)
     # thin_ballscrew_base(5).create_occurrence(True, .1)
 
-    # thumb_base().create_occurrence(True, .1)
+    # full_thumb()
+
+    # full_central_pcb()
 
     end = time.time()
     print(end-start)
