@@ -812,16 +812,17 @@ def jst_adaptor():
 
 def ballscrew(screw_length):
     screw_radius = 1.5
-    neck_length = 1
+    neck_length = 3
+    neck_lower_radius = 2
+    neck_upper_radius = 1.75
 
     ball = ball_socket_ball()
 
-    tmp = Cylinder(ball.size().z/2, screw_radius)
+    tmp = Cylinder(ball.size().z/2, neck_upper_radius)
     tmp.place(~tmp == ~ball,
               ~tmp == ~ball,
               -tmp == ~ball)
     screw_ball_intersection = Intersection(ball.copy(), tmp)
-    screw_ball_intersection.create_occurrence(True, .1)
     screw_ball_intersection_height = screw_ball_intersection.shared_edges(
         ball.bodies[0].faces[0], tmp.side)[0].brep.pointOnEdge.z
 
@@ -833,7 +834,7 @@ def ballscrew(screw_length):
 
     screw = Cylinder(screw_length - neck_length, screw_radius)
 
-    screw_neck = Cylinder(neck_length, screw_radius)
+    screw_neck = Cylinder(neck_length, neck_lower_radius, neck_upper_radius)
     screw_neck.place(~screw_neck == ~screw,
                      ~screw_neck == ~screw,
                      -screw_neck == +screw)
@@ -1105,6 +1106,7 @@ def _design():
     # long_side_key().create_occurrence(True, .1)
 
     # jst_adaptor().create_occurrence(True, .1)
+    # ballscrew(7).create_occurrence(True, .1)
     # ballscrew(10).create_occurrence(True, .1)
     # ballscrew(15).create_occurrence(True, .1)
     # ballscrew_cap().create_occurrence(True, .1)
