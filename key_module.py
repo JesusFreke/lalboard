@@ -1382,6 +1382,21 @@ def full_central_pcb():
     central_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
 
+def central_pcb_tray():
+    base = Box(50, 50, 1.2)
+    back = Box(50, 2.2, 10)
+    back.place(~back == ~base,
+               +back == -base,
+               -back == -base)
+
+    magnet = horizontal_magnet_cutout(1.8)
+    magnet.place(~magnet == ~base,
+                 -magnet == -back,
+                 (-magnet == -base) + 5.4)
+
+    return Difference(Union(base, back), magnet)
+
+
 def _design():
     start = time.time()
 
@@ -1408,6 +1423,8 @@ def _design():
     # full_thumb()
 
     # full_central_pcb()
+
+    # central_pcb_tray().create_occurrence(True, .1)
 
     end = time.time()
     print(end-start)
