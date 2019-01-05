@@ -217,19 +217,19 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrore
     lines = []
     lines.append(adsk.core.InfiniteLine3D.create(
         origin,
-        rotated(down, -20)))
+        rotated(down, -pressed_key_angle)))
     lines.append(adsk.core.InfiniteLine3D.create(
         origin,
         left))
 
-    point = vectorTo(origin, rotated(left, -20), retaining_ridge_thickness)
+    point = vectorTo(origin, rotated(left, -pressed_key_angle), retaining_ridge_thickness)
     lines.append(adsk.core.InfiniteLine3D.create(
         point,
-        rotated(down, -20)))
+        rotated(down, -pressed_key_angle)))
 
     point = lines[1].intersectWithCurve(lines[2])[0]
     lines.append(adsk.core.InfiniteLine3D.create(
-        vectorTo(point, rotated(down, -20), retaining_ridge_height),
+        vectorTo(point, rotated(down, -pressed_key_angle), retaining_ridge_height),
         rotated(down, retaining_ridge_lower_angle)))
 
     points = []
@@ -732,11 +732,10 @@ def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, 
     key_dish.rx(key_angle, center=key_dish.min())
 
     dished_key = Difference(key_base, key_dish, name="dished_key")
-    dished_key = Scale(dished_key, sx=key_width/13, center=dished_key.mid(), name="dished_key")
-
     dished_key = Fillet(
         dished_key.shared_edges([key_dish.side, key_base.back],
                                 [key_base.left, key_base.right, key_base.back]), 1, False)
+    dished_key = Scale(dished_key, sx=key_width/13, center=dished_key.mid(), name="dished_key")
 
     if key_displacement:
         dished_key.ty(key_displacement)
@@ -768,6 +767,31 @@ def short_side_key():
 
 def long_side_key():
     return side_key(11, 10, "long_side_key")
+
+
+def thumb_side_key(key_width, key_height, name):
+    return vertical_key(
+        post_length=11.5,
+        key_width=key_width,
+        key_height=key_height,
+        key_angle=0,
+        key_protrusion=6.5,
+        key_displacement=-3,
+        groove_height=6.147,
+        magnet_height=9.05,
+        name=name)
+
+
+def outer_upper_thumb_key():
+    return thumb_side_key(25, 16, "outer_upper_thumb_key")
+
+
+def outer_lower_thumb_key():
+    return thumb_side_key(20, 20, "outer_lower_thumb_key")
+
+
+def inner_thumb_key():
+    return thumb_side_key(20, 16, "inner_thumb_key")
 
 
 def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False):
@@ -1296,6 +1320,10 @@ def _design():
     # center_key().create_occurrence(False, .1)
     # short_side_key().create_occurrence(False, .1)
     # long_side_key().create_occurrence(True, .1)
+
+    # outer_upper_thumb_key().create_occurrence(False, .1)
+    # outer_lower_thumb_key().create_occurrence(False, .1)
+    # inner_thumb_key().create_occurrence(False, .1)
 
     # jst_adaptor().create_occurrence(True, .1)
     # ballscrew(7).create_occurrence(True, .1)
