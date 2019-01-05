@@ -936,7 +936,7 @@ def ballscrew(screw_length):
                     ~flat_ball == ~screw,
                     -flat_ball == +screw_neck)
 
-    screw = Threads(screw, ((0, 0), (.99, .99), (0, .99)), 1.0)
+    screw = Threads(screw, ((0, 0), (.95, .95), (0, .95)), 1.0)
 
     return Union(screw, screw_neck, flat_ball)
 
