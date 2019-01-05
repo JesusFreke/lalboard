@@ -825,6 +825,44 @@ def thumb_mode_key():
     return Union(key_post, angled_section, tilted_section)
 
 
+def thumb_down_key():
+    key_base = Box(15, 29, 2.5)
+    post = Box(4.5, 2.2, 9)
+    post.place(~post == ~key_base,
+               -post == -key_base,
+               -post == +key_base)
+
+    slot = Box(key_base.size().x, 2, post.size().z*2)
+    slot = Fillet(slot.shared_edges([slot.front, slot.back], [slot.bottom]), slot.size().y/2)
+    slot.place(~slot == ~key_base,
+               -slot == +post,
+               -slot == +key_base)
+    angled_slot = slot.copy()
+    angled_slot.rx(-9, center=(0, slot.mid().y, slot.min().z + slot.size().y/2))
+
+    slot_backing = Box(key_base.size().x, post.size().y + slot.size().y, 1.8)
+    slot_backing.place(~slot_backing == ~key_base,
+                       -slot_backing == -key_base,
+                       -slot_backing == +key_base)
+    slot_stop = Box(key_base.size().x, 1.5, 4)
+    slot_stop.place(~slot_stop == ~key_base,
+                    -slot_stop == +slot_backing,
+                    -slot_stop == +key_base)
+
+    interruptor = Box(2, 3.5, 4.7)
+    interruptor.place(~interruptor == ~key_base,
+                      (~interruptor == ~key_base) - 1,
+                      -interruptor == +key_base)
+
+    magnet = horizontal_magnet_cutout()
+    magnet.rz(180)
+    magnet.place(~magnet == ~key_base,
+                 +magnet == +post,
+                 (+magnet == +post) - 1)
+
+    return Difference(Union(key_base, post, slot_backing, slot_stop, interruptor), slot, angled_slot, magnet)
+
+
 def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False):
     clust = cluster()
     clust.rz(180, center=clust.mid())
@@ -1356,6 +1394,7 @@ def _design():
     # outer_lower_thumb_key().create_occurrence(False, .1)
     # inner_thumb_key().create_occurrence(False, .1)
     # thumb_mode_key().create_occurrence(True, .1)
+    # thumb_down_key().create_occurrence(True, .1)
 
     # jst_adaptor().create_occurrence(True, .1)
     # ballscrew(7).create_occurrence(True, .1)
