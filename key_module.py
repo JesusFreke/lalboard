@@ -58,7 +58,7 @@ def vertical_large_magnet_cutout(name="magnet_cutout"):
 
 def vertical_large_thin_magnet_cutout(name="magnet_cutout"):
     base = Box(3.0*2, 3.0, 1, name=name + "_base")
-    taper = tapered_box(3.0*2, 3.0, 3.2*2, 3.2, .7, name=name + "_taper")
+    taper = tapered_box(3.05*2, 3.0, 3.25*2, 3.2, .7, name=name + "_taper")
     taper.place(~taper == ~base,
                 ~taper == ~base,
                 -taper == +base)
@@ -894,7 +894,7 @@ def ballscrew_cap():
 
 def ballscrew_base(screw_length):
     screw_length = screw_length - 2
-    magnet = vertical_large_magnet_cutout()
+    magnet = vertical_large_thin_magnet_cutout()
 
     base_polygon = RegularPolygon(6, 5, is_outer_radius=False)
     base = Extrude(base_polygon, screw_length + magnet.size().z)
