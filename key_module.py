@@ -794,6 +794,37 @@ def inner_thumb_key():
     return thumb_side_key(20, 16, "inner_thumb_key")
 
 
+def thumb_mode_key():
+    key_post = vertical_key_post(20, 6.147, 9.05)
+
+    base_angled_section = Box(post_width, 100, key_thickness)
+    base_angled_section.place(~base_angled_section == ~key_post,
+                              ~base_angled_section == ~key_post,
+                              -base_angled_section == -key_post)
+    base_angled_section.rz(45, center=(key_post.min().x, key_post.max().y, 0))
+    angled_section_limiter = Box(8+post_width, 8+key_thickness, key_thickness)
+    angled_section_limiter.place(+angled_section_limiter == +key_post,
+                                 -angled_section_limiter == +key_post,
+                                 -angled_section_limiter == -key_post)
+
+    angled_section = Intersection(base_angled_section, angled_section_limiter)
+
+    base_tilted_section = Box(post_width, 15, key_thickness)
+    base_tilted_section.place(-base_tilted_section == -angled_section,
+                              -base_tilted_section == +angled_section,
+                              -base_tilted_section == -angled_section)
+    tilted_section = Fillet(
+        base_tilted_section.shared_edges(
+            [base_tilted_section.top, base_tilted_section.bottom],
+            [base_tilted_section.back]), radius=key_thickness/2)
+    tilted_section.rx(45, center=(tilted_section.min().x, tilted_section.min().y, tilted_section.max().z))
+    tilted_section = ExtrudeTo(
+        tilted_section.find_faces(base_tilted_section.front)[0],
+        angled_section.find_faces(base_angled_section.bottom)[0])
+
+    return Union(key_post, angled_section, tilted_section)
+
+
 def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False):
     clust = cluster()
     clust.rz(180, center=clust.mid())
@@ -1324,6 +1355,7 @@ def _design():
     # outer_upper_thumb_key().create_occurrence(False, .1)
     # outer_lower_thumb_key().create_occurrence(False, .1)
     # inner_thumb_key().create_occurrence(False, .1)
+    # thumb_mode_key().create_occurrence(True, .1)
 
     # jst_adaptor().create_occurrence(True, .1)
     # ballscrew(7).create_occurrence(True, .1)
