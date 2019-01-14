@@ -1305,24 +1305,22 @@ def place_header(header: Component, x: int, y: int) -> Point3D:
 
 
 def central_pcb():
-    base = Box(50, 50, 1.2)
+    base = Box(42, 50, 1.2)
 
-    teensy_left1 = hole_array(.4, 2.54, 6).rz(90)
-    place_header(teensy_left1, 0, 0)
-    teensy_left2 = hole_array(.4, 2.54, 8).rz(90)
-    place_header(teensy_left2, 0, 7)
+    teensy_left = hole_array(.4, 2.54, 12).rz(90)
+    place_header(teensy_left, 0, 0)
 
-    teensy_back = hole_array(.4, 2.54, 6)
-    place_header(teensy_back, 2, 11)
+    teensy_back = hole_array(.4, 2.54, 5)
+    place_header(teensy_back, 1, 11)
 
-    teensy_right = hole_array(.4, 2.54, 10).rz(90)
+    teensy_right = hole_array(.4, 2.54, 12).rz(90)
     place_header(teensy_right, 6, 0)
 
     driver_right = hole_array(.4, 2.54, 10).rz(90)
-    place_header(driver_right, -2, 0)
+    place_header(driver_right, -1, 0)
 
     driver_left = driver_right.copy()
-    place_header(driver_left, -5, 0)
+    place_header(driver_left, -4, 0)
 
     conn1 = hole_array(.35, 1.5, 7)
     conn1.place((+conn1 == -driver_left) - 2.54,
@@ -1339,13 +1337,13 @@ def central_pcb():
         prev = conn
 
     i2c_conn = hole_array(.35, 1.5, 7).rz(90)
-    place_header(i2c_conn, 8, 5)
+    place_header(i2c_conn, 3, 3)
 
     all_holes = Union(
-        teensy_left1, teensy_left2, teensy_back, teensy_right, driver_right, driver_left, *conns, i2c_conn)
+        teensy_left, teensy_back, teensy_right, driver_right, driver_left, *conns, i2c_conn)
 
-    all_holes.place((+all_holes == +base) - 2.12,
-                    (-all_holes == -base) + 5.55,
+    all_holes.place(~all_holes == ~base,
+                    (-all_holes == -base) + 2.54*3,
                     ~all_holes == +base)
 
     result = Difference(base, ExtrudeTo(all_holes, base))
