@@ -459,7 +459,7 @@ def ball_socket_ball():
     return Sphere(3, "ball")
 
 
-def ball_socket_base(base_height):
+def ball_socket_base(base_height, mirrored=False):
     pin_hole_radius = 2.4
 
     ball = ball_socket_ball()
@@ -491,7 +491,13 @@ def ball_socket_base(base_height):
                               ~ball_socket_opening == ~ball,
                               (-ball_socket_opening == -base) - base_height)
 
-    return base, Union(ball_socket_opening, ball)
+    negatives = Union(ball_socket_opening, ball)
+
+    if mirrored:
+        base.scale(-1, 1, 1, center=base.mid())
+        negatives.scale(-1, 1, 1, center=base.mid())
+
+    return base, negatives
 
 
 def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
@@ -1025,7 +1031,7 @@ def thin_ballscrew_base(screw_length):
     return Threads(base, ((0, 0), (.99, .99), (0, .99)), 1, reverse_axis=True)
 
 
-def thumb_base():
+def thumb_base(mirrored=False):
     base = Box(44, 47, 2)
 
     key_stand_lower = Box(15, 2.2, 3)
@@ -1058,10 +1064,16 @@ def thumb_base():
                        -mid_key_stop == +base)
 
     mid_pt_base = Box(5, 5.9, 5.1)
-    mid_pt_base.place((+mid_pt_base == ~key_stand_lower) - 1.5,
-                      (~mid_pt_base == +key_stand_lower) + 9,
-                      -mid_pt_base == +base)
     pt_cavity = make_pt_cavity()
+    if mirrored:
+        mid_pt_base.place((-mid_pt_base == ~key_stand_lower) + 1.5,
+                          (~mid_pt_base == +key_stand_lower) + 9,
+                          -mid_pt_base == +base)
+        pt_cavity.rz(180)
+    else:
+        mid_pt_base.place((+mid_pt_base == ~key_stand_lower) - 1.5,
+                          (~mid_pt_base == +key_stand_lower) + 9,
+                          -mid_pt_base == +base)
     pt_cavity.place(~pt_cavity.point("lens_center") == ~mid_pt_base,
                     ~pt_cavity.point("lens_center") == ~mid_pt_base,
                     (~pt_cavity.point("lens_center") == +mid_pt_base) - 1.8)
@@ -1070,10 +1082,16 @@ def thumb_base():
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("legs")), base)
 
     mid_led_base = Box(5.5, 5.9, 5.1)
-    mid_led_base.place((-mid_led_base == ~key_stand_lower) + 1.5,
-                       (~mid_led_base == ~mid_pt_base),
-                       -mid_led_base == +base)
     led_cavity = make_led_cavity()
+    if mirrored:
+        mid_led_base.place((+mid_led_base == ~key_stand_lower) - 1.5,
+                           (~mid_led_base == ~mid_pt_base),
+                           -mid_led_base == +base)
+        led_cavity.rz(180)
+    else:
+        mid_led_base.place((-mid_led_base == ~key_stand_lower) + 1.5,
+                           (~mid_led_base == ~mid_pt_base),
+                           -mid_led_base == +base)
     led_cavity.place(~led_cavity.point("lens_center") == ~mid_led_base,
                      ~led_cavity.point("lens_center") == ~mid_led_base,
                      ~led_cavity.point("lens_center") == pt_cavity.point("lens_center").point)
@@ -1082,7 +1100,7 @@ def thumb_base():
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("legs")), base.bottom)
 
     upper_outer_base, upper_outer_base_negatives = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=10, mirrored=True)
+        base.size().z, extra_height=4, pressed_key_angle=10, mirrored=not mirrored)
     upper_outer_base.rz(-90)
     upper_outer_base_negatives.rz(-90)
     upper_outer_base_negatives.place((-upper_outer_base == -base) + 1.05,
@@ -1116,7 +1134,7 @@ def thumb_base():
     upper_base.place((+upper_base == +base) - .55,
                      (-upper_base == -base) + 12)
 
-    lower_ball_socket, lower_ball_socket_negatives = ball_socket_base(2)
+    lower_ball_socket, lower_ball_socket_negatives = ball_socket_base(2, mirrored)
     lower_ball_socket_negatives.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
                                       ~lower_ball_socket == (key_stand_lower.min().y + base.min().y) / 2,
                                       -lower_ball_socket == +base)
@@ -1124,7 +1142,7 @@ def thumb_base():
                             ~lower_ball_socket == (key_stand_lower.min().y + base.min().y) / 2,
                             -lower_ball_socket == +base)
 
-    upper_ball_socket, upper_ball_socket_negatives = ball_socket_base(2)
+    upper_ball_socket, upper_ball_socket_negatives = ball_socket_base(2, mirrored)
     upper_ball_socket_negatives.place(~upper_ball_socket == ~mid_key_stop,
                                       (~upper_ball_socket == +mid_key_stop) + 7,
                                       -upper_ball_socket == +base)
@@ -1136,7 +1154,7 @@ def thumb_base():
                                       ~upper_ball_socket_extension == ~upper_ball_socket,
                                       -upper_ball_socket_extension == -base)
 
-    side_ball_socket, side_ball_socket_negatives = ball_socket_base(2)
+    side_ball_socket, side_ball_socket_negatives = ball_socket_base(2, mirrored)
 
     upper_circle = Cylinder(1, 7)
     upper_circle.place(~upper_circle == upper_outer_base.min(),
@@ -1285,12 +1303,17 @@ def thumb_pcb_sketch(pcb_bottom):
         sketch.include(face)
 
 
-def full_thumb():
-    base = thumb_base()
+def full_thumb(mirrored=False):
+    base = thumb_base(mirrored)
     pcb, relief = thumb_pcb(base)
-    thumb_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
     base = Difference(base, relief)
+
+    if mirrored:
+        base.scale(-1, 1, 1, center=base.mid())
+        pcb.scale(-1, 1, 1, center=base.mid())
+
+    thumb_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
     base.create_occurrence(False, .1)
     pcb.create_occurrence(True, .1)
@@ -1418,7 +1441,8 @@ def _design():
     # ballscrew_base(15).create_occurrence(True, .1)
     # thin_ballscrew_base(5).create_occurrence(True, .1)
 
-    # full_thumb()
+    # full_thumb(mirrored=False)
+    # full_thumb(mirrored=True)
 
     # full_central_pcb()
 
