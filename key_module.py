@@ -1418,6 +1418,59 @@ def central_pcb_tray():
     return Difference(Union(base, back), magnet)
 
 
+def key_breakout_pcb():
+    base = Box(20, 13, 1.2)
+
+    upper_connector_holes = hole_array(.35, 1.5, 7)
+    upper_connector_holes.place(~upper_connector_holes == ~base,
+                                (~upper_connector_holes == +base) - 2.2,
+                                -upper_connector_holes == -base)
+
+    lower_connector_holes = upper_connector_holes.copy()
+    lower_connector_holes.place(y=(~lower_connector_holes == -base) + 2.2)
+
+    header_holes = hole_array(.40, 2.54, 7)
+    header_holes.place(~header_holes == ~base,
+                       ~header_holes == ~base,
+                       -header_holes == -base)
+
+    all_holes = Union(upper_connector_holes, lower_connector_holes, header_holes)
+    all_holes = ExtrudeTo(all_holes, base)
+
+    result = Difference(base, all_holes)
+    result.add_faces("bottom", *result.find_faces(base.bottom))
+    return result
+
+
+def key_breakout_pcb_sketch(pcb_bottom):
+    rects = []
+    for edge in pcb_bottom.bodies[0].brep.edges:
+        if not isinstance(edge.geometry, adsk.core.Circle3D):
+            continue
+
+        if edge.geometry.radius < .4:
+            rect_size = (1.25, 1.25)
+        else:
+            rect_size = (2, 2)
+
+        rect = Rect(*rect_size)
+        rect.place(~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center)
+        rects.append(rect)
+    split_face = SplitFace(pcb_bottom, Union(*rects))
+    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
+    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
+    for face in occurrence.bRepBodies[0].faces:
+        sketch.include(face)
+
+
+def full_key_breakout_pcb():
+    pcb = key_breakout_pcb()
+    pcb.create_occurrence(False, .1)
+    key_breakout_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
+
+
 def _design():
     start = time.time()
 
@@ -1447,6 +1500,8 @@ def _design():
     # full_central_pcb()
 
     # central_pcb_tray().create_occurrence(True, .1)
+
+    # full_key_breakout_pcb()
 
     end = time.time()
     print(end-start)
