@@ -321,15 +321,18 @@ def cluster():
                ~flat == ~center_hole)
     center_hole = Intersection(center_hole, flat)
 
-    central_magnet_riser = Box(4.55, .1, combined_cluster.max().z - center_floor.max().z, "central_magnet_riser")
+    central_post = Cylinder(combined_cluster.size().z, (center_hole.size().x/2) + .8)
+    central_post.place(~central_post == ~base,
+                       ~central_post == ~base,
+                       -central_post == -base)
+
+    combined_cluster.add(central_post)
+
+    central_magnet_riser = Box(4.55, 2, combined_cluster.max().z - center_floor.max().z, "central_magnet_riser")
     central_magnet_riser.place(~central_magnet_riser == ~base,
                                -central_magnet_riser == +center_hole,
                                -central_magnet_riser == +center_floor)
-    extruded_central_magnet_riser = ExtrudeTo(central_magnet_riser.back, combined_cluster.copy(False))
-
-    central_magnet_riser = Fillet(extruded_central_magnet_riser.shared_edges(
-        [central_magnet_riser.top, central_magnet_riser.front],
-        [central_magnet_riser.front, central_magnet_riser.left, central_magnet_riser.right]), .6)
+    central_magnet_riser = ExtrudeTo(central_magnet_riser.back, combined_cluster.copy(False))
 
     central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~central_magnet_riser,
@@ -628,13 +631,12 @@ def pcb_holder(pcb) -> Component:
 
 
 def center_key():
-    size = 6.1 * 2
     key_radius = 7.5
     key_thickness = 2.5
-    post_length = 8.4
-    post_radius = 2.3
+    post_length = 8.4 + 2.5
+    post_radius = 2.425
 
-    fillet_radius = .6
+    fillet_radius = 1.2
 
     key = Cylinder(key_thickness, key_radius, name="key")
     post = Cylinder(post_length, post_radius, name="post")
@@ -643,7 +645,12 @@ def center_key():
                -post == +key)
     post = Fillet(post.shared_edges(post.top, post.side), fillet_radius)
 
-    back_stop = Box(3.5, 5.7, 4, name="back_stop")
+    post_rim_cutout = Cylinder(post_length, post_radius + 1.2)
+    post_rim_cutout.place(~post_rim_cutout == ~post,
+                          ~post_rim_cutout == ~post,
+                          -post_rim_cutout == -post)
+
+    back_stop = Box(3.5, 6, 4, name="back_stop")
     back_stop.place(~back_stop == ~key,
                     -back_stop == ~key,
                     -back_stop == +key)
@@ -651,55 +658,24 @@ def center_key():
         [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left],
         [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left])
     back_stop = Fillet(fillet_edges, fillet_radius, True)
-
-    side_stop_start = Box(6.2, 3, 4, name="side_stop_start")
-    side_stop_start.place(-side_stop_start == ~key,
-                          ~side_stop_start == ~key,
-                          -side_stop_start == +key)
-
-    side_stop_end = Box(3.7, 5.9, 4, name="side_stop_end")
-    side_stop_end.place(+side_stop_end == +side_stop_start,
-                        +side_stop_end == ~key,
-                        -side_stop_end == -side_stop_start)
-
-    side_stop = Union(side_stop_start, side_stop_end, name="side_stop")
+    back_stop = Difference(back_stop, post_rim_cutout)
 
     bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
     bounding_cylinder.place(~bounding_cylinder == ~key,
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    side_stop = Intersection(side_stop, bounding_cylinder)
-
-    vertical_fillet_edges = side_stop.shared_edges(
-        [side_stop_start.back, side_stop_end.left, side_stop_end.right, side_stop_end.front],
-        [side_stop_start.back, side_stop_end.left, side_stop_end.right, side_stop_end.front])
-    horizontal_fillet_edges = side_stop.shared_edges(side_stop_start.top, [
-        side_stop_start.front, side_stop_start.back, side_stop_start.right, side_stop_start.left,
-        side_stop_end.front, side_stop_end.back, side_stop_end.right, side_stop_end.left, bounding_cylinder.side])
-    side_stop = Fillet(list(vertical_fillet_edges) + list(horizontal_fillet_edges), fillet_radius, True)
-
-    other_side_stop = side_stop.copy(False)
-    other_side_stop.scale(-1, 1, 1, center=key.mid())
-
-    post_flat_face_right = Rect(post_length, key_radius).ry(90)
-    post_flat_face_right.place(~post_flat_face_right == ~post,
-                               +post_flat_face_right == -2,
-                               -post_flat_face_right == +key)
-    post_flat_face_right.align_to(side_stop, Vector3D.create(1, 0, 0))
-
-    post_flat_face_left = post_flat_face_right.copy()
-    post_flat_face_left.align_to(other_side_stop, Vector3D.create(-1, 0, 0))
-
-    post_flat_face = Loft(post_flat_face_left, post_flat_face_right, name="post_flat_face")
+    post_flat_face = Box(post_length, key_radius*2, post.size().z)
+    post_flat_face.place(~post_flat_face == ~post,
+                         +post_flat_face == -2,
+                         -post_flat_face == +key)
 
     magnet = horizontal_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
                  -magnet == +post_flat_face,
-                 (~magnet == +post) - 4.2)
+                 (~magnet == +key) + 3.7)
 
-    result = Difference(Union(key, post, back_stop, side_stop, other_side_stop),
-                        post_flat_face, magnet)
+    result = Difference(Union(key, post, back_stop), post_flat_face, magnet)
 
     return result
 
