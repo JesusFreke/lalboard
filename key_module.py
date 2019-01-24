@@ -422,14 +422,14 @@ def cluster():
 def cluster_pcb(cluster):
     hole_size = .35
 
-    center = Circle(5)
-    center.place(~center == ~cluster,
-                 ~center == ~cluster,
-                 ~center == -cluster)
+    bottom_finder = Circle(5)
+    bottom_finder.place(~bottom_finder == ~cluster,
+                 ~bottom_finder == ~cluster,
+                 ~bottom_finder == -cluster)
 
-    bottom = cluster.find_faces(center)[0]
+    bottom = cluster.find_faces(bottom_finder)[0]
 
-    base = Extrude(Union(BRepComponent(bottom.brep), center).bodies[0].faces[0], 1.2)
+    base = Extrude(BRepComponent(bottom.brep).bodies[0].faces[0], 1.2)
 
     base_extension = Box(base.size().x, 7, base.size().z)
     base_extension.place(~base_extension == ~base,
