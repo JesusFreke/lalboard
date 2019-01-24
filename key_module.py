@@ -142,7 +142,7 @@ def hole_array(radius, pitch, count):
     return union
 
 
-def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrored=False):
+def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
     front = Box(5, 2.2, 6.4 + extra_height, "front")
 
     pt_base = Box(5, 6.15, front.size().z, "phototransistor_base")
@@ -204,9 +204,18 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrore
         point.translateBy(vector)
         return point
 
+    # how much it sticks out
     retaining_ridge_thickness = .3
     retaining_ridge_lower_angle = 45
-    retaining_ridge_height = .3
+    # the length of the "face" of the ridge
+    retaining_ridge_width = .3
+
+    # the distance along the angled backstop from where the flat part meets the bottom cylindrical part
+    # this is placed so that there's just enough room for the key to be able to slid into place vertically,
+    # but as soon as it starts to rotate, the groove in the key post engages with the ridge, retaining the key
+    retaining_ridge_dist = retaining_ridge_thickness / math.tan(math.radians(pressed_key_angle))
+    retaining_ridge_y = retaining_ridge_dist * math.sin(math.radians(pressed_key_angle))
+    retaining_ridge_z = retaining_ridge_dist * math.cos(math.radians(pressed_key_angle))
 
     origin = Point3D.create(0, 0, 0)
     up = Vector3D.create(0, 1, 0)
@@ -229,7 +238,7 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrore
 
     point = lines[1].intersectWithCurve(lines[2])[0]
     lines.append(adsk.core.InfiniteLine3D.create(
-        vectorTo(point, rotated(down, -pressed_key_angle), retaining_ridge_height),
+        vectorTo(point, rotated(down, -pressed_key_angle), retaining_ridge_width),
         rotated(down, retaining_ridge_lower_angle)))
 
     points = []
@@ -242,9 +251,17 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrore
     retaining_ridge.rz(-90)
     retaining_ridge.ry(-90)
 
+    lowest_edge = None
+    for edge in retaining_ridge.bodies[0].brep.edges:
+        if lowest_edge is None or edge.pointOnEdge.z < lowest_edge.pointOnEdge.z:
+            lowest_edge = edge
+
+    retaining_ridge.add_point("lowest_edge",
+                              Point3D.create(retaining_ridge.mid().x, lowest_edge.pointOnEdge.y, lowest_edge.pointOnEdge.z))
+
     retaining_ridge.place(~retaining_ridge == ~back,
-                          -retaining_ridge == +remaining_back.top,
-                          +retaining_ridge == +back)
+                          (~retaining_ridge.point("lowest_edge") == +back_sloped) - retaining_ridge_y,
+                          (~retaining_ridge.point("lowest_edge") == -back_sloped) + retaining_ridge_z)
 
     result = Union(pt_base, led_base, front, back, base, name="vertical_key_base")
     result = Difference(result, sloped_key)
@@ -265,9 +282,18 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=20, mirrore
 
     result = Difference(result, extruded_pt_cavity, extruded_led_cavity, magnet_cutout, key_pivot)
 
+    bounding_box = Box(
+        result.bounding_box.size().x,
+        result.bounding_box.size().y,
+        min(result.bounding_box.size().z, 6.4 + extra_height + base_height))
+    bounding_box.place(-bounding_box == -result,
+                       -bounding_box == -result,
+                       -bounding_box == -result)
+    result = Intersection(result, bounding_box)
+    negatives = Difference(result.bounding_box.make_box(), result.copy(False), name="vertical_key_base_negative")
+
     result.add_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
 
-    negatives = Difference(result.bounding_box.make_box(), result.copy(False), name="vertical_key_base_negative")
     if mirrored:
         negatives = negatives.scale(-1, 1, 1, center=result.mid())
         result = result.scale(-1, 1, 1, center=result.mid())
@@ -738,7 +764,7 @@ def side_key(key_height, key_angle, name):
         key_angle=key_angle,
         key_protrusion=False,
         key_displacement=False,
-        groove_height=2.99,
+        groove_height=1.575,
         magnet_height=5.45,
         name=name)
 
