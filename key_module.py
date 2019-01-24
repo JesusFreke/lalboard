@@ -1136,7 +1136,7 @@ def thumb_base(mirrored=False):
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("legs")), base.bottom)
 
     upper_outer_base, upper_outer_base_negatives = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=10, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
     upper_outer_base.rz(-90)
     upper_outer_base_negatives.rz(-90)
     upper_outer_base_negatives.place((-upper_outer_base == -base) + 1.05,
@@ -1147,28 +1147,39 @@ def thumb_base(mirrored=False):
                            (+upper_outer_base == +base) - 4,
                            -upper_outer_base == -base)
 
-    lower_outer_base = upper_outer_base.copy(False)
-    lower_outer_base_negatives = upper_outer_base_negatives.copy(False)
-    lower_outer_base_negatives.place(y=(-lower_outer_base == -base) + 1)
-    lower_outer_base.place(y=(-lower_outer_base == -base) + 1)
+    lower_outer_base, lower_outer_base_negatives = vertical_key_base(
+        base.size().z, extra_height=4, pressed_key_angle=4.2, mirrored=not mirrored)
+    lower_outer_base.rz(-90)
+    lower_outer_base_negatives.rz(-90)
+    lower_outer_base_negatives.place(
+        -lower_outer_base == -upper_outer_base,
+        (-lower_outer_base == -base) + 1,
+        -lower_outer_base == -upper_outer_base)
+    lower_outer_base.place(-lower_outer_base == -upper_outer_base,
+                           (-lower_outer_base == -base) + 1,
+                           -lower_outer_base == -upper_outer_base)
 
-    inner_base = lower_outer_base.copy(False)
-    inner_base_negatives = lower_outer_base_negatives.copy(False)
-    inner_base.rz(180 + 20)
-    inner_base_negatives.rz(180 + 20)
+    inner_base, inner_base_negatives = vertical_key_base(
+        base.size().z, extra_height=4, pressed_key_angle=10, mirrored=not mirrored)
+    inner_base.rz(90 + 20)
+    inner_base_negatives.rz(90 + 20)
     inner_base_negatives.place((+inner_base == +base) - .65,
-                               (+inner_base == +base) - 1.5)
+                               (+inner_base == +base) - 1.5,
+                               -inner_base == -base)
     inner_base.place((+inner_base == +base) - .65,
-                     (+inner_base == +base) - 1.5)
+                     (+inner_base == +base) - 1.5,
+                     -inner_base == -base)
 
-    upper_base = lower_outer_base.copy(False)
-    upper_base_negatives = lower_outer_base_negatives.copy(False)
-    upper_base.rz(180)
-    upper_base_negatives.rz(180)
+    upper_base, upper_base_negatives = vertical_key_base(
+        base.size().z, extra_height=4, pressed_key_angle=8, mirrored=not mirrored)
+    upper_base.rz(90)
+    upper_base_negatives.rz(90)
     upper_base_negatives.place((+upper_base == +base) - .55,
-                               (-upper_base == -base) + 12)
+                               (-upper_base == -base) + 12,
+                               -upper_base == -base)
     upper_base.place((+upper_base == +base) - .55,
-                     (-upper_base == -base) + 12)
+                     (-upper_base == -base) + 12,
+                     -upper_base==-base)
 
     lower_ball_socket, lower_ball_socket_negatives = ball_socket_base(2, mirrored)
     lower_ball_socket_negatives.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
