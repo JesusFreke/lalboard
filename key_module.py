@@ -740,7 +740,7 @@ def center_key():
     return result
 
 
-def vertical_key_post(post_length, groove_height, magnet_height):
+def vertical_key_post(post_length, groove_height, magnet_height, upper_grooves_height=None, upper_grooves_count=0):
     post = Box(post_width, post_length, key_thickness, name="post")
     post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
 
@@ -755,7 +755,17 @@ def vertical_key_post(post_length, groove_height, magnet_height):
     groove.place(~groove == ~post,
                  (-groove == -post) + groove_height + key_thickness/2,
                  -groove == -post)
-    return Difference(post, magnet, groove)
+
+    extra_groove_list = []
+    if upper_grooves_count > 0:
+        for i in range(0, upper_grooves_count):
+            extra_groove = groove.copy()
+            extra_groove.place(~extra_groove == ~post,
+                               (-extra_groove == -post) + upper_grooves_height + key_thickness/2 - (i * groove_width*2),
+                               -groove == -post)
+            extra_groove_list.append(extra_groove)
+
+    return Difference(post, magnet, groove, *extra_groove_list)
 
 
 def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, key_displacement, groove_height,
@@ -786,8 +796,8 @@ def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, 
         riser = Box(post_width, post_width, key_protrusion, name="riser")
         riser.place(~riser == ~post, -riser == +post, -riser == -post)
         dished_key.place(z=-dished_key == +riser)
-        return Union(post, dished_key, riser)
-    return Union(post, dished_key)
+        return Union(post, dished_key, riser, name=name)
+    return Union(post, dished_key, name=name)
 
 
 def side_key(key_height, key_angle, name):
@@ -811,7 +821,7 @@ def long_side_key():
     return side_key(11, 10, "long_side_key")
 
 
-def thumb_side_key(key_width, key_height, name):
+def thumb_side_key(key_width, key_height, groove_height, name):
     return vertical_key(
         post_length=11.5,
         key_width=key_width,
@@ -819,25 +829,25 @@ def thumb_side_key(key_width, key_height, name):
         key_angle=0,
         key_protrusion=6.5,
         key_displacement=-3,
-        groove_height=6.147,
+        groove_height=groove_height,
         magnet_height=9.05,
         name=name)
 
 
+def inner_thumb_key():
+    return thumb_side_key(25, 16, 1.878, "inner_thumb_key")
+
+
 def outer_upper_thumb_key():
-    return thumb_side_key(25, 16, "outer_upper_thumb_key")
+    return thumb_side_key(20, 16, 2.566, "outer_upper_thumb_key")
 
 
 def outer_lower_thumb_key():
-    return thumb_side_key(20, 20, "outer_lower_thumb_key")
-
-
-def inner_thumb_key():
-    return thumb_side_key(20, 16, "inner_thumb_key")
+    return thumb_side_key(20, 20, 4.159, "outer_lower_thumb_key")
 
 
 def thumb_mode_key():
-    key_post = vertical_key_post(20, 6.147, 9.05)
+    key_post = vertical_key_post(20, 2.275, 9.05, upper_grooves_height=7, upper_grooves_count=3)
 
     base_angled_section = Box(post_width, 100, key_thickness)
     base_angled_section.place(~base_angled_section == ~key_post,
@@ -864,7 +874,7 @@ def thumb_mode_key():
         tilted_section.find_faces(base_tilted_section.front)[0],
         angled_section.find_faces(base_angled_section.bottom)[0])
 
-    return Union(key_post, angled_section, tilted_section)
+    return Union(key_post, angled_section, tilted_section, name="thumb_mode_key")
 
 
 def thumb_down_key():
