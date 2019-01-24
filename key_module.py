@@ -658,25 +658,59 @@ def pcb_holder(pcb) -> Component:
 
 def center_key():
     key_radius = 7.5
-    key_thickness = 2.5
+    key_rim_height = .5
+    key_thickness = 2
     post_length = 8.4 + 2.5
-    post_radius = 2.425
+    post_radius = 2.35
+    mid_post_radius = 2.3
+    key_travel = 2.4
 
     fillet_radius = 1.2
 
     key = Cylinder(key_thickness, key_radius, name="key")
-    post = Cylinder(post_length, post_radius, name="post")
-    post.place(~post == ~key,
-               ~post == ~key,
-               -post == +key)
-    post = Fillet(post.shared_edges(post.top, post.side), fillet_radius)
+    key_rim = Cylinder(key_rim_height, key_radius)
+    key_rim.place(~key_rim == ~key,
+                  ~key_rim == ~key,
+                  -key_rim == +key)
+    key_rim_hollow = Cylinder(key_rim_height, key_radius - 1)
+    key_rim_hollow.place(~key_rim_hollow == ~key,
+                         ~key_rim_hollow == ~key,
+                         -key_rim_hollow == -key_rim)
+    key_rim = Difference(key_rim, key_rim_hollow)
+
+    post_upper = Cylinder(key_travel + key_rim_height, post_radius, name="post")
+    post_upper.place((~post_upper == ~key),
+                     ~post_upper  == ~key,
+                     -post_upper == +key)
+    post_mid_upper = Cylinder(1, post_radius, mid_post_radius)
+    post_mid_upper.place(~post_mid_upper == ~post_upper,
+                         ~post_mid_upper == ~post_upper,
+                         -post_mid_upper == +post_upper)
+    post_mid = Cylinder(post_length - 2*key_travel - 2, mid_post_radius)
+    post_mid.place(~post_mid == ~post_upper,
+                   ~post_mid == ~post_upper,
+                   -post_mid == +post_mid_upper)
+
+    post_mid_lower = Cylinder(1, mid_post_radius, post_radius)
+    post_mid_lower.place(~post_mid_lower == ~post_upper,
+                         ~post_mid_lower == ~post_upper,
+                         -post_mid_lower == +post_mid)
+
+    post_lower = Cylinder(key_travel, post_radius)
+    post_lower.place(~post_lower == ~post_upper,
+                     ~post_lower == ~post_upper,
+                     -post_lower == +post_mid_lower)
+
+    post_lower = Fillet(post_lower.shared_edges(post_lower.top, post_lower.side), fillet_radius)
+
+    post = Union(post_upper, post_mid_upper, post_mid, post_mid_lower, post_lower)
 
     post_rim_cutout = Cylinder(post_length, post_radius + 1.2)
     post_rim_cutout.place(~post_rim_cutout == ~post,
                           ~post_rim_cutout == ~post,
                           -post_rim_cutout == -post)
 
-    back_stop = Box(3.5, 6, 4, name="back_stop")
+    back_stop = Box(3.5, 6, 4.5, name="back_stop")
     back_stop.place(~back_stop == ~key,
                     -back_stop == ~key,
                     -back_stop == +key)
@@ -691,7 +725,7 @@ def center_key():
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    post_flat_face = Box(post_length, key_radius*2, post.size().z)
+    post_flat_face = Box(post_length, 1, post.size().z)
     post_flat_face.place(~post_flat_face == ~post,
                          +post_flat_face == -2,
                          -post_flat_face == +key)
@@ -699,9 +733,9 @@ def center_key():
     magnet = horizontal_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
                  -magnet == +post_flat_face,
-                 (~magnet == +key) + 3.7)
+                 (~magnet == +key_rim) + 1.7 + key_travel)
 
-    result = Difference(Union(key, post, back_stop), post_flat_face, magnet)
+    result = Difference(Union(key, key_rim, post, back_stop), post_flat_face, magnet)
 
     return result
 
