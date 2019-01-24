@@ -799,7 +799,7 @@ def side_key(key_height, key_angle, name):
         key_protrusion=False,
         key_displacement=False,
         groove_height=1.575,
-        magnet_height=5.45,
+        magnet_height=5.6,
         name=name)
 
 
