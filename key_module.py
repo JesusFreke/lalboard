@@ -838,7 +838,7 @@ def outer_lower_thumb_key():
 
 
 def thumb_mode_key():
-    key_post = vertical_key_post(23, 2.275, 9.05)
+    key_post = vertical_key_post(23, 2.566, 9.05)
 
     face_finder = Box(1, 1, 1)
     face_finder.place(~face_finder == ~key_post,
@@ -1170,7 +1170,7 @@ def thumb_base(mirrored=False):
                      -inner_base == -base)
 
     upper_base, upper_base_negatives = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=8, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
     upper_base.rz(90)
     upper_base_negatives.rz(90)
     upper_base_negatives.place((+upper_base == +base) - .55,
