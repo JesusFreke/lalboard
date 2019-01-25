@@ -256,8 +256,8 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
         if lowest_edge is None or edge.pointOnEdge.z < lowest_edge.pointOnEdge.z:
             lowest_edge = edge
 
-    retaining_ridge.add_point("lowest_edge",
-                              Point3D.create(retaining_ridge.mid().x, lowest_edge.pointOnEdge.y, lowest_edge.pointOnEdge.z))
+    retaining_ridge.add_point("lowest_edge", Point3D.create(
+        retaining_ridge.mid().x, lowest_edge.pointOnEdge.y, lowest_edge.pointOnEdge.z))
 
     retaining_ridge.place(~retaining_ridge == ~back,
                           (~retaining_ridge.point("lowest_edge") == +back_sloped) - retaining_ridge_y,
@@ -740,7 +740,7 @@ def center_key():
     return result
 
 
-def vertical_key_post(post_length, groove_height, magnet_height, upper_grooves_height=None, upper_grooves_count=0):
+def vertical_key_post(post_length, groove_height, magnet_height):
     post = Box(post_width, post_length, key_thickness, name="post")
     post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
 
@@ -756,16 +756,7 @@ def vertical_key_post(post_length, groove_height, magnet_height, upper_grooves_h
                  (-groove == -post) + groove_height + key_thickness/2,
                  -groove == -post)
 
-    extra_groove_list = []
-    if upper_grooves_count > 0:
-        for i in range(0, upper_grooves_count):
-            extra_groove = groove.copy()
-            extra_groove.place(~extra_groove == ~post,
-                               (-extra_groove == -post) + upper_grooves_height + key_thickness/2 - (i * groove_width*2),
-                               -groove == -post)
-            extra_groove_list.append(extra_groove)
-
-    return Difference(post, magnet, groove, *extra_groove_list)
+    return Difference(post, magnet, groove)
 
 
 def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, key_displacement, groove_height,
@@ -847,34 +838,32 @@ def outer_lower_thumb_key():
 
 
 def thumb_mode_key():
-    key_post = vertical_key_post(20, 2.275, 9.05, upper_grooves_height=7, upper_grooves_count=3)
+    key_post = vertical_key_post(23, 2.275, 9.05)
 
-    base_angled_section = Box(post_width, 100, key_thickness)
-    base_angled_section.place(~base_angled_section == ~key_post,
-                              ~base_angled_section == ~key_post,
-                              -base_angled_section == -key_post)
-    base_angled_section.rz(45, center=(key_post.min().x, key_post.max().y, 0))
-    angled_section_limiter = Box(8+post_width, 8+key_thickness, key_thickness)
-    angled_section_limiter.place(+angled_section_limiter == +key_post,
-                                 -angled_section_limiter == +key_post,
-                                 -angled_section_limiter == -key_post)
+    face_finder = Box(1, 1, 1)
+    face_finder.place(~face_finder == ~key_post,
+                      -face_finder == +key_post,
+                      ~face_finder == ~key_post)
 
-    angled_section = Intersection(base_angled_section, angled_section_limiter)
+    end_face = key_post.find_faces(face_finder)[0]
 
-    base_tilted_section = Box(post_width, 15, key_thickness)
-    base_tilted_section.place(-base_tilted_section == -angled_section,
-                              -base_tilted_section == +angled_section,
-                              -base_tilted_section == -angled_section)
-    tilted_section = Fillet(
-        base_tilted_section.shared_edges(
-            [base_tilted_section.top, base_tilted_section.bottom],
-            [base_tilted_section.back]), radius=key_thickness/2)
-    tilted_section.rx(45, center=(tilted_section.min().x, tilted_section.min().y, tilted_section.max().z))
-    tilted_section = ExtrudeTo(
-        tilted_section.find_faces(base_tilted_section.front)[0],
-        angled_section.find_faces(base_angled_section.bottom)[0])
+    end_face = BRepComponent(end_face.brep)
 
-    return Union(key_post, angled_section, tilted_section, name="thumb_mode_key")
+    mid_section_end = end_face.copy()
+    mid_section_end.ry(20, center=mid_section_end.mid())
+    mid_section_end .translate(-10, 10, math.sqrt(2*math.pow(10, 2)) * math.sin(math.radians(20)))
+
+    end_section_end = mid_section_end.copy()
+    end_section_end.ty(10)
+
+    mid_section = Loft(end_face, mid_section_end)
+    end_section = Loft(mid_section_end, end_section_end)
+
+    end_section_end_face = end_section.find_faces(end_section_end)[0]
+
+    end_section = Fillet(end_section_end_face.edges, key_thickness/2, False)
+
+    return Union(key_post, mid_section, end_section)
 
 
 def thumb_down_key():
