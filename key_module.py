@@ -368,23 +368,26 @@ def cluster():
     combined_cluster.add(central_magnet_riser)
 
     # TODO: is there a better way to find the desired children?
-    bottom_cavity = key_base_negatives[0]
+    back = key_base_negatives[0]
     left_cavity = key_base_negatives[3]
     right_cavity = key_base_negatives[1]
+
+    right_base = key_bases[1]
+    left_base = key_bases[3]
 
     central_led_cavity = make_led_cavity().scale(-1, 1, 1)
     central_led_cavity.place(-central_led_cavity == -center_floor,
                              -central_led_cavity == -center_floor,
                              (~central_led_cavity.point("lens_center") == +center_floor) + 1.6)
     central_led_cavity.align_to(left_cavity.bodies[0], Vector3D.create(-1, 0, 0))
-    central_led_cavity.align_to(bottom_cavity.bodies[0], Vector3D.create(0, -1, 0))
+    central_led_cavity.align_to(back.bodies[0], Vector3D.create(0, -1, 0))
 
     central_pt_cavity = make_pt_cavity().scale(-1, 1, 1)
     central_pt_cavity.place(+central_pt_cavity == +center_floor,
                             -central_pt_cavity == -center_floor,
                             (~central_pt_cavity.point("lens_center") == +center_floor) + 1.6)
     central_pt_cavity.align_to(right_cavity.bodies[0], Vector3D.create(1, 0, 0))
-    central_pt_cavity.align_to(bottom_cavity.bodies[0], Vector3D.create(0, -1, 0))
+    central_pt_cavity.align_to(back.bodies[0], Vector3D.create(0, -1, 0))
 
     central_led_base = Box(2.8,
                            central_led_cavity.max().y - center_floor.min().y,
@@ -415,8 +418,11 @@ def cluster():
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(central_pt_cavity.faces("top")),
                                    combined_cluster.copy(False))
 
-    return Difference(combined_cluster, *key_base_negatives, center_hole, central_magnet_cutout,
-                      extruded_led_cavity, extruded_pt_cavity)
+    result = Difference(combined_cluster, *key_base_negatives, center_hole, central_magnet_cutout,
+                        extruded_led_cavity, extruded_pt_cavity)
+    result.add_point("lower_left_corner", [right_base.max().x, right_base.max().y, 0])
+    result.add_point("lower_right_corner", [left_base.min().x, left_base.max().y, 0])
+    return result
 
 
 def cluster_pcb(cluster):
@@ -557,19 +563,21 @@ def cluster_front(cluster: Component, base_height):
     socket_base_circle = Circle(socket_base.size().x/2)
     socket_base_circle.place(~socket_base_circle == ~socket_base,
                              ~socket_base_circle == ~socket_base)
-    left_point = Point3D.create(cluster.min().x, cluster.min().y, 0)
+    left_point = cluster.point("lower_left_corner").point
+    right_point = cluster.point("lower_right_corner").point
     left_tangents = find_tangent_intersection_on_circle(socket_base_circle, left_point)
-    if left_tangents[0].geometry.x < left_tangents[1].geometry.x:
+    if left_tangents[0].geometry.y < left_tangents[1].geometry.y:
         left_tangent_point = left_tangents[0].geometry
     else:
         left_tangent_point = left_tangents[1].geometry
 
-    right_tangent_point = Point3D.create(cluster.mid().x + (cluster.mid().x - left_tangent_point.x),
-                                         left_tangent_point.y, left_tangent_point.z)
+    right_tangents = find_tangent_intersection_on_circle(socket_base_circle, right_point)
+    if right_tangents[0].geometry.y < right_tangents[1].geometry.y:
+        right_tangent_point = right_tangents[0].geometry
+    else:
+        right_tangent_point = right_tangents[1].geometry
 
-    base = Polygon((cluster.min().x, cluster.min().y),
-                   left_tangent_point, right_tangent_point,
-                   (cluster.max().x, cluster.min().y))
+    base = Polygon(left_point, left_tangent_point, right_tangent_point, right_point)
 
     base = Extrude(base, base_height)
     rounded_end = Cylinder(base_height, socket_base.size().x/2, name="rounded_end")
@@ -577,15 +585,20 @@ def cluster_front(cluster: Component, base_height):
                       ~rounded_end == ~socket_base,
                       -rounded_end == -base)
     base = Union(base, rounded_end)
-
     base.place(~base == ~cluster,
-               +base == -cluster,
+               +base == right_point.y,
                -base == -cluster)
+
+    base = Difference(base, cluster.bounding_box.make_box())
+
+    cluster = Difference(cluster, Extrude(Polygon(left_tangent_point, left_point, cluster.min()), base_height),
+                         Extrude(Polygon(right_point, right_tangent_point,
+                                         Point3D.create(cluster.max().x, cluster.min().y, 0)), base_height))
 
     opening.place(z=-socket_base == +base)
     socket_base.place(z=-socket_base == +base)
 
-    return Difference(Union(base, socket_base), opening)
+    return cluster, Difference(Union(base, socket_base), opening)
 
 
 def cluster_back(cluster: Component, pcb: Component, base_height: float):
@@ -886,13 +899,13 @@ def full_cluster(add_pcb=True, add_pcb_sketch=True, create_children=False):
     clust = cluster()
     clust.rz(180, center=clust.mid())
 
-    pcb = cluster_pcb(clust)
+    clust, front = cluster_front(clust, 2)
 
-    clust = Union(clust, cluster_front(clust, 2))
+    pcb = cluster_pcb(clust)
 
     back, pcb_relief = cluster_back(clust, pcb, 2)
 
-    Difference(Union(clust, back), pcb_relief).create_occurrence(create_children, scale=.1)
+    Difference(Union(clust, front, back), pcb_relief).create_occurrence(create_children, scale=.1)
 
     if add_pcb:
         pcb.create_occurrence(create_children, scale=.1)
