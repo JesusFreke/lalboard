@@ -634,29 +634,6 @@ def cluster_back(cluster: Component, pcb: Component, base_height: float):
     return Difference(Union(base, socket_base, other_socket_base), opening, other_opening), pcb_relief
 
 
-def pcb_holder(pcb) -> Component:
-    holder = Box(pcb.size().x + 10.2, pcb.size().y + 10.2, pcb.size().z)
-    holder.place(~holder == ~pcb,
-                 ~holder == ~pcb,
-                 ~holder == ~pcb)
-
-    pcb_outline = Box(pcb.size().x + .2, pcb.size().y + .2, pcb.size().z)
-    pcb_outline.place(~pcb_outline == ~holder,
-                      ~pcb_outline == ~holder,
-                      ~pcb_outline == ~holder)
-
-    screw = Cylinder(holder.size().z, 1.75)
-    screw.place((~screw == +holder) - 3,
-                (~screw == +holder) - 3,
-                -screw == -holder)
-
-    return Difference(holder, pcb_outline,
-                      screw,
-                      screw.copy().scale(-1, 1, 1, center=holder.mid()),
-                      screw.copy().scale(1, -1, 1, center=holder.mid()),
-                      screw.copy().scale(-1, -1, 1, center=holder.mid()))
-
-
 def center_key():
     key_radius = 7.5
     key_rim_height = .5
@@ -905,7 +882,7 @@ def thumb_down_key():
     return Difference(Union(key_base, post, slot_backing, slot_stop, interruptor), slot, angled_slot, magnet)
 
 
-def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False):
+def full_cluster(add_pcb=True, add_pcb_sketch=True, create_children=False):
     clust = cluster()
     clust.rz(180, center=clust.mid())
 
@@ -922,9 +899,6 @@ def full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_
 
     if add_pcb_sketch:
         cluster_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
-
-    if add_pcb_holder:
-        pcb_holder(pcb).create_occurrence(create_children, scale=.1)
 
 
 def jst_adaptor():
@@ -1568,7 +1542,7 @@ def full_key_breakout_pcb():
 def _design():
     start = time.time()
 
-    full_cluster(add_pcb=True, add_pcb_sketch=True, add_pcb_holder=True, create_children=False)
+    full_cluster(add_pcb=True, add_pcb_sketch=True, create_children=False)
     # center_key().create_occurrence(False, .1)
     # short_side_key().create_occurrence(False, .1)
     # long_side_key().create_occurrence(True, .1)
