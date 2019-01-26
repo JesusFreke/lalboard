@@ -532,11 +532,12 @@ def ball_socket_base(base_height, mirrored=False):
 def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
     left_point_to_mid = point.vectorTo(circle.mid())
     left_point_to_mid.scaleBy(.5)
-    point.translateBy(left_point_to_mid)
+    midpoint = point.copy()
+    midpoint.translateBy(left_point_to_mid)
     intersecting_circle = Circle(left_point_to_mid.length)
-    intersecting_circle.place(~intersecting_circle == point,
-                              ~intersecting_circle == point,
-                              ~intersecting_circle == point)
+    intersecting_circle.place(~intersecting_circle == midpoint,
+                              ~intersecting_circle == midpoint,
+                              ~intersecting_circle == midpoint)
 
     vertices = list(Intersection(circle, intersecting_circle).bodies[0].brep.vertices)
     return vertices
@@ -1067,11 +1068,11 @@ def thin_ballscrew_base(screw_length):
 
 
 def thumb_base(mirrored=False):
-    base = Box(44, 47, 2)
+    base = Box(44 - .55 - 1.05, 44.5, 2)
 
     key_stand_lower = Box(15, 2.2, 3)
-    key_stand_lower.place((-key_stand_lower == -base) + 12.5,
-                          (-key_stand_lower == -base) + 12.3,
+    key_stand_lower.place((-key_stand_lower == -base) + 11.45,
+                          (-key_stand_lower == -base) + 11.3,
                           -key_stand_lower == +base)
 
     key_stand_transition_top = Rect(15, 1.8)
@@ -1138,12 +1139,12 @@ def thumb_base(mirrored=False):
         base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
     upper_outer_base.rz(-90)
     upper_outer_base_negatives.rz(-90)
-    upper_outer_base_negatives.place((-upper_outer_base == -base) + 1.05,
-                                     (+upper_outer_base == +base) - 4,
+    upper_outer_base_negatives.place((-upper_outer_base == -base),
+                                     (+upper_outer_base == +base) - 2.5,
                                      -upper_outer_base == -base)
 
-    upper_outer_base.place((-upper_outer_base == -base) + 1.05,
-                           (+upper_outer_base == +base) - 4,
+    upper_outer_base.place((-upper_outer_base == -base),
+                           (+upper_outer_base == +base) - 2.5,
                            -upper_outer_base == -base)
 
     lower_outer_base, lower_outer_base_negatives = vertical_key_base(
@@ -1152,40 +1153,40 @@ def thumb_base(mirrored=False):
     lower_outer_base_negatives.rz(-90)
     lower_outer_base_negatives.place(
         -lower_outer_base == -upper_outer_base,
-        (-lower_outer_base == -base) + 1,
+        (-lower_outer_base == -base),
         -lower_outer_base == -upper_outer_base)
     lower_outer_base.place(-lower_outer_base == -upper_outer_base,
-                           (-lower_outer_base == -base) + 1,
+                           (-lower_outer_base == -base),
                            -lower_outer_base == -upper_outer_base)
 
     inner_base, inner_base_negatives = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=10, mirrored=not mirrored)
     inner_base.rz(90 + 20)
     inner_base_negatives.rz(90 + 20)
-    inner_base_negatives.place((+inner_base == +base) - .65,
-                               (+inner_base == +base) - 1.5,
+    inner_base_negatives.place((+inner_base == +base) - .1,
+                               +inner_base == +base,
                                -inner_base == -base)
-    inner_base.place((+inner_base == +base) - .65,
-                     (+inner_base == +base) - 1.5,
+    inner_base.place((+inner_base == +base) - .1,
+                     +inner_base == +base,
                      -inner_base == -base)
 
     upper_base, upper_base_negatives = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
     upper_base.rz(90)
     upper_base_negatives.rz(90)
-    upper_base_negatives.place((+upper_base == +base) - .55,
-                               (-upper_base == -base) + 12,
+    upper_base_negatives.place((+upper_base == +base),
+                               (-upper_base == -base) + 11,
                                -upper_base == -base)
-    upper_base.place((+upper_base == +base) - .55,
-                     (-upper_base == -base) + 12,
-                     -upper_base==-base)
+    upper_base.place((+upper_base == +base),
+                     (-upper_base == -base) + 11,
+                     -upper_base == -base)
 
     lower_ball_socket, lower_ball_socket_negatives = ball_socket_base(2, mirrored)
     lower_ball_socket_negatives.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
-                                      ~lower_ball_socket == (key_stand_lower.min().y + base.min().y) / 2,
+                                      -lower_ball_socket == -base,
                                       -lower_ball_socket == +base)
     lower_ball_socket.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
-                            ~lower_ball_socket == (key_stand_lower.min().y + base.min().y) / 2,
+                            -lower_ball_socket == -base,
                             -lower_ball_socket == +base)
 
     upper_ball_socket, upper_ball_socket_negatives = ball_socket_base(2, mirrored)
@@ -1195,10 +1196,28 @@ def thumb_base(mirrored=False):
     upper_ball_socket.place(~upper_ball_socket == ~mid_key_stop,
                             (~upper_ball_socket == +mid_key_stop) + 7,
                             -upper_ball_socket == +base)
-    upper_ball_socket_extension = Cylinder(base.size().z, upper_ball_socket.size().y/2)
-    upper_ball_socket_extension.place(~upper_ball_socket_extension == ~upper_ball_socket,
-                                      ~upper_ball_socket_extension == ~upper_ball_socket,
-                                      -upper_ball_socket_extension == -base)
+    upper_ball_socket_base = Cylinder(base.size().z, upper_ball_socket.size().y/2)
+    upper_ball_socket_base.place(~upper_ball_socket_base == ~upper_ball_socket,
+                                 ~upper_ball_socket_base == ~upper_ball_socket,
+                                 -upper_ball_socket_base == -base)
+
+    extension_point_finder = Box(1, 100, 2)
+    extension_point = extension_point_finder.rz(-45, center=extension_point_finder.max()).closest_points(
+        upper_ball_socket_base)[1]
+    extension_point2 = Point3D.create(2 * upper_ball_socket_base.mid().x - extension_point.x,
+                                      extension_point.y,
+                                      extension_point.z)
+    upper_extension_face = Rect(extension_point2.x - extension_point.x, base.size().z).rx(90)
+    upper_extension_face.place(~upper_extension_face == ~upper_ball_socket_base,
+                               ~upper_extension_face == extension_point.y,
+                               -upper_extension_face == -base)
+    upper_extension_face2 = Rect(extension_point2.x - extension_point.x + (extension_point.y - base.max().y) * 2,
+                                 base.size().z)
+    upper_extension_face2.rx(90)
+    upper_extension_face2.place(~upper_extension_face2 == ~upper_ball_socket_base,
+                                (~upper_extension_face2 == +base),
+                                -upper_extension_face2 == -base)
+    upper_extension = Loft(upper_extension_face, upper_extension_face2)
 
     side_ball_socket, side_ball_socket_negatives = ball_socket_base(2, mirrored)
 
@@ -1240,19 +1259,48 @@ def thumb_base(mirrored=False):
     side_extension_face2 = Rect(extension_point2.y - extension_point.y + (base.min().x - extension_point.x) * 2,
                                 base.size().z)
     side_extension_face2.rx(90).rz(90)
-    side_extension_face2.place(~side_extension_face2 == -base,
+    side_extension_face2.place((~side_extension_face2 == -base),
                                ~side_extension_face2 == ~side_ball_socket_base,
                                -side_extension_face2 == -base)
     side_extension = Loft(side_extension_face, side_extension_face2)
+
+    lower_ball_socket_circle = Circle(lower_ball_socket.size().x/2)
+    lower_ball_socket_circle.place(~lower_ball_socket_circle == ~lower_ball_socket,
+                                   ~lower_ball_socket_circle == ~lower_ball_socket,
+                                   ~lower_ball_socket_circle == +base)
+    upper_base_corner = Point3D.create(
+        upper_base.max().x,
+        upper_base.min().y,
+        base.max().z)
+
+    lower_ball_socket_tangents = find_tangent_intersection_on_circle(lower_ball_socket_circle, upper_base_corner)
+    if lower_ball_socket_tangents[0].geometry.x > lower_ball_socket_tangents[1].geometry.x:
+        lower_ball_socket_tangent = lower_ball_socket_tangents[0].geometry
+    else:
+        lower_ball_socket_tangent = lower_ball_socket_tangents[1].geometry
+
+    tangent_vector = upper_base_corner.vectorTo(lower_ball_socket_tangent)
+    tangent_vector.scaleBy(2)
+    tangent_line_corner = upper_base_corner.copy()
+    tangent_line_corner.translateBy(tangent_vector)
+    lower_cut_corner = Polygon(
+        upper_base_corner, tangent_line_corner, Point3D.create(base.max().x, base.min().y, base.max().z))
+    lower_cut_corner = ExtrudeTo(lower_cut_corner, base.bottom)
+
+    upper_cut_corner = Box(100, 100, 100).rz(20)
+    upper_cut_corner.place(-upper_cut_corner == +base,
+                           ~upper_cut_corner == +base,
+                           -upper_cut_corner == -base)
+    upper_cut_corner.align_to(inner_base, Vector3D.create(-1, 0, 0))
 
     result = Difference(
         Union(
             base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base, mid_led_base,
             upper_outer_base, lower_outer_base, inner_base, upper_base, lower_ball_socket, upper_ball_socket,
-            upper_ball_socket_extension, side_ball_socket, side_extension, side_ball_socket_base),
+            upper_extension, upper_ball_socket_base, side_ball_socket, side_extension, side_ball_socket_base),
         magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives, lower_outer_base_negatives,
         inner_base_negatives, upper_base_negatives, lower_ball_socket_negatives, upper_ball_socket_negatives,
-        side_ball_socket_negatives)
+        side_ball_socket_negatives, lower_cut_corner, upper_cut_corner)
 
     result = SplitFace(result, base.bottom)
     result.add_faces("bottom", *result.find_faces(base.bottom))
@@ -1362,7 +1410,7 @@ def full_thumb(mirrored=False):
     thumb_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
     base.create_occurrence(False, .1)
-    pcb.create_occurrence(True, .1)
+    pcb.create_occurrence(False, .1)
 
 
 def place_header(header: Component, x: int, y: int) -> Point3D:
