@@ -43,6 +43,10 @@ def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.8, 1.7, 1.8, depth, name=name).rx(90)
 
 
+def horizontal_large_thin_magnet_cutout(depth=1.8, name="magnet_cutout"):
+    return tapered_box(1.45*2, 1.8*2, 1.7*2, 1.8*2, depth, name=name).rx(90)
+
+
 def vertical_magnet_cutout(depth=1.6, name="magnet_cutout"):
     return tapered_box(1.55, 1.55, 1.7, 1.7, depth, name)
 
@@ -1454,20 +1458,52 @@ def full_central_pcb():
     pcb.create_occurrence(False, .1)
     central_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
+    central_pcb_tray(pcb).create_occurrence(False, .1)
 
-def central_pcb_tray():
-    base = Box(50, 50, 1.2)
-    back = Box(50, 2.2, 10)
-    back.place(~back == ~base,
-               +back == -base,
-               -back == -base)
 
-    magnet = horizontal_magnet_cutout(1.8)
-    magnet.place(~magnet == ~base,
-                 -magnet == -back,
-                 (-magnet == -base) + 5.4)
+def central_pcb_tray(pcb):
+    bottom_thickness = 1.2
+    base = Box(pcb.size().x + 2.3*2,
+               pcb.size().y + 2.3*2,
+               10)
 
-    return Difference(Union(base, back), magnet)
+    base.place(~base == ~pcb,
+               ~base == ~pcb,
+               (-base == -pcb) - bottom_thickness)
+
+    back_magnet = horizontal_large_thin_magnet_cutout(name="back_cutout")
+    back_magnet.rz(180)
+    back_magnet.place(~back_magnet == ~base,
+                      +back_magnet == +base,
+                      +back_magnet == 8)
+
+    left_magnet = horizontal_large_thin_magnet_cutout(name="left_cutout")
+    left_magnet.rz(-90)
+    left_magnet.place(-left_magnet == -base,
+                      (-left_magnet == -base) + 5,
+                      +left_magnet == 8)
+
+    right_magnet = horizontal_large_thin_magnet_cutout(name="left_cutout")
+    right_magnet.rz(90)
+    right_magnet.place(+right_magnet == +base,
+                       (-right_magnet == -base) + 5,
+                       +right_magnet == 8)
+
+    hollow = Box(pcb.bounding_box.size().x+.2,
+                 pcb.bounding_box.size().y+.2,
+                 base.size().z)
+    hollow.place(~hollow == ~pcb,
+                 ~hollow == ~pcb,
+                 -hollow == -pcb)
+
+    front_opening = Box(pcb.bounding_box.size().x + .2,
+                        pcb.bounding_box.size().y,
+                        base.size().z)
+    front_opening.place(~front_opening == ~base,
+                        ~front_opening == -base,
+                        (-front_opening == -base) + 1.2 + 2)
+
+    return Difference(base, back_magnet, left_magnet, right_magnet, hollow, front_opening)
 
 
 def key_breakout_pcb():
