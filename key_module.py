@@ -263,7 +263,7 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
                           (~retaining_ridge.point("lowest_edge") == +back_sloped) - retaining_ridge_y,
                           (~retaining_ridge.point("lowest_edge") == -back_sloped) + retaining_ridge_z)
 
-    result = Union(pt_base, led_base, front, back, base, name="vertical_key_base")
+    result = Union(pt_base, led_base, front, back, base)
     result = Difference(result, sloped_key)
     result = Union(result, retaining_ridge)
 
@@ -280,8 +280,7 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("legs")), result.copy(False))
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.faces("top")), result.copy(False))
 
-    result = Difference(result, extruded_pt_cavity, extruded_led_cavity, magnet_cutout, key_pivot)
-
+    negatives = Union(extruded_pt_cavity, extruded_led_cavity, magnet_cutout, key_pivot)
     bounding_box = Box(
         result.bounding_box.size().x,
         result.bounding_box.size().y,
@@ -289,25 +288,23 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
     bounding_box.place(-bounding_box == -result,
                        -bounding_box == -result,
                        -bounding_box == -result)
-    result = Intersection(result, bounding_box)
-    negatives = Difference(result.bounding_box.make_box(), result.copy(False), name="vertical_key_base_negative")
+
+    negatives = Intersection(negatives, bounding_box, name="negatives")
+
+    result = Difference(Intersection(result, bounding_box), negatives,  name="vertical_key_base")
 
     result.add_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
 
     if mirrored:
-        negatives = negatives.scale(-1, 1, 1, center=result.mid())
-        result = result.scale(-1, 1, 1, center=result.mid())
+        result.scale(-1, 1, 1, center=result.mid())
 
-    return result, negatives
+    return result
 
 
 def cluster():
     base = Box(24.9, 24.9, 2, "base")
-    key_base, key_base_negative = vertical_key_base(2)
+    key_base = vertical_key_base(2)
 
-    key_base_negative.place(~key_base.point("midpoint") == ~base,
-                            -key_base == -base,
-                            -key_base == -base)
     key_base.place(~key_base.point("midpoint") == ~base,
                    -key_base == -base,
                    -key_base == -base)
@@ -319,10 +316,10 @@ def cluster():
         key_base.rz(270, base.mid())
     )
     key_base_negatives = (
-        key_base_negative.copy().scale(-1, 1, 1, center=key_bases[0].point("midpoint")),
-        key_base_negative.copy().rz(90, base.mid()),
-        key_base_negative.copy().scale(-1, 1, 1, center=key_bases[0].point("midpoint")).rz(180, base.mid()),
-        key_base_negative.rz(270, base.mid())
+        key_bases[0].find_children("negatives")[0],
+        key_bases[1].find_children("negatives")[0],
+        key_bases[2].find_children("negatives")[0],
+        key_bases[3].find_children("negatives")[0]
     )
 
     combined_cluster = Union(base, *key_bases)
@@ -1122,48 +1119,35 @@ def thumb_base(mirrored=False):
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("lens_hole")), mid_led_base)
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.faces("legs")), base.bottom)
 
-    upper_outer_base, upper_outer_base_negatives = vertical_key_base(
+    upper_outer_base = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
+    upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
-    upper_outer_base_negatives.rz(-90)
-    upper_outer_base_negatives.place((-upper_outer_base == -base),
-                                     (+upper_outer_base == +base) - 2.5,
-                                     -upper_outer_base == -base)
 
     upper_outer_base.place((-upper_outer_base == -base),
                            (+upper_outer_base == +base) - 2.5,
                            -upper_outer_base == -base)
 
-    lower_outer_base, lower_outer_base_negatives = vertical_key_base(
+    lower_outer_base = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=4.2, mirrored=not mirrored)
+    lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
-    lower_outer_base_negatives.rz(-90)
-    lower_outer_base_negatives.place(
-        -lower_outer_base == -upper_outer_base,
-        (-lower_outer_base == -base),
-        -lower_outer_base == -upper_outer_base)
     lower_outer_base.place(-lower_outer_base == -upper_outer_base,
                            (-lower_outer_base == -base),
                            -lower_outer_base == -upper_outer_base)
 
-    inner_base, inner_base_negatives = vertical_key_base(
+    inner_base = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=10, mirrored=not mirrored)
+    inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
-    inner_base_negatives.rz(90 + 20)
-    inner_base_negatives.place((+inner_base == +base) - .1,
-                               +inner_base == +base,
-                               -inner_base == -base)
     inner_base.place((+inner_base == +base) - .1,
                      +inner_base == +base,
                      -inner_base == -base)
 
-    upper_base, upper_base_negatives = vertical_key_base(
+    upper_base = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
+    upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
-    upper_base_negatives.rz(90)
-    upper_base_negatives.place((+upper_base == +base),
-                               (-upper_base == -base) + 11,
-                               -upper_base == -base)
     upper_base.place((+upper_base == +base),
                      (-upper_base == -base) + 11,
                      -upper_base == -base)
