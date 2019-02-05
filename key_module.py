@@ -797,29 +797,29 @@ def long_side_key():
     return side_key(11, 10, "long_side_key")
 
 
-def thumb_side_key(key_width, key_height, groove_height, name):
+def thumb_side_key(key_width, key_height, groove_height, key_displacement=-3, name="thumb_side_key"):
     return vertical_key(
         post_length=11.5,
         key_width=key_width,
         key_height=key_height,
         key_angle=0,
         key_protrusion=6.5,
-        key_displacement=-3,
+        key_displacement=key_displacement,
         groove_height=groove_height,
         magnet_height=9.05,
         name=name)
 
 
 def inner_thumb_key():
-    return thumb_side_key(25, 16, 1.878, "inner_thumb_key")
+    return thumb_side_key(25, 13.5, 1.878, key_displacement=-.5, name="inner_thumb_key")
 
 
 def outer_upper_thumb_key():
-    return thumb_side_key(20, 16, 2.566, "outer_upper_thumb_key")
+    return thumb_side_key(20, 16, 2.566, name="outer_upper_thumb_key")
 
 
 def outer_lower_thumb_key():
-    return thumb_side_key(20, 20, 4.159, "outer_lower_thumb_key")
+    return thumb_side_key(20, 20, 4.159, name="outer_lower_thumb_key")
 
 
 def thumb_mode_key():
