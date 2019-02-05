@@ -811,7 +811,7 @@ def thumb_side_key(key_width, key_height, groove_height, key_displacement=-3, na
 
 
 def inner_thumb_key():
-    return thumb_side_key(25, 13.5, 1.878, key_displacement=-.5, name="inner_thumb_key")
+    return thumb_side_key(25, 13.5, 2.443, key_displacement=-.5, name="inner_thumb_key")
 
 
 def outer_upper_thumb_key():
@@ -1134,7 +1134,7 @@ def thumb_base(mirrored=False):
                            -lower_outer_base == -upper_outer_base)
 
     inner_base = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=10, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
     inner_base.place((+inner_base == +base) - .1,
