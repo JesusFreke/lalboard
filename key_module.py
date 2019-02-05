@@ -14,7 +14,9 @@
 
 import adsk.core
 import adsk.fusion
+import inspect
 import math
+import os
 import time
 
 from adsk.core import Matrix2D, Vector2D
@@ -1559,6 +1561,68 @@ def full_key_breakout_pcb():
     key_breakout_pcb_sketch(BRepComponent(pcb.faces("bottom")[0].brep))
 
 
+def handrest():
+    script_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
+    script_dir = os.path.dirname(script_path)
+
+    handrest = import_fusion_archive(os.path.join(script_dir, "left_handrest_scan_reduced_brep.f3d"), name="handrest")
+    handrest.scale(10, 10, 10)
+    handrest.rz(-90)
+    handrest.place(~handrest == 0,
+                   ~handrest == 0,
+                   -handrest == 0)
+
+    pcb = central_pcb()
+    pcb_tray = central_pcb_tray(pcb)
+
+    tray_slot = Box(pcb_tray.bounding_box.size().x + .2,
+                    pcb_tray.bounding_box.size().y * 10,
+                    24)
+    tray_slot.place(~tray_slot == ~handrest,
+                    (+tray_slot == -handrest) + pcb_tray.bounding_box.size().y + 15,
+                    -tray_slot == -handrest)
+
+    back_magnet = Box(3.9, 3.9, 1.8).rx(90)
+    back_magnet.place(~back_magnet == ~tray_slot,
+                      -back_magnet == +tray_slot,
+                      (+back_magnet == -handrest) + 9.2)
+
+    left_magnet = back_magnet.copy()
+    left_magnet.rz(90)
+    left_magnet.place(+left_magnet == -tray_slot,
+                      (+left_magnet == +tray_slot) - 46.2,
+                      +left_magnet == +back_magnet)
+
+    right_magnet = back_magnet.copy()
+    right_magnet.rz(-90)
+    right_magnet.place(-right_magnet == +tray_slot,
+                       +right_magnet == +left_magnet,
+                       +right_magnet == +left_magnet)
+
+    front_left_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    front_left_bottom_magnet.place((~front_left_bottom_magnet == ~handrest) + 27.778,
+                                   (~front_left_bottom_magnet == ~handrest) - 17.2784,
+                                   -front_left_bottom_magnet == -handrest)
+
+    front_right_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    front_right_bottom_magnet.place((~front_right_bottom_magnet == ~handrest) - 29.829,
+                                    (~front_right_bottom_magnet == ~handrest) - 17.2782,
+                                    -front_right_bottom_magnet == -handrest)
+
+    back_right_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    back_right_bottom_magnet.place((~back_right_bottom_magnet == ~handrest) - 29.829,
+                                   (~back_right_bottom_magnet == ~handrest) + 37.7218,
+                                   -back_right_bottom_magnet == -handrest)
+
+    back_left_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    back_left_bottom_magnet.place((~back_left_bottom_magnet == ~handrest) + 27.778,
+                                   (~back_left_bottom_magnet == ~handrest) + 37.7218,
+                                   -back_left_bottom_magnet == -handrest)
+
+    return Difference(handrest, tray_slot, back_magnet, left_magnet, right_magnet, front_left_bottom_magnet,
+                      front_right_bottom_magnet, back_right_bottom_magnet, back_left_bottom_magnet)
+
+
 def _design():
     start = time.time()
 
@@ -1590,6 +1654,8 @@ def _design():
     # central_pcb_tray().create_occurrence(True, .1)
 
     # full_key_breakout_pcb()
+
+    # handrest().create_occurrence(False, .1)
 
     end = time.time()
     print(end-start)
