@@ -1627,7 +1627,7 @@ def handrest(mirrored=False):
                       name="right_handrest" if mirrored else "left_handrest")
 
 
-def _design():
+def design():
     start = time.time()
 
     # uncomment one of the function calls below to generate the corresponding part(s)
@@ -1668,4 +1668,4 @@ def _design():
 
 
 def run(_):
-    run_design(_design, message_box_on_error=False, document_name=__name__)
+    run_design(design, message_box_on_error=False, document_name=__name__)
