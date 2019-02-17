@@ -57,6 +57,11 @@ The handrest was first molded for my wrist in plasticine clay, and then scanned 
 for my wrists specifically, I'm not sure how "one-size-fits-all" they are, or how comfortable they
 would be for someone else to use.
 
+##### [BOM](https://github.com/JesusFreke/lalboard/wiki/BOM)
+
+##### [Printing tips & instructions](https://github.com/JesusFreke/lalboard/wiki/Printing-tips-&-instructions)
+
+
 --------
 
 Note: This is not an officially supported Google product.
