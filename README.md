@@ -4,19 +4,31 @@
 
 [More Images](https://github.com/JesusFreke/lalboard/wiki/Images)
 
+I am a long-time user of a DataHand keyboard. With the scarcity and rising cost of second hand
+DataHands these days, I wanted to ensure that I always had access to a DataHand-like keyboard. And
+so this project was born.
 
-This was designed to be very adjustable, so you can get the keys positioned exactly right for your
-hand. Each key cluster has limited adjustability in all 6 degrees of freedom.
+The overall functionality of the lalboard is obviously heavily based on the DataHand, but I designed
+all of the specific key mechanisms, etc. from scratch, to be printable on a normal hobby-level
+FDM printer.
 
-This is printable on a hobby-level FDM 3D printer. e.g. I used a stock Prusa i3 MK2.5 for
-everything. Most parts need to be printed in a very opaque PLA, but there are a few parts that don't
-work well in PLA which should be printed in polycarbonate or similar material, for its strength and
-heat resistance.
+With my DataHand, I never felt like I could get the keys positioned *quite right* for my hand. So
+one of my primary focuses with the lalboard was adjustability. Each key cluster can be independently
+adjusted in all 6 degrees of freedom to some extent.
+
+Most parts need to be printed in a very opaque PLA, but there are a few parts that don't work well
+in PLA which should be printed in polycarbonate or similar material, for its strength and heat
+resistance.
 
 ##### Key Mechanisms
 
 All keys use a pair of magnets to provide the clickiness and key return force, and an IR LED and
-phototransistor for detecting a keypress.
+phototransistor for detecting a keypress. They are all held in place only with magnets, so they
+are easily removable for cleaning, etc.
+
+The feel/clickiness of the keys was another focus area. I tried to get them to feel as similar to
+those on a DataHand as possible. They require roughly the same amount of force, and have that same
+unique clicky feel due to the magnetic holding force.
 
 ##### Adjustability
 
