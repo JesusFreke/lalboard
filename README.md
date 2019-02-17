@@ -1,5 +1,10 @@
 ##### lalboard - A 3D-printed keyboard inspired by the DataHand.
 
+<img src="https://jesusfreke.github.io/lalboard/lalboard.jpg" alt="drawing" width="595"/>
+
+[More Images](https://github.com/JesusFreke/lalboard/wiki/Images)
+
+
 This was designed to be very adjustable, so you can get the keys positioned exactly right for your
 hand. Each key cluster has limited adjustability in all 6 degrees of freedom.
 
