@@ -1,4 +1,4 @@
-##### lalboard - A 3D-printed keyboard based around the idea of a cluster of 5 buttons per finger.
+##### lalboard - A 3D-printed keyboard inspired by the DataHand.
 
 This was designed to be very adjustable, so you can get the keys positioned exactly right for your
 hand. Each key cluster has limited adjustability in all 6 degrees of freedom.
