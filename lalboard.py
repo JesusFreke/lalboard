@@ -337,35 +337,30 @@ def cluster():
 
     combined_cluster.add(center_floor)
 
-    center_hole = Cylinder(combined_cluster.size().z, 2.5, name="center_hole")
+    center_hole = Box(5, 5, combined_cluster.size().z, name="center_hole")
     center_hole.place(~center_hole == ~base,
                       ~center_hole == ~base,
                       -center_hole == -base)
-    flat = Box(center_hole.size().x, center_hole.size().y - .5, center_hole.size().z, "flat")
-    flat.place(~flat == ~center_hole,
-               -flat == -center_hole,
-               ~flat == ~center_hole)
-    center_hole = Intersection(center_hole, flat)
 
-    central_post = Cylinder(combined_cluster.size().z, (center_hole.size().x/2) + .8)
-    central_post.place(~central_post == ~base,
-                       ~central_post == ~base,
+    central_post = Box(center_hole.size().x + 1.6,
+                       center_hole.size().x + 1.6,
+                       combined_cluster.size().z, name="center_post")
+    central_post.place(~central_post == ~center_hole,
+                       ~central_post == ~center_hole,
                        -central_post == -base)
 
-    combined_cluster.add(central_post)
+    combined_cluster_copy = combined_cluster.copy(False)
+    center = ExtrudeTo(central_post.back,
+                       combined_cluster_copy)
+    center = ExtrudeTo(center.find_faces(central_post.left), combined_cluster_copy)
+    center = ExtrudeTo(center.find_faces(central_post.right), combined_cluster_copy, name="center")
 
-    central_magnet_riser = Box(4.55, 2, combined_cluster.max().z - center_floor.max().z, "central_magnet_riser")
-    central_magnet_riser.place(~central_magnet_riser == ~base,
-                               -central_magnet_riser == +center_hole,
-                               -central_magnet_riser == +center_floor)
-    central_magnet_riser = ExtrudeTo(central_magnet_riser.back, combined_cluster.copy(False))
+    combined_cluster.add(center)
 
     central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
-    central_magnet_cutout.place(~central_magnet_cutout == ~central_magnet_riser,
-                                -central_magnet_cutout == -central_magnet_riser,
-                                (+central_magnet_cutout == +central_magnet_riser) - .8)
-
-    combined_cluster.add(central_magnet_riser)
+    central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
+                                -central_magnet_cutout == +center_hole,
+                                (+central_magnet_cutout == +center) - .8)
 
     # TODO: is there a better way to find the desired children?
     back = key_base_negatives[0]
@@ -642,8 +637,6 @@ def center_key():
     key_rim_height = .5
     key_thickness = 2
     post_length = 8.4 + 2.5
-    post_radius = 2.35
-    mid_post_radius = 2.3
     key_travel = 2.4
 
     fillet_radius = 1.2
@@ -659,64 +652,33 @@ def center_key():
                          -key_rim_hollow == -key_rim)
     key_rim = Difference(key_rim, key_rim_hollow)
 
-    post_upper = Cylinder(key_travel + key_rim_height, post_radius, name="post")
-    post_upper.place((~post_upper == ~key),
-                     ~post_upper == ~key,
-                     -post_upper == +key)
-    post_mid_upper = Cylinder(1, post_radius, mid_post_radius)
-    post_mid_upper.place(~post_mid_upper == ~post_upper,
-                         ~post_mid_upper == ~post_upper,
-                         -post_mid_upper == +post_upper)
-    post_mid = Cylinder(post_length - 2*key_travel - 2, mid_post_radius)
-    post_mid.place(~post_mid == ~post_upper,
-                   ~post_mid == ~post_upper,
-                   -post_mid == +post_mid_upper)
+    post = Box(5 - .2, 5 - .2, post_length + key_rim_height, name="post")
+    post.place(~post == ~key,
+               ~post == ~key,
+               -post == +key)
+    post = Fillet(post.shared_edges([post.top], [post.front, post.back, post.left, post.right]), fillet_radius,
+                  name="filleted_post")
 
-    post_mid_lower = Cylinder(1, mid_post_radius, post_radius)
-    post_mid_lower.place(~post_mid_lower == ~post_upper,
-                         ~post_mid_lower == ~post_upper,
-                         -post_mid_lower == +post_mid)
-
-    post_lower = Cylinder(key_travel, post_radius)
-    post_lower.place(~post_lower == ~post_upper,
-                     ~post_lower == ~post_upper,
-                     -post_lower == +post_mid_lower)
-
-    post_lower = Fillet(post_lower.shared_edges(post_lower.top, post_lower.side), fillet_radius)
-
-    post = Union(post_upper, post_mid_upper, post_mid, post_mid_lower, post_lower)
-
-    post_rim_cutout = Cylinder(post_length, post_radius + 1.2)
-    post_rim_cutout.place(~post_rim_cutout == ~post,
-                          ~post_rim_cutout == ~post,
-                          -post_rim_cutout == -post)
-
-    back_stop = Box(3.5, 6, 4.5, name="back_stop")
+    back_stop = Box(3.5, 2.45, 4.5, name="back_stop")
     back_stop.place(~back_stop == ~key,
-                    -back_stop == ~key,
+                    (-back_stop == +post) + 1.1,
                     -back_stop == +key)
     fillet_edges = back_stop.shared_edges(
         [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left],
         [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left])
-    back_stop = Fillet(fillet_edges, fillet_radius, True)
-    back_stop = Difference(back_stop, post_rim_cutout)
+    back_stop = Fillet(fillet_edges, fillet_radius, False)
 
     bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
     bounding_cylinder.place(~bounding_cylinder == ~key,
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    post_flat_face = Box(post_length, 1, post.size().z)
-    post_flat_face.place(~post_flat_face == ~post,
-                         +post_flat_face == -2,
-                         -post_flat_face == +key)
-
     magnet = horizontal_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
-                 -magnet == +post_flat_face,
+                 -magnet == -post,
                  (~magnet == +key_rim) + 1.7 + key_travel)
 
-    result = Difference(Union(key, key_rim, post, back_stop), post_flat_face, magnet, name="center_key")
+    result = Difference(Union(key, key_rim, post, back_stop), magnet, name="center_key")
 
     return result
 
