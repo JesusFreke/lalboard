@@ -38,6 +38,10 @@ def tapered_box(bottom_x, bottom_y, top_x, top_y, height, name):
     return Loft(bottom_face, top_face, name=name)
 
 
+def horizontal_rotated_magnet_cutout(depth=1.8, name="magnet_cutout"):
+    return tapered_box(1.45, 1.45, 1.7, 1.7, depth, name=name).rx(90).ry(45)
+
+
 def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.8, 1.7, 1.8, depth, name=name).rx(90)
 
@@ -270,7 +274,7 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
     result = Difference(result, sloped_key)
     result = Union(result, retaining_ridge)
 
-    magnet_cutout = horizontal_magnet_cutout()
+    magnet_cutout = horizontal_rotated_magnet_cutout()
     magnet_cutout.place(~magnet_cutout == ~front,
                         -magnet_cutout == -front,
                         (+magnet_cutout == +front) - .45)
@@ -357,7 +361,7 @@ def cluster():
 
     combined_cluster.add(center)
 
-    central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
+    central_magnet_cutout = horizontal_rotated_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
                                 -central_magnet_cutout == +center_hole,
                                 (+central_magnet_cutout == +center) - .8)
@@ -673,7 +677,7 @@ def center_key():
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    magnet = horizontal_magnet_cutout(1.8)
+    magnet = horizontal_rotated_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
                  -magnet == -post,
                  (~magnet == +key_rim) + 1.7 + key_travel)
@@ -687,7 +691,7 @@ def vertical_key_post(post_length, groove_height, magnet_height):
     post = Box(post_width, post_length, key_thickness, name="post")
     post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
 
-    magnet = vertical_magnet_cutout()
+    magnet = vertical_magnet_cutout().rz(45)
     magnet.place(~magnet == ~post,
                  ~magnet == magnet_height + key_thickness/2,
                  +magnet == +post)
