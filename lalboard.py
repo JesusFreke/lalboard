@@ -554,7 +554,7 @@ def cluster_front(cluster: Component, base_height):
     socket_base.place(~socket_base == ~cluster,
                       (~socket_base == -cluster) - extension_y_size / 2)
 
-    socket_base_circle = Circle(socket_base.size().x/2)
+    socket_base_circle = Circle(socket_base.size().x/2 + .4)
     socket_base_circle.place(~socket_base_circle == ~socket_base,
                              ~socket_base_circle == ~socket_base)
     left_point = cluster.named_point("lower_left_corner").point
@@ -574,7 +574,7 @@ def cluster_front(cluster: Component, base_height):
     base = Polygon(left_point, left_tangent_point, right_tangent_point, right_point)
 
     base = Extrude(base, base_height)
-    rounded_end = Cylinder(base_height, socket_base.size().x/2, name="rounded_end")
+    rounded_end = Cylinder(base_height, socket_base.size().x/2 + .4, name="rounded_end")
     rounded_end.place(~rounded_end == ~socket_base,
                       ~rounded_end == ~socket_base,
                       -rounded_end == -base)
@@ -603,13 +603,13 @@ def cluster_back(cluster: Component, pcb: Component, base_height: float):
                -base == +cluster,
                -base == -cluster)
 
-    socket_base.place(-socket_base == -cluster,
-                      +socket_base == +base,
+    socket_base.place((-socket_base == -cluster) + .4,
+                      (+socket_base == +base) - .4,
                       -socket_base == +base)
 
     other_socket_base = socket_base.copy()
     other_opening = other_socket_base.find_children("negatives")[0]
-    other_socket_base.place(+other_socket_base == +cluster)
+    other_socket_base.place((+other_socket_base == +cluster) - .4)
 
     hole_bounding_box = None
     for body in pcb.bodies:
@@ -631,7 +631,7 @@ def cluster_back(cluster: Component, pcb: Component, base_height: float):
                      ~pcb_relief == holes_mid_point,
                      -pcb_relief == -base)
 
-    base = Fillet(base.shared_edges([base.back], [base.left, base.right]), socket_base.size().x/2)
+    base = Fillet(base.shared_edges([base.back], [base.left, base.right]), socket_base.size().x/2 + .4)
 
     return Difference(Union(base, socket_base, other_socket_base), opening, other_opening), pcb_relief
 
@@ -1118,7 +1118,7 @@ def thumb_base(mirrored=False):
     lower_ball_socket = ball_socket_base(2, mirrored)
     lower_ball_socket_negatives = lower_ball_socket.find_children("negatives")[0]
     lower_ball_socket.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
-                            -lower_ball_socket == -base,
+                            (-lower_ball_socket == -base) + .4,
                             -lower_ball_socket == +base)
 
     upper_ball_socket = ball_socket_base(2, mirrored)
@@ -1126,7 +1126,7 @@ def thumb_base(mirrored=False):
     upper_ball_socket.place(~upper_ball_socket == ~mid_key_stop,
                             (~upper_ball_socket == +mid_key_stop) + 7,
                             -upper_ball_socket == +base)
-    upper_ball_socket_base = Cylinder(base.size().z, upper_ball_socket.size().y/2)
+    upper_ball_socket_base = Cylinder(base.size().z, upper_ball_socket.size().y/2 + .4)
     upper_ball_socket_base.place(~upper_ball_socket_base == ~upper_ball_socket,
                                  ~upper_ball_socket_base == ~upper_ball_socket,
                                  -upper_ball_socket_base == -base)
@@ -1170,7 +1170,7 @@ def thumb_base(mirrored=False):
     side_ball_socket.place(~side_ball_socket == side_ball_socket_center,
                            ~side_ball_socket == side_ball_socket_center,
                            -side_ball_socket == +base)
-    side_ball_socket_base = Cylinder(base.size().z, side_ball_socket.size().x/2)
+    side_ball_socket_base = Cylinder(base.size().z, side_ball_socket.size().x/2 + .4)
     side_ball_socket_base.place(~side_ball_socket_base == ~side_ball_socket,
                                 ~side_ball_socket_base == ~side_ball_socket,
                                 -side_ball_socket_base == -base)
@@ -1192,7 +1192,7 @@ def thumb_base(mirrored=False):
                                -side_extension_face2 == -base)
     side_extension = Loft(side_extension_face, side_extension_face2)
 
-    lower_ball_socket_circle = Circle(lower_ball_socket.size().x/2)
+    lower_ball_socket_circle = Circle(lower_ball_socket.size().x/2 + .4)
     lower_ball_socket_circle.place(~lower_ball_socket_circle == ~lower_ball_socket,
                                    ~lower_ball_socket_circle == ~lower_ball_socket,
                                    ~lower_ball_socket_circle == +base)
