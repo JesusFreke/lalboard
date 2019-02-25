@@ -663,7 +663,7 @@ def center_key():
     post = Fillet(post.shared_edges([post.top], [post.front, post.back, post.left, post.right]), fillet_radius,
                   name="filleted_post")
 
-    back_stop = Box(3.5, 2.45, 4.5, name="back_stop")
+    back_stop = Box(3.5, 2.45, 4.3 + key_rim_height, name="back_stop")
     back_stop.place(~back_stop == ~key,
                     (-back_stop == +post) + 1.1,
                     -back_stop == +key)
