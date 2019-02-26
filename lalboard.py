@@ -686,8 +686,8 @@ def center_key():
                     (-back_stop == +post) + 1.1,
                     -back_stop == +key)
     fillet_edges = back_stop.shared_edges(
-        [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left],
-        [back_stop.top, back_stop.front, back_stop.back, back_stop.right, back_stop.left])
+        [back_stop.top, back_stop.back, back_stop.right, back_stop.left],
+        [back_stop.top, back_stop.back, back_stop.right, back_stop.left])
     back_stop = Fillet(fillet_edges, fillet_radius)
 
     bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
