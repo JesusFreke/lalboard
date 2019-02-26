@@ -388,14 +388,14 @@ def cluster():
     central_pt_cavity.align_to(right_cavity.bodies[0], Vector3D.create(1, 0, 0))
     central_pt_cavity.align_to(back.bodies[0], Vector3D.create(0, -1, 0))
 
-    central_led_base = Box(2.8,
+    central_led_base = Box(4.3,
                            central_led_cavity.max().y - center_floor.min().y,
                            combined_cluster.max().z - center_floor.max().z)
     central_led_base.place(-central_led_base == -center_floor,
                            -central_led_base == -center_floor,
                            -central_led_base == +center_floor)
 
-    central_pt_base = Box(2.8,
+    central_pt_base = Box(4.3,
                           central_pt_cavity.max().y - center_floor.min().y,
                           combined_cluster.max().z - center_floor.max().z)
     central_pt_base.place(+central_pt_base == +center_floor,
