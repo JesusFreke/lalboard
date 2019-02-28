@@ -61,7 +61,11 @@ def horizontal_peaked_magnet_cutout(depth=1.8, name="magnet_cutout"):
     top.place(~top == ~bottom,
               +top == +bottom,
               (~top == ~bottom) + depth)
-    return Loft(bottom, top).rx(90)
+    result = Loft(bottom, top, name=name).rx(90)
+
+    result.add_named_point("magnet_center", (0, 0, 0))
+
+    return result
 
 
 def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
@@ -390,7 +394,7 @@ def cluster():
     central_magnet_cutout = horizontal_peaked_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
                                 -central_magnet_cutout == +center_hole,
-                                (+central_magnet_cutout == +center) - .8)
+                                (~central_magnet_cutout.named_point("magnet_center") == +center) - 2.7)
 
     # TODO: is there a better way to find the desired children?
     back = key_base_negatives[0]
@@ -724,7 +728,7 @@ def center_key():
     magnet = horizontal_peaked_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
                  -magnet == -post,
-                 (~magnet == +key_rim) + 1.7 + key_travel)
+                 (~magnet.named_point("magnet_center") == +key_rim) + 2.7 + key_travel)
 
     result = Difference(Union(key, key_rim, post, back_stop), magnet, name="center_key")
 
