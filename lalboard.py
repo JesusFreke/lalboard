@@ -76,6 +76,10 @@ def vertical_magnet_cutout(depth=1.6, name="magnet_cutout"):
     return tapered_box(1.55, 1.55, 1.7, 1.7, depth, name)
 
 
+def vertical_rotated_magnet_cutout(depth=1.6, name="magnet_cutout"):
+    return tapered_box(1.7, 1.7, 1.8, 1.8, depth, name).rz(45)
+
+
 def vertical_large_magnet_cutout(name="magnet_cutout"):
     base = Box(2.9, 2.9, 2, name=name + "_base")
     taper = tapered_box(2.9, 2.9, 3.1, 3.1, 1.3, name=name + "_taper")
@@ -731,7 +735,7 @@ def vertical_key_post(post_length, groove_height, magnet_height):
     post = Box(post_width, post_length, key_thickness, name="post")
     post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
 
-    magnet = vertical_magnet_cutout().rz(45)
+    magnet = vertical_rotated_magnet_cutout()
     magnet.place(~magnet == ~post,
                  ~magnet == magnet_height + key_thickness/2,
                  +magnet == +post)
