@@ -42,6 +42,28 @@ def horizontal_rotated_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.45, 1.7, 1.7, depth, name=name).rx(90).ry(45)
 
 
+def horizontal_peaked_magnet_cutout(depth=1.8, name="magnet_cutout"):
+    bottom_size = 1.45
+    top_size = 1.7
+
+    bottom = Polygon((-bottom_size/2, -bottom_size/2),
+                     (-bottom_size/2, top_size/2),
+                     (0, top_size/2 + math.sqrt(top_size*top_size*2)/2),
+                     (bottom_size/2, top_size/2),
+                     (bottom_size/2, -bottom_size/2))
+
+    top = Polygon((-top_size/2, -top_size/2),
+                  (-top_size/2, top_size/2),
+                  (0, top_size/2 + math.sqrt(top_size*top_size*2)/2),
+                  (top_size/2, top_size/2),
+                  (top_size/2, -top_size/2))
+
+    top.place(~top == ~bottom,
+              +top == +bottom,
+              (~top == ~bottom) + depth)
+    return Loft(bottom, top).rx(90)
+
+
 def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.8, 1.7, 1.8, depth, name=name).rx(90)
 
@@ -361,7 +383,7 @@ def cluster():
 
     combined_cluster.add(center)
 
-    central_magnet_cutout = horizontal_rotated_magnet_cutout(name="central_magnet_cutout")
+    central_magnet_cutout = horizontal_peaked_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
                                 -central_magnet_cutout == +center_hole,
                                 (+central_magnet_cutout == +center) - .8)
@@ -695,7 +717,7 @@ def center_key():
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    magnet = horizontal_rotated_magnet_cutout(1.8)
+    magnet = horizontal_peaked_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
                  -magnet == -post,
                  (~magnet == +key_rim) + 1.7 + key_travel)
