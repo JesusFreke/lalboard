@@ -660,19 +660,19 @@ def center_key():
                          -key_rim_hollow == -key_rim)
     key_rim = Difference(key_rim, key_rim_hollow)
 
-    upper_post = Box(5 - .2, 5 - .2, key_rim_height + key_travel, name="upper_post")
-    lower_post = Box(5 - .2, 5 - .2, key_travel, name="upper_post")
-    mid_post = Box(5 - .2 - .8, 5 - .2 - .4,
+    upper_post = Box(5 - .2, 5 - .1, key_rim_height + key_travel, name="upper_post")
+    lower_post = Box(5 - .2, 5 - .1, key_travel, name="upper_post")
+    mid_post = Box(5 - .2 - .8, 5 - .1 - .4,
                    post_length + key_rim_height - upper_post.size().z - lower_post.size().z - 2, name="upper_post")
 
     upper_post.place(~upper_post == ~key,
-                     ~upper_post == ~key,
+                     (~upper_post == ~key) + .05,
                      -upper_post == +key)
     mid_post.place(~mid_post == ~upper_post,
                    -mid_post == -upper_post,
                    (-mid_post == +upper_post) + 1)
     lower_post.place(~lower_post == ~upper_post,
-                     ~lower_post == ~upper_post,
+                     -lower_post == -upper_post,
                      (-lower_post == +mid_post) + 1)
 
     filleted_lower_post = Fillet(lower_post.shared_edges(
