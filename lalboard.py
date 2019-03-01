@@ -43,20 +43,21 @@ def horizontal_rotated_magnet_cutout(depth=1.8, name="magnet_cutout"):
 
 
 def horizontal_peaked_magnet_cutout(depth=1.8, name="magnet_cutout"):
-    bottom_size = 1.45
-    top_size = 1.7
+    bottom_width = 1.45
+    top_width = 1.7
+    height = 1.7
 
-    bottom = Polygon((-bottom_size/2, -bottom_size/2),
-                     (-bottom_size/2, top_size/2),
-                     (0, top_size/2 + math.sqrt(top_size*top_size*2)/2),
-                     (bottom_size/2, top_size/2),
-                     (bottom_size/2, -bottom_size/2))
+    bottom = Polygon((-bottom_width/2, -height/2),
+                     (-bottom_width/2, height/2),
+                     (0, top_width/2 + math.sqrt(top_width*top_width*2)/2),
+                     (bottom_width/2, height/2),
+                     (bottom_width/2, -height/2))
 
-    top = Polygon((-top_size/2, -top_size/2),
-                  (-top_size/2, top_size/2),
-                  (0, top_size/2 + math.sqrt(top_size*top_size*2)/2),
-                  (top_size/2, top_size/2),
-                  (top_size/2, -top_size/2))
+    top = Polygon((-top_width/2, -height/2),
+                  (-top_width/2, height/2),
+                  (0, top_width/2 + math.sqrt(top_width*top_width*2)/2),
+                  (top_width/2, height/2),
+                  (top_width/2, -height/2))
 
     top.place(~top == ~bottom,
               +top == +bottom,
