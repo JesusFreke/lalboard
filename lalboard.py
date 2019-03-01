@@ -42,33 +42,6 @@ def horizontal_rotated_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.45, 1.7, 1.7, depth, name=name).rx(90).ry(45)
 
 
-def horizontal_peaked_magnet_cutout(depth=1.8, name="magnet_cutout"):
-    bottom_width = 1.45
-    top_width = 1.7
-    height = 1.7
-
-    bottom = Polygon((-bottom_width/2, -height/2),
-                     (-bottom_width/2, height/2),
-                     (0, top_width/2 + math.sqrt(top_width*top_width*2)/2),
-                     (bottom_width/2, height/2),
-                     (bottom_width/2, -height/2))
-
-    top = Polygon((-top_width/2, -height/2),
-                  (-top_width/2, height/2),
-                  (0, top_width/2 + math.sqrt(top_width*top_width*2)/2),
-                  (top_width/2, height/2),
-                  (top_width/2, -height/2))
-
-    top.place(~top == ~bottom,
-              +top == +bottom,
-              (~top == ~bottom) + depth)
-    result = Loft(bottom, top, name=name).rx(90)
-
-    result.add_named_point("magnet_center", (0, 0, 0))
-
-    return result
-
-
 def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.8, 1.7, 1.8, depth, name=name).rx(90)
 
@@ -392,10 +365,10 @@ def cluster():
 
     combined_cluster.add(center)
 
-    central_magnet_cutout = horizontal_peaked_magnet_cutout(name="central_magnet_cutout")
+    central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
                                 -central_magnet_cutout == +center_hole,
-                                (~central_magnet_cutout.named_point("magnet_center") == +center) - 2.7)
+                                (~central_magnet_cutout == +center) - 3.5)
 
     # TODO: is there a better way to find the desired children?
     back = key_base_negatives[0]
@@ -726,10 +699,10 @@ def center_key():
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    magnet = horizontal_peaked_magnet_cutout(1.8)
+    magnet = horizontal_magnet_cutout(1.8)
     magnet.place(~magnet == ~post,
                  -magnet == -post,
-                 (~magnet.named_point("magnet_center") == +key_rim) + 2.7 + key_travel)
+                 (~magnet == +key_rim) + 3.5 + key_travel)
 
     result = Difference(Union(key, key_rim, post, back_stop), magnet, name="center_key")
 
