@@ -61,6 +61,10 @@ would be for someone else to use.
 
 ##### [Printing tips & instructions](https://github.com/JesusFreke/lalboard/wiki/Printing-tips-&-instructions)
 
+##### [Preparing the Vinyl-cut PCBs](https://github.com/JesusFreke/lalboard/wiki/Vinyl-Cut-PCBs)
+
+
+
 
 --------
 
