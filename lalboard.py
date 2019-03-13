@@ -790,7 +790,7 @@ def thumb_side_key(key_width, key_height, groove_height, key_displacement: float
         key_protrusion=6.5,
         key_displacement=key_displacement,
         groove_height=groove_height,
-        magnet_height=9.05,
+        magnet_height=8.748,
         name=name)
 
 
