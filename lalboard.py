@@ -709,7 +709,7 @@ def center_key():
     return result
 
 
-def vertical_key_post(post_length, groove_height, magnet_height):
+def vertical_key_post(post_length, groove_height, magnet_height, groove_width=.6):
     post = Box(post_width, post_length, key_thickness, name="post")
     post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
 
@@ -718,7 +718,6 @@ def vertical_key_post(post_length, groove_height, magnet_height):
                  ~magnet == magnet_height + key_thickness/2,
                  +magnet == +post)
 
-    groove_width = .6
     groove_depth = .7
     groove = Box(post.size().x, groove_width, groove_depth, name="groove")
     groove.place(~groove == ~post,
@@ -807,7 +806,7 @@ def outer_lower_thumb_key():
 
 
 def thumb_mode_key(mirrored=False, name=None):
-    key_post = vertical_key_post(23, 2.566, 9.05)
+    key_post = vertical_key_post(23, 2.566, 9.05, groove_width=1)
 
     face_finder = Box(1, 1, 1)
     face_finder.place(~face_finder == ~key_post,
