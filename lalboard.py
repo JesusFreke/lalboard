@@ -867,11 +867,11 @@ def thumb_down_key():
                       (~interruptor == ~key_base) - 1,
                       -interruptor == +key_base)
 
-    magnet = horizontal_magnet_cutout()
+    magnet = horizontal_rotated_magnet_cutout()
     magnet.rz(180)
     magnet.place(~magnet == ~key_base,
                  +magnet == +post,
-                 (+magnet == +post) - 1)
+                 (~magnet == +post) - 1.9)
 
     return Difference(Union(key_base, post, slot_backing, slot_stop, interruptor), slot, angled_slot, magnet,
                       name="thumb_down_key")
@@ -1058,10 +1058,10 @@ def thumb_base(mirrored=False):
         [key_stand_upper.front, key_stand_upper.back]),
         key_stand_upper.size().y/2)
 
-    magnet = horizontal_magnet_cutout(1.8)
+    magnet = horizontal_rotated_magnet_cutout(1.8)
     magnet.place(~magnet == ~key_stand_lower,
                  -magnet == -key_stand_lower,
-                 (-magnet == +base) + 1)
+                 (~magnet == +base) + 1.9)
 
     mid_key_stop = Box(15, 3, 5.1)
     mid_key_stop.place(~mid_key_stop == ~key_stand_lower,
