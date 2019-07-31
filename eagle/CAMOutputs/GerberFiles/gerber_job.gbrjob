@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2019-07-31T17:05:41Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.3.2"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "center"
+        },
+        "Owner": "Stefan Elsen <stefan.elsen@hotmail.com>",
+        "Size": {
+            "X": 40.31,
+            "Y": 52.06
+        }
+    }
+}
