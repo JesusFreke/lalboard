@@ -15,12 +15,20 @@ To work faster I would also suggest to reduce the mesh smooth Iterations (modifi
 The high number of Iterations (3+) is necessary for export but not for display on screen and will slow down update dramatically.
 Also notice that the mesh may temporarily disappear from other objects while you operate on the *Editable Poly* layer.
 
+## Breathing Tubes
+For the bottom rest part you have two options: With and without what I call *breathing tubes*.
+These are 1mm wide vertical shafts atop or below (depending on orientation) magnet holes, going all the way through the model to the opposite side.
+If magnets are so loose that you need to glue them in, these shafts let the compressed air (from inserting the magnet) back out.
+I've seen more than one magnet that slowly pushed itself back out before the glue could harden simply because of air pressure.
+If you did not have to glue them in, then these tubes can be used to push the magnets back out using strong wire or some such, in case you want to recycle them.
+I have a steady loss of magnets from discarded experiments, simply because I cannot get them back out even though they are not glued in.
+Still, the holes look a bit like ant-holes so you may or may not like them.
 
 ## Export
 Export objects are generally colored blueish in the editor.
 They are aligned for printing out of the box.
-There are a total of 4 objects (5 if you count the rubber mask) designed to be exported:
-**Bottom Export**, **Top Export**, **Board Shield 7**, and **Board Shield 8**.
+There are a total of 5 objects (6 if you count the rubber mask) designed to be exported:
+**Bottom Export**, **Bottom With Breathing Tubes Export**, **Top Export**, **Board Shield 7**, and **Board Shield 8**.
 The rubber mask may require adjustments and or cutting the printed object and is designed to aid in cutting a rubber plate such that it can be glued to the rest bottom.
 
 To export an object (using 3ds Max 2018), first select it, then go to *File->Export->Export...* (**important: NOT Export Selected...**), then select *StereoLitho (.STL)* and in the export settings check *Selected only*
