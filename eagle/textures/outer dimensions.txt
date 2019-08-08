@@ -1,0 +1,3 @@
+right thumb: 41.89 mm x 42.97 mm
+left thumb: 41.91 mm x 42.49 mm
+cluster: 24.9 mm x 28.4 mm
