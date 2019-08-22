@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="9.3.2">
+<eagle version="9.4.2">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -144,8 +144,8 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <library name="PT908-7B-F">
 <packages>
 <package name="PT908-7B-F">
-<pad name="EMITTER" x="-1.27" y="0" drill="0.4" shape="square"/>
-<pad name="COLLECTOR" x="1.27" y="0" drill="0.4"/>
+<pad name="EMITTER" x="-1.27" y="0" drill="0.7" shape="square"/>
+<pad name="COLLECTOR" x="1.27" y="0" drill="0.7"/>
 <wire x1="-2.3" y1="0.75" x2="2.3" y2="0.75" width="0.127" layer="21"/>
 <wire x1="2.3" y1="0.75" x2="2.3" y2="-0.85" width="0.127" layer="21"/>
 <wire x1="2.3" y1="-0.85" x2="-2.3" y2="-0.85" width="0.127" layer="21"/>
@@ -155,25 +155,24 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <wire x1="0" y1="-1.55" x2="-0.6" y2="-0.95" width="0.127" layer="21" curve="-90"/>
 <wire x1="-0.6" y1="-0.95" x2="-0.6" y2="-0.9" width="0.127" layer="21"/>
 <text x="-2.3" y="0.8" size="1.016" layer="27">&gt;VALUE</text>
-<text x="-2.3" y="1.9" size="0.6096" layer="25">PT908-7B-F</text>
 </package>
 </packages>
 <symbols>
 <symbol name="PT908-7B-F">
-<pin name="C" x="10.16" y="2.54" length="middle" direction="in" rot="R180"/>
-<pin name="E" x="10.16" y="0" length="middle" direction="out" rot="R180"/>
-<wire x1="-12.7" y1="5.08" x2="-12.7" y2="-2.54" width="0.254" layer="94"/>
-<wire x1="-12.7" y1="-2.54" x2="5.08" y2="-2.54" width="0.254" layer="94"/>
-<wire x1="5.08" y1="-2.54" x2="5.08" y2="5.08" width="0.254" layer="94"/>
-<wire x1="5.08" y1="5.08" x2="-12.7" y2="5.08" width="0.254" layer="94"/>
-<text x="-10.16" y="2.54" size="1.27" layer="95">PT908-7B-F</text>
-<text x="-10.16" y="0" size="1.27" layer="96">&gt;VALUE</text>
+<pin name="C" x="0" y="2.54" length="middle" direction="in" rot="R180"/>
+<pin name="E" x="0" y="0" length="middle" direction="out" rot="R180"/>
+<wire x1="-22.86" y1="5.08" x2="-22.86" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="-22.86" y1="-2.54" x2="-5.08" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="-2.54" x2="-5.08" y2="5.08" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="5.08" x2="-22.86" y2="5.08" width="0.254" layer="94"/>
+<text x="-20.32" y="2.54" size="1.27" layer="95">PT908-7B-F</text>
+<text x="-20.32" y="0" size="1.27" layer="96">&gt;VALUE</text>
 </symbol>
 </symbols>
 <devicesets>
 <deviceset name="PT908-7B-F" prefix="PT" uservalue="yes">
 <gates>
-<gate name="G$1" symbol="PT908-7B-F" x="2.54" y="-2.54"/>
+<gate name="G$1" symbol="PT908-7B-F" x="0" y="0"/>
 </gates>
 <devices>
 <device name="" package="PT908-7B-F">
@@ -199,34 +198,33 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <wire x1="-2.35" y1="-2" x2="-2.35" y2="-1.2" width="0.1" layer="21"/>
 <wire x1="-2.35" y1="-1.2" x2="-2.35" y2="0.6" width="0.1" layer="21"/>
 <wire x1="-2.35" y1="0.6" x2="2.35" y2="0.6" width="0.1" layer="21"/>
-<pad name="CATHODE" x="-1.27" y="0" drill="0.4" diameter="0.8128" shape="square"/>
-<pad name="ANODE" x="1.27" y="0" drill="0.4" diameter="0.8128" rot="R180"/>
+<pad name="CATHODE" x="-1.27" y="0" drill="0.7" shape="square"/>
+<pad name="ANODE" x="1.27" y="0" drill="0.7" rot="R180"/>
 <wire x1="-2.35" y1="-1.2" x2="-0.9" y2="-1.2" width="0.1" layer="21"/>
 <wire x1="-0.9" y1="-1.2" x2="0.8" y2="-1.2" width="0.1" layer="21"/>
 <wire x1="0.8" y1="-1.2" x2="2.35" y2="-1.2" width="0.1" layer="21"/>
 <wire x1="-0.9" y1="-1.2" x2="-0.1" y2="-2" width="0.1" layer="21" curve="90"/>
 <wire x1="-0.1" y1="-2" x2="0" y2="-2" width="0.1" layer="21"/>
 <wire x1="0" y1="-2" x2="0.8" y2="-1.2" width="0.1" layer="21" curve="90"/>
-<text x="-2.4" y="1.8" size="0.6096" layer="25">IR928-6C-F</text>
 <text x="-2.4" y="0.7" size="1.016" layer="27">&gt;VALUE</text>
 </package>
 </packages>
 <symbols>
 <symbol name="IR928-6C-F">
-<pin name="A" x="-7.62" y="0" length="middle" direction="in"/>
-<pin name="C" x="-7.62" y="-2.54" length="middle" direction="out"/>
-<wire x1="-2.54" y1="2.54" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
-<wire x1="-2.54" y1="-5.08" x2="12.7" y2="-5.08" width="0.254" layer="94"/>
-<wire x1="12.7" y1="-5.08" x2="12.7" y2="2.54" width="0.254" layer="94"/>
-<wire x1="12.7" y1="2.54" x2="-2.54" y2="2.54" width="0.254" layer="94"/>
-<text x="2.54" y="0" size="1.27" layer="95">IR928-6C-F</text>
-<text x="2.54" y="-2.54" size="1.27" layer="96">&gt;VALUE</text>
+<pin name="A" x="0" y="2.54" length="middle" direction="in"/>
+<pin name="C" x="0" y="0" length="middle" direction="out"/>
+<wire x1="5.08" y1="5.08" x2="5.08" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="5.08" y1="-2.54" x2="20.32" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="20.32" y1="-2.54" x2="20.32" y2="5.08" width="0.254" layer="94"/>
+<wire x1="20.32" y1="5.08" x2="5.08" y2="5.08" width="0.254" layer="94"/>
+<text x="10.16" y="2.54" size="1.27" layer="95">IR928-6C-F</text>
+<text x="10.16" y="0" size="1.27" layer="96">&gt;VALUE</text>
 </symbol>
 </symbols>
 <devicesets>
 <deviceset name="IR928-6C-F" prefix="LED" uservalue="yes">
 <gates>
-<gate name="G$1" symbol="IR928-6C-F" x="104.14" y="-7.62"/>
+<gate name="G$1" symbol="IR928-6C-F" x="109.22" y="-7.62"/>
 </gates>
 <devices>
 <device name="" package="IR928-6C-F">
@@ -242,24 +240,24 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 </deviceset>
 </devicesets>
 </library>
-<library name="4309R-101-202LF">
+<library name="9 pin resistor network">
 <description>&lt;Resistor Networks &amp; Arrays 9pin 2Kohms Bussed Low Profile&lt;/b&gt;&lt;p&gt;
 &lt;author&gt;Created by SamacSys&lt;/author&gt;</description>
 <packages>
-<package name="4309R-101">
-<description>&lt;b&gt;4309R-101&lt;/b&gt;&lt;br&gt;
+<package name="9PIN-RESISTOR-NETWORK">
+<description>9pin-resistor-network
 </description>
-<pad name="1" x="0" y="0" drill="0.77" diameter="1.27"/>
-<pad name="2" x="2.54" y="0" drill="0.75" diameter="1.25"/>
-<pad name="3" x="5.08" y="0" drill="0.75" diameter="1.25"/>
-<pad name="4" x="7.62" y="0" drill="0.75" diameter="1.25"/>
-<pad name="5" x="10.16" y="0" drill="0.75" diameter="1.25"/>
-<pad name="6" x="12.7" y="0" drill="0.75" diameter="1.25"/>
-<pad name="7" x="15.24" y="0" drill="0.75" diameter="1.25"/>
-<pad name="8" x="17.78" y="0" drill="0.75" diameter="1.25"/>
-<pad name="9" x="20.32" y="0" drill="0.75" diameter="1.25"/>
-<text x="8.41966875" y="-0.26233125" size="1.27" layer="27" align="center">&gt;VALUE</text>
-<text x="8.41966875" y="-0.26233125" size="1.27" layer="25" align="center">&gt;NAME</text>
+<pad name="1" x="0" y="0" drill="0.77" shape="square"/>
+<pad name="2" x="2.54" y="0" drill="0.75"/>
+<pad name="3" x="5.08" y="0" drill="0.75"/>
+<pad name="4" x="7.62" y="0" drill="0.75"/>
+<pad name="5" x="10.16" y="0" drill="0.75"/>
+<pad name="6" x="12.7" y="0" drill="0.75"/>
+<pad name="7" x="15.24" y="0" drill="0.75"/>
+<pad name="8" x="17.78" y="0" drill="0.75"/>
+<pad name="9" x="20.32" y="0" drill="0.75"/>
+<text x="16.03966875" y="2.27766875" size="1.27" layer="27" align="center">&gt;VALUE</text>
+<text x="7.14966875" y="2.27766875" size="1.27" layer="25" align="center">&gt;NAME</text>
 <wire x1="21.565" y1="-1.245" x2="-1.245" y2="-1.245" width="0.2" layer="21"/>
 <wire x1="-1.245" y1="-1.245" x2="-1.245" y2="1.245" width="0.2" layer="21"/>
 <wire x1="-1.245" y1="1.245" x2="21.565" y2="1.245" width="0.2" layer="21"/>
@@ -271,33 +269,32 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 </package>
 </packages>
 <symbols>
-<symbol name="4309R-101-202LF">
-<wire x1="5.08" y1="2.54" x2="15.24" y2="2.54" width="0.254" layer="94"/>
-<wire x1="15.24" y1="-12.7" x2="15.24" y2="2.54" width="0.254" layer="94"/>
-<wire x1="15.24" y1="-12.7" x2="5.08" y2="-12.7" width="0.254" layer="94"/>
-<wire x1="5.08" y1="2.54" x2="5.08" y2="-12.7" width="0.254" layer="94"/>
-<text x="16.51" y="7.62" size="1.778" layer="95" align="center-left">&gt;NAME</text>
-<text x="16.51" y="5.08" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
-<pin name="1" x="0" y="0" length="middle"/>
-<pin name="2" x="0" y="-2.54" length="middle"/>
-<pin name="3" x="0" y="-5.08" length="middle"/>
-<pin name="4" x="0" y="-7.62" length="middle"/>
-<pin name="5" x="0" y="-10.16" length="middle"/>
-<pin name="6" x="20.32" y="0" length="middle" rot="R180"/>
-<pin name="7" x="20.32" y="-2.54" length="middle" rot="R180"/>
-<pin name="8" x="20.32" y="-5.08" length="middle" rot="R180"/>
-<pin name="9" x="20.32" y="-7.62" length="middle" rot="R180"/>
+<symbol name="9PIN-RESISTOR-NETWORK">
+<wire x1="20.32" y1="-5.08" x2="20.32" y2="-15.24" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="-15.24" x2="20.32" y2="-15.24" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="-15.24" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
+<wire x1="20.32" y1="-5.08" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
+<text x="11.43" y="-10.16" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="-1.27" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<pin name="1" x="0" y="0" length="middle" rot="R270"/>
+<pin name="2" x="0" y="-20.32" length="middle" rot="R90"/>
+<pin name="3" x="2.54" y="-20.32" length="middle" rot="R90"/>
+<pin name="4" x="5.08" y="-20.32" length="middle" rot="R90"/>
+<pin name="5" x="7.62" y="-20.32" length="middle" rot="R90"/>
+<pin name="6" x="10.16" y="-20.32" length="middle" rot="R90"/>
+<pin name="7" x="12.7" y="-20.32" length="middle" rot="R90"/>
+<pin name="8" x="15.24" y="-20.32" length="middle" rot="R90"/>
+<pin name="9" x="17.78" y="-20.32" length="middle" rot="R90"/>
 </symbol>
 </symbols>
 <devicesets>
-<deviceset name="4309R-101-202LF" prefix="RN">
-<description>&lt;b&gt;Resistor Networks &amp; Arrays 9pin 2Kohms Bussed Low Profile&lt;/b&gt;&lt;p&gt;
-Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/4309R-101-202LF.pdf"&gt; Datasheet &lt;/a&gt;</description>
+<deviceset name="9PIN-RESISTOR-NETWORK" prefix="RN" uservalue="yes">
+<description>9 pin, standard resistor network</description>
 <gates>
-<gate name="G$1" symbol="4309R-101-202LF" x="0" y="0"/>
+<gate name="G$1" symbol="9PIN-RESISTOR-NETWORK" x="0" y="0"/>
 </gates>
 <devices>
-<device name="" package="4309R-101">
+<device name="9PIN-RESISTOR-NETWORK" package="9PIN-RESISTOR-NETWORK">
 <connects>
 <connect gate="G$1" pin="1" pad="1"/>
 <connect gate="G$1" pin="2" pad="2"/>
@@ -311,12 +308,7 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/4309R-101-202
 </connects>
 <technologies>
 <technology name="">
-<attribute name="DESCRIPTION" value="Resistor Networks &amp; Arrays 9pin 2Kohms Bussed Low Profile" constant="no"/>
 <attribute name="HEIGHT" value="mm" constant="no"/>
-<attribute name="MANUFACTURER_NAME" value="Bourns" constant="no"/>
-<attribute name="MANUFACTURER_PART_NUMBER" value="4309R-101-202LF" constant="no"/>
-<attribute name="MOUSER_PART_NUMBER" value="652-4309R-1LF-2K" constant="no"/>
-<attribute name="MOUSER_PRICE-STOCK" value="https://www.mouser.com/Search/Refine.aspx?Keyword=652-4309R-1LF-2K" constant="no"/>
 </technology>
 </technologies>
 </device>
@@ -345,7 +337,7 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/4309R-101-202
 <part name="LED3" library="IR928-6C-F" deviceset="IR928-6C-F" device="" value="East"/>
 <part name="LED4" library="IR928-6C-F" deviceset="IR928-6C-F" device="" value="South"/>
 <part name="LED5" library="IR928-6C-F" deviceset="IR928-6C-F" device="" value="West"/>
-<part name="150R" library="4309R-101-202LF" deviceset="4309R-101-202LF" device=""/>
+<part name="150R" library="9 pin resistor network" deviceset="9PIN-RESISTOR-NETWORK" device="9PIN-RESISTOR-NETWORK" value="150R"/>
 </parts>
 <sheets>
 <sheet>
@@ -356,39 +348,38 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/4309R-101-202
 <attribute name="NAME" x="-88.9" y="173.99" size="1.778" layer="95" rot="R90" align="center-left"/>
 <attribute name="VALUE" x="-86.36" y="173.99" size="1.778" layer="96" rot="R90" align="center-left"/>
 </instance>
-<instance part="PT1" gate="G$1" x="-10.16" y="101.6" smashed="yes">
-<attribute name="VALUE" x="-20.32" y="101.6" size="1.27" layer="96"/>
+<instance part="PT1" gate="G$1" x="0" y="101.6" smashed="yes">
+<attribute name="VALUE" x="-17.78" y="99.06" size="1.27" layer="96"/>
 </instance>
-<instance part="PT2" gate="G$1" x="-10.16" y="93.98" smashed="yes">
-<attribute name="VALUE" x="-20.32" y="93.98" size="1.27" layer="96"/>
+<instance part="PT2" gate="G$1" x="0" y="93.98" smashed="yes">
+<attribute name="VALUE" x="-17.78" y="91.44" size="1.27" layer="96"/>
 </instance>
-<instance part="PT3" gate="G$1" x="-10.16" y="86.36" smashed="yes">
-<attribute name="VALUE" x="-20.32" y="86.36" size="1.27" layer="96"/>
+<instance part="PT3" gate="G$1" x="0" y="86.36" smashed="yes">
+<attribute name="VALUE" x="-17.78" y="83.82" size="1.27" layer="96"/>
 </instance>
-<instance part="PT4" gate="G$1" x="-10.16" y="78.74" smashed="yes">
-<attribute name="VALUE" x="-20.32" y="78.74" size="1.27" layer="96"/>
+<instance part="PT4" gate="G$1" x="0" y="78.74" smashed="yes">
+<attribute name="VALUE" x="-17.78" y="76.2" size="1.27" layer="96"/>
 </instance>
-<instance part="PT5" gate="G$1" x="-10.16" y="71.12" smashed="yes">
-<attribute name="VALUE" x="-20.32" y="71.12" size="1.27" layer="96"/>
+<instance part="PT5" gate="G$1" x="0" y="71.12" smashed="yes">
+<attribute name="VALUE" x="-17.78" y="68.58" size="1.27" layer="96"/>
 </instance>
-<instance part="LED1" gate="G$1" x="-38.1" y="104.14" smashed="yes">
-<attribute name="VALUE" x="-35.56" y="101.6" size="1.27" layer="96"/>
+<instance part="LED1" gate="G$1" x="-45.72" y="101.6" smashed="yes">
+<attribute name="VALUE" x="-43.18" y="99.06" size="1.27" layer="96"/>
 </instance>
-<instance part="LED2" gate="G$1" x="-38.1" y="96.52" smashed="yes">
-<attribute name="VALUE" x="-35.56" y="93.98" size="1.27" layer="96"/>
+<instance part="LED2" gate="G$1" x="-45.72" y="93.98" smashed="yes">
+<attribute name="VALUE" x="-43.18" y="91.44" size="1.27" layer="96"/>
 </instance>
-<instance part="LED3" gate="G$1" x="-38.1" y="88.9" smashed="yes">
-<attribute name="VALUE" x="-35.56" y="86.36" size="1.27" layer="96"/>
+<instance part="LED3" gate="G$1" x="-45.72" y="86.36" smashed="yes">
+<attribute name="VALUE" x="-43.18" y="83.82" size="1.27" layer="96"/>
 </instance>
-<instance part="LED4" gate="G$1" x="-38.1" y="81.28" smashed="yes">
-<attribute name="VALUE" x="-35.56" y="78.74" size="1.27" layer="96"/>
+<instance part="LED4" gate="G$1" x="-45.72" y="78.74" smashed="yes">
+<attribute name="VALUE" x="-43.18" y="76.2" size="1.27" layer="96"/>
 </instance>
-<instance part="LED5" gate="G$1" x="-38.1" y="73.66" smashed="yes">
-<attribute name="VALUE" x="-35.56" y="71.12" size="1.27" layer="96"/>
+<instance part="LED5" gate="G$1" x="-45.72" y="71.12" smashed="yes">
+<attribute name="VALUE" x="-43.18" y="68.58" size="1.27" layer="96"/>
 </instance>
-<instance part="150R" gate="G$1" x="-73.66" y="121.92" smashed="yes">
-<attribute name="NAME" x="-57.15" y="129.54" size="1.778" layer="95" align="center-left"/>
-<attribute name="VALUE" x="-57.15" y="127" size="1.778" layer="96" align="center-left"/>
+<instance part="150R" gate="G$1" x="-81.28" y="124.46" smashed="yes">
+<attribute name="NAME" x="-77.47" y="116.84" size="1.778" layer="95" align="center-left"/>
 </instance>
 </instances>
 <busses>
@@ -398,34 +389,30 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/4309R-101-202
 <segment>
 <pinref part="J1" gate="G$1" pin="1"/>
 <pinref part="150R" gate="G$1" pin="1"/>
-<wire x1="-81.28" y1="157.48" x2="-81.28" y2="121.92" width="0.1524" layer="91"/>
-<wire x1="-81.28" y1="121.92" x2="-73.66" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="-81.28" y1="157.48" x2="-81.28" y2="124.46" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$2" class="0">
 <segment>
 <pinref part="150R" gate="G$1" pin="2"/>
-<wire x1="-73.66" y1="119.38" x2="-81.28" y2="119.38" width="0.1524" layer="91"/>
 <pinref part="LED5" gate="G$1" pin="C"/>
-<wire x1="-81.28" y1="119.38" x2="-81.28" y2="71.12" width="0.1524" layer="91"/>
+<wire x1="-81.28" y1="104.14" x2="-81.28" y2="71.12" width="0.1524" layer="91"/>
 <wire x1="-81.28" y1="71.12" x2="-45.72" y2="71.12" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$3" class="0">
 <segment>
 <pinref part="150R" gate="G$1" pin="3"/>
-<wire x1="-73.66" y1="116.84" x2="-78.74" y2="116.84" width="0.1524" layer="91"/>
 <pinref part="LED4" gate="G$1" pin="C"/>
-<wire x1="-78.74" y1="116.84" x2="-78.74" y2="78.74" width="0.1524" layer="91"/>
+<wire x1="-78.74" y1="104.14" x2="-78.74" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="-78.74" y1="78.74" x2="-45.72" y2="78.74" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$4" class="0">
 <segment>
 <pinref part="150R" gate="G$1" pin="4"/>
-<wire x1="-73.66" y1="114.3" x2="-76.2" y2="114.3" width="0.1524" layer="91"/>
 <pinref part="LED3" gate="G$1" pin="C"/>
-<wire x1="-76.2" y1="114.3" x2="-76.2" y2="86.36" width="0.1524" layer="91"/>
+<wire x1="-76.2" y1="104.14" x2="-76.2" y2="86.36" width="0.1524" layer="91"/>
 <wire x1="-76.2" y1="86.36" x2="-45.72" y2="86.36" width="0.1524" layer="91"/>
 </segment>
 </net>
@@ -433,17 +420,16 @@ Source: &lt;a href="https://componentsearchengine.com/Datasheets/1/4309R-101-202
 <segment>
 <pinref part="150R" gate="G$1" pin="5"/>
 <pinref part="LED2" gate="G$1" pin="C"/>
-<wire x1="-73.66" y1="111.76" x2="-73.66" y2="93.98" width="0.1524" layer="91"/>
+<wire x1="-73.66" y1="104.14" x2="-73.66" y2="93.98" width="0.1524" layer="91"/>
 <wire x1="-73.66" y1="93.98" x2="-45.72" y2="93.98" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$6" class="0">
 <segment>
 <pinref part="LED1" gate="G$1" pin="C"/>
-<wire x1="-45.72" y1="101.6" x2="-50.8" y2="101.6" width="0.1524" layer="91"/>
 <pinref part="150R" gate="G$1" pin="6"/>
-<wire x1="-53.34" y1="121.92" x2="-50.8" y2="121.92" width="0.1524" layer="91"/>
-<wire x1="-50.8" y1="121.92" x2="-50.8" y2="101.6" width="0.1524" layer="91"/>
+<wire x1="-71.12" y1="104.14" x2="-71.12" y2="101.6" width="0.1524" layer="91"/>
+<wire x1="-71.12" y1="101.6" x2="-45.72" y2="101.6" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$7" class="0">
