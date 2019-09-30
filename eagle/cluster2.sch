@@ -240,12 +240,12 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 </deviceset>
 </devicesets>
 </library>
-<library name="9 pin resistor network">
-<description>&lt;Resistor Networks &amp; Arrays 9pin 2Kohms Bussed Low Profile&lt;/b&gt;&lt;p&gt;
+<library name="6 pin resistor network">
+<description>&lt;Resistor Networks &amp; Arrays 6pin 150ohms Bussed Low Profile&lt;/b&gt;&lt;p&gt;
 &lt;author&gt;Created by SamacSys&lt;/author&gt;</description>
 <packages>
-<package name="9PIN-RESISTOR-NETWORK">
-<description>9pin-resistor-network
+<package name="6PIN-RESISTOR-NETWORK">
+<description>6pin-resistor-network
 </description>
 <pad name="1" x="0" y="0" drill="0.7" shape="square"/>
 <pad name="2" x="2.54" y="0" drill="0.7"/>
@@ -253,48 +253,38 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <pad name="4" x="7.62" y="0" drill="0.7"/>
 <pad name="5" x="10.16" y="0" drill="0.7"/>
 <pad name="6" x="12.7" y="0" drill="0.7"/>
-<pad name="7" x="15.24" y="0" drill="0.7"/>
-<pad name="8" x="17.78" y="0" drill="0.7"/>
-<pad name="9" x="20.32" y="0" drill="0.7"/>
-<text x="16.03966875" y="2.27766875" size="1.27" layer="27" align="center">&gt;VALUE</text>
-<text x="7.14966875" y="2.27766875" size="1.27" layer="25" align="center">&gt;NAME</text>
-<wire x1="21.565" y1="-1.245" x2="-1.245" y2="-1.245" width="0.2" layer="21"/>
+<text x="9.68966875" y="2.27766875" size="1.27" layer="27" align="center">&gt;VALUE</text>
+<text x="2.06966875" y="2.27766875" size="1.27" layer="25" align="center">&gt;NAME</text>
 <wire x1="-1.245" y1="-1.245" x2="-1.245" y2="1.245" width="0.2" layer="21"/>
-<wire x1="-1.245" y1="1.245" x2="21.565" y2="1.245" width="0.2" layer="21"/>
-<wire x1="21.565" y1="1.245" x2="21.565" y2="-1.245" width="0.2" layer="21"/>
-<wire x1="21.565" y1="-1.245" x2="-1.245" y2="-1.245" width="0.2" layer="51"/>
-<wire x1="-1.245" y1="-1.245" x2="-1.245" y2="1.245" width="0.2" layer="51"/>
-<wire x1="-1.245" y1="1.245" x2="21.565" y2="1.245" width="0.2" layer="51"/>
-<wire x1="21.565" y1="1.245" x2="21.565" y2="-1.245" width="0.2" layer="51"/>
+<wire x1="13.945" y1="-1.245" x2="-1.245" y2="-1.245" width="0.2" layer="21"/>
+<wire x1="-1.245" y1="1.245" x2="13.945" y2="1.245" width="0.2" layer="21"/>
+<wire x1="13.945" y1="1.245" x2="13.945" y2="-1.245" width="0.2" layer="21"/>
 </package>
 </packages>
 <symbols>
-<symbol name="9PIN-RESISTOR-NETWORK">
-<wire x1="20.32" y1="-5.08" x2="20.32" y2="-15.24" width="0.254" layer="94"/>
-<wire x1="-2.54" y1="-15.24" x2="20.32" y2="-15.24" width="0.254" layer="94"/>
+<symbol name="6PIN-RESISTOR-NETWORK">
+<wire x1="12.7" y1="-5.08" x2="12.7" y2="-15.24" width="0.254" layer="94"/>
+<wire x1="-2.54" y1="-15.24" x2="12.7" y2="-15.24" width="0.254" layer="94"/>
 <wire x1="-2.54" y1="-15.24" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
-<wire x1="20.32" y1="-5.08" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
-<text x="11.43" y="-10.16" size="1.778" layer="95" align="center-left">&gt;NAME</text>
-<text x="-1.27" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
+<wire x1="12.7" y1="-5.08" x2="-2.54" y2="-5.08" width="0.254" layer="94"/>
+<text x="1.27" y="-7.62" size="1.778" layer="95" align="center-left">&gt;NAME</text>
+<text x="1.27" y="-10.16" size="1.778" layer="96" align="center-left">&gt;VALUE</text>
 <pin name="1" x="0" y="0" length="middle" rot="R270"/>
 <pin name="2" x="0" y="-20.32" length="middle" rot="R90"/>
 <pin name="3" x="2.54" y="-20.32" length="middle" rot="R90"/>
 <pin name="4" x="5.08" y="-20.32" length="middle" rot="R90"/>
 <pin name="5" x="7.62" y="-20.32" length="middle" rot="R90"/>
 <pin name="6" x="10.16" y="-20.32" length="middle" rot="R90"/>
-<pin name="7" x="12.7" y="-20.32" length="middle" rot="R90"/>
-<pin name="8" x="15.24" y="-20.32" length="middle" rot="R90"/>
-<pin name="9" x="17.78" y="-20.32" length="middle" rot="R90"/>
 </symbol>
 </symbols>
 <devicesets>
-<deviceset name="9PIN-RESISTOR-NETWORK" prefix="RN" uservalue="yes">
-<description>9 pin, standard resistor network</description>
+<deviceset name="6PIN-RESISTOR-NETWORK" prefix="RN" uservalue="yes">
+<description>6 pin, standard resistor network</description>
 <gates>
-<gate name="G$1" symbol="9PIN-RESISTOR-NETWORK" x="0" y="0"/>
+<gate name="G$1" symbol="6PIN-RESISTOR-NETWORK" x="0" y="0"/>
 </gates>
 <devices>
-<device name="9PIN-RESISTOR-NETWORK" package="9PIN-RESISTOR-NETWORK">
+<device name="6PIN-RESISTOR-NETWORK" package="6PIN-RESISTOR-NETWORK">
 <connects>
 <connect gate="G$1" pin="1" pad="1"/>
 <connect gate="G$1" pin="2" pad="2"/>
@@ -302,9 +292,6 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <connect gate="G$1" pin="4" pad="4"/>
 <connect gate="G$1" pin="5" pad="5"/>
 <connect gate="G$1" pin="6" pad="6"/>
-<connect gate="G$1" pin="7" pad="7"/>
-<connect gate="G$1" pin="8" pad="8"/>
-<connect gate="G$1" pin="9" pad="9"/>
 </connects>
 <technologies>
 <technology name="">
@@ -337,7 +324,7 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <part name="LED3" library="IR928-6C-F" deviceset="IR928-6C-F" device="" value="East"/>
 <part name="LED4" library="IR928-6C-F" deviceset="IR928-6C-F" device="" value="South"/>
 <part name="LED5" library="IR928-6C-F" deviceset="IR928-6C-F" device="" value="West"/>
-<part name="150R" library="9 pin resistor network" deviceset="9PIN-RESISTOR-NETWORK" device="9PIN-RESISTOR-NETWORK" value="150R"/>
+<part name="RN1" library="6 pin resistor network" deviceset="6PIN-RESISTOR-NETWORK" device="6PIN-RESISTOR-NETWORK" value="150R"/>
 </parts>
 <sheets>
 <sheet>
@@ -378,8 +365,9 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <instance part="LED5" gate="G$1" x="-45.72" y="71.12" smashed="yes">
 <attribute name="VALUE" x="-43.18" y="68.58" size="1.27" layer="96"/>
 </instance>
-<instance part="150R" gate="G$1" x="-81.28" y="124.46" smashed="yes">
-<attribute name="NAME" x="-77.47" y="116.84" size="1.778" layer="95" align="center-left"/>
+<instance part="RN1" gate="G$1" x="-81.28" y="124.46" smashed="yes">
+<attribute name="NAME" x="-80.01" y="116.84" size="1.778" layer="95" align="center-left"/>
+<attribute name="VALUE" x="-80.01" y="114.3" size="1.778" layer="96" align="center-left"/>
 </instance>
 </instances>
 <busses>
@@ -388,48 +376,48 @@ Source: &lt;a href="http://docs-emea.rs-online.com/webdocs/1147/0900766b81147f94
 <net name="N$1" class="0">
 <segment>
 <pinref part="J1" gate="G$1" pin="1"/>
-<pinref part="150R" gate="G$1" pin="1"/>
 <wire x1="-81.28" y1="157.48" x2="-81.28" y2="124.46" width="0.1524" layer="91"/>
+<pinref part="RN1" gate="G$1" pin="1"/>
 </segment>
 </net>
 <net name="N$2" class="0">
 <segment>
-<pinref part="150R" gate="G$1" pin="2"/>
 <pinref part="LED5" gate="G$1" pin="C"/>
 <wire x1="-81.28" y1="104.14" x2="-81.28" y2="71.12" width="0.1524" layer="91"/>
 <wire x1="-81.28" y1="71.12" x2="-45.72" y2="71.12" width="0.1524" layer="91"/>
+<pinref part="RN1" gate="G$1" pin="2"/>
 </segment>
 </net>
 <net name="N$3" class="0">
 <segment>
-<pinref part="150R" gate="G$1" pin="3"/>
 <pinref part="LED4" gate="G$1" pin="C"/>
 <wire x1="-78.74" y1="104.14" x2="-78.74" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="-78.74" y1="78.74" x2="-45.72" y2="78.74" width="0.1524" layer="91"/>
+<pinref part="RN1" gate="G$1" pin="3"/>
 </segment>
 </net>
 <net name="N$4" class="0">
 <segment>
-<pinref part="150R" gate="G$1" pin="4"/>
 <pinref part="LED3" gate="G$1" pin="C"/>
 <wire x1="-76.2" y1="104.14" x2="-76.2" y2="86.36" width="0.1524" layer="91"/>
 <wire x1="-76.2" y1="86.36" x2="-45.72" y2="86.36" width="0.1524" layer="91"/>
+<pinref part="RN1" gate="G$1" pin="4"/>
 </segment>
 </net>
 <net name="N$5" class="0">
 <segment>
-<pinref part="150R" gate="G$1" pin="5"/>
 <pinref part="LED2" gate="G$1" pin="C"/>
 <wire x1="-73.66" y1="104.14" x2="-73.66" y2="93.98" width="0.1524" layer="91"/>
 <wire x1="-73.66" y1="93.98" x2="-45.72" y2="93.98" width="0.1524" layer="91"/>
+<pinref part="RN1" gate="G$1" pin="5"/>
 </segment>
 </net>
 <net name="N$6" class="0">
 <segment>
 <pinref part="LED1" gate="G$1" pin="C"/>
-<pinref part="150R" gate="G$1" pin="6"/>
 <wire x1="-71.12" y1="104.14" x2="-71.12" y2="101.6" width="0.1524" layer="91"/>
 <wire x1="-71.12" y1="101.6" x2="-45.72" y2="101.6" width="0.1524" layer="91"/>
+<pinref part="RN1" gate="G$1" pin="6"/>
 </segment>
 </net>
 <net name="N$7" class="0">

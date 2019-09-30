@@ -149,15 +149,15 @@
 <package name="9PIN-RESISTOR-NETWORK">
 <description>9pin-resistor-network
 </description>
-<pad name="1" x="0" y="0" drill="0.77" shape="square"/>
-<pad name="2" x="2.54" y="0" drill="0.75"/>
-<pad name="3" x="5.08" y="0" drill="0.75"/>
-<pad name="4" x="7.62" y="0" drill="0.75"/>
-<pad name="5" x="10.16" y="0" drill="0.75"/>
-<pad name="6" x="12.7" y="0" drill="0.75"/>
-<pad name="7" x="15.24" y="0" drill="0.75"/>
-<pad name="8" x="17.78" y="0" drill="0.75"/>
-<pad name="9" x="20.32" y="0" drill="0.75"/>
+<pad name="1" x="0" y="0" drill="0.7" shape="square"/>
+<pad name="2" x="2.54" y="0" drill="0.7"/>
+<pad name="3" x="5.08" y="0" drill="0.7"/>
+<pad name="4" x="7.62" y="0" drill="0.7"/>
+<pad name="5" x="10.16" y="0" drill="0.7"/>
+<pad name="6" x="12.7" y="0" drill="0.7"/>
+<pad name="7" x="15.24" y="0" drill="0.7"/>
+<pad name="8" x="17.78" y="0" drill="0.7"/>
+<pad name="9" x="20.32" y="0" drill="0.7"/>
 <text x="16.03966875" y="2.27766875" size="1.27" layer="27" align="center">&gt;VALUE</text>
 <text x="7.14966875" y="2.27766875" size="1.27" layer="25" align="center">&gt;NAME</text>
 <wire x1="21.565" y1="-1.245" x2="-1.245" y2="-1.245" width="0.2" layer="21"/>
