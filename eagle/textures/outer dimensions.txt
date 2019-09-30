@@ -1,3 +1,4 @@
 right thumb: 42.26 mm x 42.66 mm
 left thumb: 42.26 mm x 42.66 mm
 cluster: 24.9 mm x 28.5 mm
+cluster2: (identical to cluster)
