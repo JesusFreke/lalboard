@@ -15,19 +15,20 @@ Unless specified differently, print once per finger cluster, aligned as you see 
 * Cluster.stl
 * Magnet Frame.stl
 * Top[1-8].stl (pick one as desired 1=really strong, 8=really weak, flip around to print)<br>
-	![top](./images/top.png)
+	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/top.png" width="300px"/>
+	
 * Tube.stl
 ###### Keys:
 * Shaft.stl (rotate to back) <br>
-	![shaft](./images/shaft.png)
+	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/shaft.png" width="300px"/>
 * Cap Top.stl
 * Cap Mask.stl
 * Long Key Shaft.stl (rotate to side) <br>
-	![long shaft](./images/long_shaft.png)
+	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/long_shaft.png" width="300px"/>
 * 2x Key Shaft.stl (rotate as above)
 * Micro Key Shaft.stl (rotate as above)
 * Long Key Cap.stl (align to plate) <br>
-	![long cap](./images/long_cap.png)
+	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/long_cap.png" width="300px"/>
 * 2x Key Cap.stl (align as above)
 * Micro Key Cap.stl (align as above)
 
@@ -97,3 +98,13 @@ The LEDs and phototransistors should now be held in place so you can turn the cl
 1. Solder everything remaining.
 Once done, the PCB should be held in place, and you can now re-insert all the keys.
 Congratulations, you're done with this cluster.
+
+
+##### Connection
+
+Connecting to the cluster PCB (as also presented in this branch) requires a point-symmetric wiring.
+The left most pin of one side needs to be connected to the left most pin of the other (when viewing both connectors from the same side).
+Same goes for the other six cables.
+When using pre-crimped wires, this means the cables tend to cross in the middle.
+It is not possible to connect the two PCB designs using the pre-assembled wires as in the original BOM.
+If you absolutely have to use such cables, adjust one of the two PCBs (probably the cluster) accordingly before ordering.
