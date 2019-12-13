@@ -43,7 +43,7 @@ You need 18x of the original 1/16" magnets per cluster.
 Make sure the magnets are aligned with their siblings in [* Key Shaft.stl].
 The magnets should snap to each other such that no plastic is between the magnets.
 
-1. Insert 5 into the printed [TopX.stl] plate. Make sure they are properly aligned. The four corner magnets must be aligned to their corresponding siblings inserted into the [Cluster.stl] print to snap and hold.
+1. Insert 5 magnets into the printed [TopX.stl] plate. Make sure they are properly aligned. The four corner magnets must be aligned to their corresponding siblings inserted into the [Cluster.stl] print to snap and hold.
 The center magnet must be aligned with the one inserted into the printed [Shaft.stl].
 
 1. Clip [Cap Top.stl] to [Cap Mask.stl]. You may need some force. If it doesn't hold, use glue.
