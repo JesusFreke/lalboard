@@ -15,7 +15,7 @@ Unless specified differently, print once per finger cluster, aligned as you see 
 * Cluster.stl
 * Magnet Frame.stl
 * Top[1-8].stl (pick one as desired 1=really strong, 8=really weak, flip around to print)<br>
-	
+	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/top.png" width="300px"/>
 * Tube.stl
 ###### Keys:
 * Shaft.stl (rotate to back) <br>
