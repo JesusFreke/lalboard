@@ -15,7 +15,6 @@ Unless specified differently, print once per finger cluster, aligned as you see 
 * Cluster.stl
 * Magnet Frame.stl
 * Top[1-8].stl (pick one as desired 1=really strong, 8=really weak, flip around to print)<br>
-	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/top.png" width="300px"/>
 	
 * Tube.stl
 ###### Keys:
@@ -43,7 +42,7 @@ You need 18x of the original 1/16" magnets per cluster.
 Make sure the magnets are aligned with their siblings in [* Key Shaft.stl].
 The magnets should snap to each other such that no plastic is between the magnets.
 
-1. Insert 5 magnets into the printed [TopX.stl] plate. Make sure they are properly aligned. The four corner magnets must be aligned to their corresponding siblings inserted into the [Cluster.stl] print to snap and hold.
+1. Insert 5 magnets into the printed [Top*.stl] plate. Make sure they are properly aligned. The four corner magnets must be aligned to their corresponding siblings inserted into the [Cluster.stl] print to snap and hold.
 The center magnet must be aligned with the one inserted into the printed [Shaft.stl].
 
 1. Clip [Cap Top.stl] to [Cap Mask.stl]. You may need some force. If it doesn't hold, use glue.
@@ -59,7 +58,7 @@ If everything went well, the central key should now be operational. If it gets s
 
 1. Combine [* Key Cap.stl] and [* Key Shaft.stl].
 For the Micro and regular key versions, you should just press them together.
-With any luck, and using a plier, they stick without glue.
+With any luck, and using pliers, they stick without glue.
 For the long key variant, this modification has not been implemented yet.
 Use some glue here.
 
@@ -74,7 +73,7 @@ You need:
 * 5x "IR928-6C-F" IR LEDs
 * 1x "4606X-101-151LF" Resistor network
 * 1x 7-pin JST ZH male connector
-* 1x cluster2 PCBs
+* 1x cluster2 PCB
 
 
 
@@ -85,17 +84,18 @@ Conversely, the components are soldered on the opposite side where the component
 The resistor network and connector are soldered from opposing sides.
 The drill holes with square soldering pads denote the respective component's ground line.
 In case of the resistor network that is where the pin with the dot marker needs to go.
-If all goes well, the resulting PCB should fit needly underneath the cluster.
+If all goes well, the soldered result should fit needly into the bottom openings of the cluster.
 
-1. Remove all keys and [Top.stl] from the cluster.
+1. Remove all keys and [Top*.stl] from the cluster.
 Leave [Magnet Frame.stl] in.
 
-1. While holding the PCB beneath the cluster, insert "IR928-6C-F" IR LEDs and "PT908-7B-F" IR phototransistors into the matching openings of [Cluster.png] and the PCB.
+1. While holding the PCB beneath the cluster, insert "IR928-6C-F" IR LEDs and "PT908-7B-F" IR phototransistors into the matching openings of [Cluster.stl] and the PCB.
 The white IR LEDs go into the larger rectangular holes, the thin black phototransistors into the smaller openings with the notch.
 You might need to widen some channels using a needle or stitching awl, but generally these components should fit needly.
-1. Put [Top.stl] back onto the cluster.
-The LEDs and phototransistors should now be held in place so you can turn the cluster around.
-1. Solder everything remaining.
+1. Put [Top*.stl] back onto the cluster.
+The LEDs and phototransistors should now be held in place so you can flip the cluster upside-down without any of them being able to move much.
+1. Solder all the IR LED and phototransistor pins to the PCB.
+Make sure there is no gab between the cluster and the PCB, or between the cluster and [Top*.stl].
 Once done, the PCB should be held in place, and you can now re-insert all the keys.
 Congratulations, you're done with this cluster.
 
