@@ -18,15 +18,15 @@ Unless specified differently, print once per finger cluster, aligned as you see 
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/top.png" width="300px"/>
 * Tube.stl
 ###### Keys:
-* Shaft.stl (rotate to back) <br>
+* Shaft.stl<br>Rotate to back:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/shaft.png" width="300px"/>
 * Cap Top.stl
 * Cap Mask.stl
-* Long Key Shaft.stl (rotate to side) <br>
+* Long Key Shaft.stl<br>Rotate to side:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/long_shaft.png" width="300px"/>
 * 2x Key Shaft.stl (rotate as above)
 * Micro Key Shaft.stl (rotate as above)
-* Long Key Cap.stl (align to plate) <br>
+* Long Key Cap.stl<br>Align to plate:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/long_cap.png" width="300px"/>
 * 2x Key Cap.stl (align as above)
 * Micro Key Cap.stl (align as above)
@@ -65,6 +65,8 @@ Use some glue here.
 1. Press the four keys all the way down into the openings of [Cluster.stl] and [Top.stl].
 If all went well, the four keys should now operate as intended.
 If they levitate out of the openings or otherwise do not return to idle, you might have inserted some magnets the wrong way.
+It can also happen that there is some stray filament printed in the openings.
+You may need to file a bit. Make sure you do not remove the ledge that holds the pressed keys in place.
 
 ##### Soldering
 
@@ -80,10 +82,10 @@ You need:
 1. Solder "4606X-101-151LF" Resistor network and 7-pin JST ZH male connector onto the PCB. 
 **Important**: The components need to be inserted from the PCB side where the respective outline is drawn.
 Make sure to align the JST ZH connector such that it matches its outline.
-Conversely, the components are soldered on the opposite side where the component's outline is not drawn.
+Conversely, the components' pins are soldered to the PCB on the opposite side (where the component's outline is not drawn).
 The resistor network and connector are soldered from opposing sides.
-The drill holes with square soldering pads denote the respective component's ground line.
-In case of the resistor network that is where the pin with the dot marker needs to go.
+**The drill holes with square soldering pads denote the respective component's ground line.
+In case of the resistor network that is where the pin with the dot marker needs to go.**
 If all goes well, the soldered result should fit needly into the bottom openings of the cluster.
 
 1. Remove all keys and [Top*.stl] from the cluster.
