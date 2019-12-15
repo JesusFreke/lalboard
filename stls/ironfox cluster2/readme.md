@@ -87,14 +87,14 @@ Conversely, the components' pins are soldered to the PCB on the opposite side (w
 The resistor network and connector are soldered from opposing sides.
 **The drill holes with square soldering pads denote the respective component's ground line.
 In case of the resistor network that is where the pin with the dot marker needs to go.**
-If all goes well, the soldered result should fit needly into the bottom openings of the cluster.
+If all goes well, the soldered result should fit neatly into the bottom openings of the cluster.
 
 1. Remove all keys and [Top*.stl] from the cluster.
 Leave [Magnet Frame.stl] in.
 
 1. While holding the PCB beneath the cluster, insert "IR928-6C-F" IR LEDs and "PT908-7B-F" IR phototransistors into the matching openings of [Cluster.stl] and the PCB.
 The white IR LEDs go into the larger rectangular holes, the thin black phototransistors into the smaller openings with the notch.
-You might need to widen some channels using a needle or stitching awl, but generally these components should fit needly.
+You might need to widen some channels using a needle or stitching awl, but generally these components should fit neatly.
 1. Put [Top*.stl] back onto the cluster.
 The LEDs and phototransistors should now be held in place so you can flip the cluster upside-down without any of them being able to move much.
 1. Solder all the IR LED and phototransistor pins to the PCB.
