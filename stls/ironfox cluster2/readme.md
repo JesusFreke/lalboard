@@ -14,19 +14,20 @@ Unless specified differently, print once per finger cluster, aligned as you see 
 ###### Main:
 * Cluster.stl
 * Magnet Frame.stl
-* Top[1-8].stl (pick one as desired 1=really strong, 8=really weak, flip around to print)<br>
+* Top[1-8].stl (pick one as desired 1=really strong, 8=really weak)<br>
+Flip around to print:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/top.png" width="300px"/>
 * Tube.stl
 ###### Keys:
-* Shaft.stl<br>Rotate to back:<br>
+* Shaft.stl<br>Rotate to back to print:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/shaft.png" width="300px"/>
 * Cap Top.stl
 * Cap Mask.stl
-* Long Key Shaft.stl<br>Rotate to side:<br>
+* Long Key Shaft.stl<br>Rotate to side to print:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/long_shaft.png" width="300px"/>
 * 2x Key Shaft.stl (rotate as above)
 * Micro Key Shaft.stl (rotate as above)
-* Long Key Cap.stl<br>Align to plate:<br>
+* Long Key Cap.stl<br>Align to plate to print:<br>
 	<img src="https://github.com/IronFox/lalboard/raw/master/stls/ironfox%20cluster2/images/long_cap.png" width="300px"/>
 * 2x Key Cap.stl (align as above)
 * Micro Key Cap.stl (align as above)
