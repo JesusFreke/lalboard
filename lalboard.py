@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This file contains the logic for generating all the various parts. This script itself can't be run directly, but it used
+by the various part scripts in the "parts" directory.
+"""
+
 import adsk.core
 import adsk.fusion
 import inspect
@@ -464,32 +469,6 @@ def cluster_pcb(cluster):
     return base
 
 
-def cluster_pcb_sketch(cluster_pcb_bottom: Component):
-    rects = []
-    for edge in cluster_pcb_bottom.bodies[0].brep.edges:
-        if not isinstance(edge.geometry, adsk.core.Circle3D):
-            continue
-
-        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 3:
-            rect_size = (1.25, 1.25)
-        elif cluster_pcb_bottom.max().y - edge.geometry.center.y < 6:
-            rect_size = (1.75, 2)
-        else:
-            rect_size = (2, 2)
-
-        rect = Rect(*rect_size)
-        rect.place(~rect == edge.geometry.center,
-                   ~rect == edge.geometry.center,
-                   ~rect == edge.geometry.center)
-        rects.append(rect)
-    split_face = SplitFace(cluster_pcb_bottom, Union(*rects), name="cluster_pcb_sketch")
-    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
-    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
-    sketch.name = "cluster_pcb_sketch"
-    for face in occurrence.bRepBodies[0].faces:
-        sketch.include(face)
-
-
 def ball_socket_ball():
     return Sphere(3, "ball")
 
@@ -805,7 +784,7 @@ def outer_lower_thumb_key():
     return thumb_side_key(20, 20, 4.159, name="outer_lower_thumb_key")
 
 
-def thumb_mode_key(mirrored=False, name=None):
+def thumb_mode_key(left_hand=False):
     key_post = vertical_key_post(23, 2.566, 9.05, groove_width=1)
 
     face_finder = Box(1, 1, 1)
@@ -831,8 +810,9 @@ def thumb_mode_key(mirrored=False, name=None):
 
     end_section = Fillet(end_section_end_face.edges, key_thickness/2, False)
 
-    result = Union(key_post, mid_section, end_section, name=name)
-    if mirrored:
+    result = Union(key_post, mid_section, end_section,
+                   name="left_thumb_mode_key" if left_hand else "right_thumb_mode_key")
+    if left_hand:
         result.scale(-1, 1, 1)
     return result
 
@@ -876,7 +856,39 @@ def thumb_down_key():
                       name="thumb_down_key")
 
 
-def full_cluster(add_pcb=True, add_pcb_sketch=True, create_children=False):
+def cluster_pcb_sketch():
+    _, pcb = full_cluster()
+
+    cluster_pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep, name="cluster_pcb_sketch")
+
+    rects = []
+    for edge in cluster_pcb_bottom.bodies[0].brep.edges:
+        if not isinstance(edge.geometry, adsk.core.Circle3D):
+            continue
+
+        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 3:
+            rect_size = (1.25, 1.25)
+        elif cluster_pcb_bottom.max().y - edge.geometry.center.y < 6:
+            rect_size = (1.75, 2)
+        else:
+            rect_size = (2, 2)
+
+        rect = Rect(*rect_size)
+        rect.place(~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center,
+                   ~rect == edge.geometry.center)
+        rects.append(rect)
+    split_face = SplitFace(cluster_pcb_bottom, Union(*rects), name="cluster_pcb_sketch")
+    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
+    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
+    sketch.name = "cluster_pcb_sketch"
+    for face in occurrence.bRepBodies[0].faces:
+        sketch.include(face)
+
+    return sketch
+
+
+def full_cluster():
     clust = cluster()
     clust.rz(180, center=clust.mid())
 
@@ -886,31 +898,7 @@ def full_cluster(add_pcb=True, add_pcb_sketch=True, create_children=False):
 
     back, pcb_relief = cluster_back(clust, pcb, 2)
 
-    Difference(Union(clust, front, back), pcb_relief, name="cluster").create_occurrence(create_children, scale=.1)
-
-    if add_pcb:
-        pcb.create_occurrence(create_children, scale=.1)
-
-    if add_pcb_sketch:
-        cluster_pcb_sketch(BRepComponent(pcb.named_faces("bottom")[0].brep, name="cluster_pcb_sketch"))
-
-
-def jst_adaptor():
-    jst_holes = hole_array(.35, 1.5, 7)
-
-    header_holes = hole_array(.35, 2.54, 7)
-    header_holes.place(~header_holes == ~jst_holes,
-                       (~header_holes == ~jst_holes) + 3,
-                       ~header_holes == ~jst_holes)
-
-    holes = Union(jst_holes, header_holes)
-
-    base = Box(22, holes.size().y + 2.2*2, 1.2)
-    base.place(~base == ~holes,
-               ~base == ~holes,
-               -base == ~holes)
-
-    return Difference(base, ExtrudeTo(holes, base))
+    return Difference(Union(clust, front, back), pcb_relief, name="cluster"), pcb
 
 
 def ballscrew(screw_length, name):
@@ -995,7 +983,7 @@ def ballscrew_cap():
     return base
 
 
-def ballscrew_base(screw_length, name):
+def ballscrew_base(screw_length, screw_hole_radius_adjustment=0, name=None):
     screw_length = screw_length - 2
     magnet = vertical_large_thin_magnet_cutout()
 
@@ -1006,7 +994,7 @@ def ballscrew_base(screw_length, name):
                  ~magnet == ~base,
                  +magnet == +base)
 
-    screw_hole = Cylinder(screw_length, 1.65)
+    screw_hole = Cylinder(screw_length, 1.65 + screw_hole_radius_adjustment)
     screw_hole.place(~screw_hole == ~base,
                      ~screw_hole == ~base,
                      -screw_hole == -base)
@@ -1015,27 +1003,7 @@ def ballscrew_base(screw_length, name):
     return Threads(base, ((0, 0), (.99, .99), (0, .99)), 1, reverse_axis=True, name=name)
 
 
-def thin_ballscrew_base(screw_length, name):
-    screw_length = screw_length - 2
-    magnet = vertical_large_thin_magnet_cutout()
-
-    base_polygon = RegularPolygon(6, 5, is_outer_radius=False)
-    base = Extrude(base_polygon, screw_length + magnet.size().z)
-
-    magnet.place(~magnet == ~base,
-                 ~magnet == ~base,
-                 +magnet == +base)
-
-    screw_hole = Cylinder(screw_length, 1.6)
-    screw_hole.place(~screw_hole == ~base,
-                     ~screw_hole == ~base,
-                     -screw_hole == -base)
-
-    base = Difference(base, magnet, screw_hole)
-    return Threads(base, ((0, 0), (.99, .99), (0, .99)), 1, reverse_axis=True, name=name)
-
-
-def thumb_base(mirrored=False):
+def thumb_base(left_hand=False):
     base = Box(44 - .55 - 1.05, 44.5, 2)
 
     key_stand_lower = Box(15, 2.2, 3)
@@ -1069,7 +1037,7 @@ def thumb_base(mirrored=False):
 
     mid_pt_base = Box(5, 5.9, 5.1)
     pt_cavity = make_pt_cavity()
-    if mirrored:
+    if left_hand:
         mid_pt_base.place((-mid_pt_base == ~key_stand_lower) + 1.5,
                           (~mid_pt_base == +key_stand_lower) + 9,
                           -mid_pt_base == +base)
@@ -1087,7 +1055,7 @@ def thumb_base(mirrored=False):
 
     mid_led_base = Box(5.5, 5.9, 5.1)
     led_cavity = make_led_cavity()
-    if mirrored:
+    if left_hand:
         mid_led_base.place((+mid_led_base == ~key_stand_lower) - 1.5,
                            (~mid_led_base == ~mid_pt_base),
                            -mid_led_base == +base)
@@ -1104,7 +1072,7 @@ def thumb_base(mirrored=False):
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.named_faces("legs")), base.bottom)
 
     upper_outer_base = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
 
@@ -1113,7 +1081,7 @@ def thumb_base(mirrored=False):
                            -upper_outer_base == -base)
 
     lower_outer_base = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=4.2, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=4.2, mirrored=not left_hand)
     lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
     lower_outer_base.place(-lower_outer_base == -upper_outer_base,
@@ -1121,7 +1089,7 @@ def thumb_base(mirrored=False):
                            -lower_outer_base == -upper_outer_base)
 
     inner_base = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
     inner_base.place((+inner_base == +base) - .1,
@@ -1129,20 +1097,20 @@ def thumb_base(mirrored=False):
                      -inner_base == -base)
 
     upper_base = vertical_key_base(
-        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not mirrored)
+        base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
     upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
     upper_base.place((+upper_base == +base),
                      (-upper_base == -base) + 11,
                      -upper_base == -base)
 
-    lower_ball_socket = ball_socket_base(2, mirrored)
+    lower_ball_socket = ball_socket_base(2, left_hand)
     lower_ball_socket_negatives = lower_ball_socket.find_children("negatives")[0]
     lower_ball_socket.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
                             (-lower_ball_socket == -base) + .4,
                             -lower_ball_socket == +base)
 
-    upper_ball_socket = ball_socket_base(2, mirrored)
+    upper_ball_socket = ball_socket_base(2, left_hand)
     upper_ball_socket_negatives = upper_ball_socket.find_children("negatives")[0]
     upper_ball_socket.place(~upper_ball_socket == ~mid_key_stop,
                             (~upper_ball_socket == +mid_key_stop) + 7,
@@ -1170,7 +1138,7 @@ def thumb_base(mirrored=False):
                                 -upper_extension_face2 == -base)
     upper_extension = Loft(upper_extension_face, upper_extension_face2)
 
-    side_ball_socket = ball_socket_base(2, mirrored)
+    side_ball_socket = ball_socket_base(2, left_hand)
     side_ball_socket_negatives = side_ball_socket.find_children("negatives")[0]
 
     upper_circle = Cylinder(1, 7)
@@ -1251,7 +1219,7 @@ def thumb_base(mirrored=False):
         inner_base_negatives, upper_base_negatives, lower_ball_socket_negatives, upper_ball_socket_negatives,
         side_ball_socket_negatives, lower_cut_corner, upper_cut_corner)
 
-    result = SplitFace(result, base.bottom, name="left_thumb_cluster" if mirrored else "right_thumb_cluster")
+    result = SplitFace(result, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
     result.add_named_faces("bottom", *result.find_faces(base.bottom))
 
     return result
@@ -1324,7 +1292,12 @@ def thumb_pcb(thumb_base: Component):
     return result, Union(jst_relief, through_hole_relief)
 
 
-def thumb_pcb_sketch(pcb_bottom, name):
+def thumb_pcb_sketch(left_hand=False):
+    _, pcb = full_thumb(left_hand)
+
+    prefix = "left_" if left_hand else "right_"
+    pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep, name=prefix + "thumb_cluster_pcb_sketch")
+
     rects = []
     for edge in pcb_bottom.bodies[0].brep.edges:
         if not isinstance(edge.geometry, adsk.core.Circle3D):
@@ -1340,6 +1313,8 @@ def thumb_pcb_sketch(pcb_bottom, name):
                    ~rect == edge.geometry.center,
                    ~rect == edge.geometry.center)
         rects.append(rect)
+
+    name = prefix + "thumb_cluster_pcb_sketch"
     split_face = SplitFace(pcb_bottom, Union(*rects), name=name)
     occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
     sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
@@ -1348,22 +1323,17 @@ def thumb_pcb_sketch(pcb_bottom, name):
         sketch.include(face)
 
 
-def full_thumb(mirrored=False):
-    base = thumb_base(mirrored)
+def full_thumb(left_hand=False):
+    base = thumb_base(left_hand)
     pcb, relief = thumb_pcb(base)
 
     base = Difference(base, relief, name=base.name)
 
-    prefix = "left_" if mirrored else "right_"
-
-    if mirrored:
+    if left_hand:
         base.scale(-1, 1, 1, center=base.mid())
         pcb.scale(-1, 1, 1, center=base.mid())
 
-    thumb_pcb_sketch(BRepComponent(pcb.named_faces("bottom")[0].brep), name=prefix + "thumb_cluster_pcb_sketch")
-
-    base.create_occurrence(False, .1)
-    pcb.create_occurrence(False, .1)
+    return base, pcb
 
 
 def place_header(header: Component, x: int, y: int):
@@ -1421,7 +1391,11 @@ def central_pcb():
     return result
 
 
-def central_pcb_sketch(pcb_bottom):
+def central_pcb_sketch():
+    pcb = central_pcb()
+
+    pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep)
+
     rects = []
     for edge in pcb_bottom.bodies[0].brep.edges:
         if not isinstance(edge.geometry, adsk.core.Circle3D):
@@ -1444,16 +1418,12 @@ def central_pcb_sketch(pcb_bottom):
     for face in occurrence.bRepBodies[0].faces:
         sketch.include(face)
 
+    return sketch
 
-def full_central_pcb():
+
+def central_pcb_tray():
     pcb = central_pcb()
-    pcb.create_occurrence(False, .1)
-    central_pcb_sketch(BRepComponent(pcb.named_faces("bottom")[0].brep))
 
-    central_pcb_tray(pcb).create_occurrence(False, .1)
-
-
-def central_pcb_tray(pcb):
     bottom_thickness = 1.2
     base = Box(pcb.size().x + 2.3*2,
                pcb.size().y + 2.3*2,
@@ -1522,7 +1492,11 @@ def key_breakout_pcb():
     return result
 
 
-def key_breakout_pcb_sketch(pcb_bottom):
+def key_breakout_pcb_sketch():
+    pcb = key_breakout_pcb()
+
+    pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep)
+
     rects = []
     for edge in pcb_bottom.bodies[0].brep.edges:
         if not isinstance(edge.geometry, adsk.core.Circle3D):
@@ -1544,38 +1518,34 @@ def key_breakout_pcb_sketch(pcb_bottom):
     for face in occurrence.bRepBodies[0].faces:
         sketch.include(face)
 
-
-def full_key_breakout_pcb():
-    pcb = key_breakout_pcb()
-    pcb.create_occurrence(False, .1)
-    key_breakout_pcb_sketch(BRepComponent(pcb.named_faces("bottom")[0].brep))
+    return sketch
 
 
-def handrest(mirrored=False):
+def handrest(left_hand=False):
     script_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
     script_dir = os.path.dirname(script_path)
 
-    handrest = import_fusion_archive(os.path.join(script_dir, "left_handrest_scan_reduced_brep.f3d"), name="handrest")
-    handrest.scale(10, 10, 10)
-    handrest.rz(-90)
-    handrest.place(~handrest == 0,
-                   ~handrest == 0,
-                   -handrest == 0)
+    handrest_model = import_fusion_archive(
+        os.path.join(script_dir, "left_handrest_scan_reduced_brep.f3d"), name="handrest")
+    handrest_model.scale(10, 10, 10)
+    handrest_model.rz(-90)
+    handrest_model.place(~handrest_model == 0,
+                         ~handrest_model == 0,
+                         -handrest_model == 0)
 
-    pcb = central_pcb()
-    pcb_tray = central_pcb_tray(pcb)
+    pcb_tray = central_pcb_tray()
 
     tray_slot = Box(pcb_tray.bounding_box.size().x + .2,
                     pcb_tray.bounding_box.size().y * 10,
                     24)
-    tray_slot.place(~tray_slot == ~handrest,
-                    (+tray_slot == -handrest) + pcb_tray.bounding_box.size().y + 15,
-                    -tray_slot == -handrest)
+    tray_slot.place(~tray_slot == ~handrest_model,
+                    (+tray_slot == -handrest_model) + pcb_tray.bounding_box.size().y + 15,
+                    -tray_slot == -handrest_model)
 
     back_magnet = Box(3.9, 3.9, 1.8).rx(90)
     back_magnet.place(~back_magnet == ~tray_slot,
                       -back_magnet == +tray_slot,
-                      (+back_magnet == -handrest) + 9.2)
+                      (+back_magnet == -handrest_model) + 9.2)
 
     left_magnet = back_magnet.copy()
     left_magnet.rz(90)
@@ -1590,69 +1560,28 @@ def handrest(mirrored=False):
                        +right_magnet == +left_magnet)
 
     front_left_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
-    front_left_bottom_magnet.place((~front_left_bottom_magnet == ~handrest) + 27.778,
-                                   (~front_left_bottom_magnet == ~handrest) - 17.2784,
-                                   -front_left_bottom_magnet == -handrest)
+    front_left_bottom_magnet.place((~front_left_bottom_magnet == ~handrest_model) + 27.778,
+                                   (~front_left_bottom_magnet == ~handrest_model) - 17.2784,
+                                   -front_left_bottom_magnet == -handrest_model)
 
     front_right_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
-    front_right_bottom_magnet.place((~front_right_bottom_magnet == ~handrest) - 29.829,
-                                    (~front_right_bottom_magnet == ~handrest) - 17.2782,
-                                    -front_right_bottom_magnet == -handrest)
+    front_right_bottom_magnet.place((~front_right_bottom_magnet == ~handrest_model) - 29.829,
+                                    (~front_right_bottom_magnet == ~handrest_model) - 17.2782,
+                                    -front_right_bottom_magnet == -handrest_model)
 
     back_right_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
-    back_right_bottom_magnet.place((~back_right_bottom_magnet == ~handrest) - 29.829,
-                                   (~back_right_bottom_magnet == ~handrest) + 37.7218,
-                                   -back_right_bottom_magnet == -handrest)
+    back_right_bottom_magnet.place((~back_right_bottom_magnet == ~handrest_model) - 29.829,
+                                   (~back_right_bottom_magnet == ~handrest_model) + 37.7218,
+                                   -back_right_bottom_magnet == -handrest_model)
 
     back_left_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
-    back_left_bottom_magnet.place((~back_left_bottom_magnet == ~handrest) + 27.778,
-                                  (~back_left_bottom_magnet == ~handrest) + 37.7218,
-                                  -back_left_bottom_magnet == -handrest)
+    back_left_bottom_magnet.place((~back_left_bottom_magnet == ~handrest_model) + 27.778,
+                                  (~back_left_bottom_magnet == ~handrest_model) + 37.7218,
+                                  -back_left_bottom_magnet == -handrest_model)
 
-    return Difference(handrest, tray_slot, back_magnet, left_magnet, right_magnet, front_left_bottom_magnet,
-                      front_right_bottom_magnet, back_right_bottom_magnet, back_left_bottom_magnet,
-                      name="right_handrest" if mirrored else "left_handrest")
-
-
-def design():
-    start = time.time()
-
-    # uncomment one of the function calls below to generate the corresponding part(s)
-
-    full_cluster(add_pcb=True, add_pcb_sketch=True, create_children=False)
-    # center_key().create_occurrence(False, .1)
-    # short_side_key().create_occurrence(False, .1)
-    # long_side_key().create_occurrence(True, .1)
-
-    # outer_upper_thumb_key().create_occurrence(False, .1)
-    # outer_lower_thumb_key().create_occurrence(False, .1)
-    # inner_thumb_key().create_occurrence(False, .1)
-    # thumb_mode_key(name="right_thumb_mode_key").create_occurrence(True, .1)
-    # thumb_mode_key(mirrored=True, name="left_thumb_mode_key").create_occurrence(True, .1)
-    # thumb_down_key().create_occurrence(True, .1)
-
-    # jst_adaptor().create_occurrence(True, .1)
-    # ballscrew(7, name="ballscrew_tiny").create_occurrence(True, .1)
-    # ballscrew(10, name="ballscrew_short").create_occurrence(True, .1)
-    # ballscrew(15, name="ballscrew_tall").create_occurrence(True, .1)
-    # ballscrew_cap().create_occurrence(True, .1)
-    # ballscrew_base(10, name="ballscrew_base_short").create_occurrence(True, .1)
-    # ballscrew_base(15, name="ballscrew_base_tall").create_occurrence(True, .1)
-    # thin_ballscrew_base(5, name="ballscrew_base_tiny").create_occurrence(True, .1)
-
-    # full_thumb(mirrored=False)
-    # full_thumb(mirrored=True)
-
-    # full_central_pcb()
-
-    # full_key_breakout_pcb()
-
-    # handrest().create_occurrence(False, .1)
-    # handrest(mirrored=True).create_occurrence(False, .1)
-
-    end = time.time()
-    print(end-start)
-
-
-def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    assembly = Difference(handrest_model, tray_slot, back_magnet, left_magnet, right_magnet, front_left_bottom_magnet,
+                          front_right_bottom_magnet, back_right_bottom_magnet, back_left_bottom_magnet,
+                          name="left_handrest" if left_hand else "right_handrest")
+    if not left_hand:
+        assembly.scale(-1, 1, 1)
+    return assembly

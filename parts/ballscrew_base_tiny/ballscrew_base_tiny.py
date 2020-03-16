@@ -1,0 +1,29 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import adsk.core
+
+from fscad import *
+relative_import("../../lalboard.py")
+from lalboard import ballscrew_base
+
+
+def design():
+    # The screw tends to be a bit too loose using standard screw hole radius, since it has significantly less contact
+    # area than the longer bases/screws. So we use a bit smaller hole, to ensure it's not too loose.
+    ballscrew_base(5, screw_hole_radius_adjustment=-.05, name="ballscrew_base_tiny").create_occurrence(True, .1)
+
+
+def run(_):
+    run_design(design, message_box_on_error=False, document_name=__name__)
