@@ -148,14 +148,10 @@ def make_led_cavity():
 
 def hole_array(radius, pitch, count):
     hole = Circle(radius)
-    union = None
+    holes = []
     for i in range(0, count):
-        hole_copy = hole.copy().tx(pitch * i)
-        if not union:
-            union = Union(hole_copy)
-        else:
-            union.add(hole_copy)
-    return union
+        holes.append(hole.copy().tx(pitch * i))
+    return Union(*holes)
 
 
 def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
@@ -348,7 +344,7 @@ def cluster():
     for face in (center_floor.left, center_floor.right, center_floor.front, center_floor.back):
         center_floor = ExtrudeTo(center_floor.find_faces(face)[0], combined_cluster.copy(False))
 
-    combined_cluster.add(center_floor)
+    combined_cluster = Union(combined_cluster, center_floor)
 
     center_hole = Box(5, 5, combined_cluster.size().z, name="center_hole")
     center_hole.place(~center_hole == ~base,
@@ -368,7 +364,7 @@ def cluster():
     center = ExtrudeTo(center.find_faces(central_post.left), combined_cluster_copy)
     center = ExtrudeTo(center.find_faces(central_post.right), combined_cluster_copy, name="center")
 
-    combined_cluster.add(center)
+    combined_cluster = Union(combined_cluster, center)
 
     central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
@@ -411,8 +407,7 @@ def cluster():
                           -central_pt_base == -center_floor,
                           -central_pt_base == +center_floor)
 
-    combined_cluster.add(central_led_base)
-    combined_cluster.add(central_pt_base)
+    combined_cluster = Union(combined_cluster, central_led_base, central_pt_base)
 
     extruded_led_cavity = ExtrudeTo(central_led_cavity.named_faces("lens_hole"), combined_cluster.copy(False))
     extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(central_led_cavity.named_faces("legs")),
