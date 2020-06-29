@@ -1086,6 +1086,14 @@ def thumb_base(left_hand=False):
     lower_outer_base.place(-lower_outer_base == -upper_outer_base,
                            (-lower_outer_base == -base),
                            -lower_outer_base == -upper_outer_base)
+    magnet_cutout = lower_outer_base.find_children("magnet_cutout", True)[0]
+
+    lower_outer_insertion_cutout = Box(4, 2, 2.5)
+    lower_outer_insertion_cutout.place(
+        ~lower_outer_insertion_cutout == -lower_outer_base,
+        ~lower_outer_insertion_cutout == ~magnet_cutout,
+        +lower_outer_insertion_cutout == +lower_outer_base)
+    lower_outer_base = Difference(lower_outer_base, lower_outer_insertion_cutout)
 
     inner_base = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
