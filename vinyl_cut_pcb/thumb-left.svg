@@ -14,7 +14,7 @@
    viewBox="0 0 42.420105 44.520115"
    version="1.1"
    id="svg14389"
-   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
    sodipodi:docname="thumb-left.svg">
   <defs
      id="defs14383">
@@ -276,11 +276,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6568542"
-     inkscape:cx="57.920282"
-     inkscape:cy="92.918806"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="16.03917"
+     inkscape:cy="19.51265"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer8"
+     inkscape:current-layer="g9674"
      showgrid="false"
      inkscape:window-width="1920"
      inkscape:window-height="1119"
@@ -407,7 +407,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -415,7 +415,7 @@
      inkscape:groupmode="layer"
      id="layer3"
      inkscape:label="Base"
-     style="display:inline"
+     style="display:none"
      transform="translate(-1.0498866,-1.5002299)">
     <path
        style="vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.07599998;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -1355,7 +1355,7 @@
        id="path6860-5-2" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      transform="translate(-137.03389,-288.59732)"
      id="g6447"
      inkscape:groupmode="layer"
@@ -1744,7 +1744,7 @@
        id="path6860-5-28" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      transform="translate(-137.03389,-288.59732)"
      id="g2385"
      inkscape:groupmode="layer"
@@ -2041,7 +2041,7 @@
        id="path6860-5-92" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      transform="translate(-137.03389,-288.59732)"
      id="g6936"
      inkscape:groupmode="layer"
@@ -2468,7 +2468,7 @@
        id="path6860-5-86" />
   </g>
   <g
-     style="display:none"
+     style="display:inline"
      transform="translate(-137.03389,-288.59732)"
      id="g9674"
      inkscape:groupmode="layer"
@@ -2536,7 +2536,7 @@
      inkscape:groupmode="layer"
      id="layer8"
      inkscape:label="Labels"
-     style="display:inline">
+     style="display:none">
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.41111112px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
@@ -2608,7 +2608,7 @@
          id="tspan8383-7">150Ω</tspan><tspan
          sodipodi:role="line"
          x="16.057358"
-         y="21.088648"
+         y="21.088646"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:0.35277778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle;stroke-width:0.26458332"
          id="tspan2755-6-9">1206</tspan></text>
     <text
@@ -2640,7 +2640,7 @@
          id="tspan8383-6">150Ω</tspan><tspan
          sodipodi:role="line"
          x="34.134323"
-         y="25.363581"
+         y="25.363579"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:0.35277778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle;stroke-width:0.26458332"
          id="tspan2755-6-3">1206</tspan></text>
     <text
