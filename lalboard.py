@@ -51,6 +51,10 @@ def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45, 1.8, 1.7, 1.8, depth, name=name).rx(90)
 
 
+def horizontal_tiny_magnet_cutout(depth=1.3, name="magnet_cutout"):
+    return tapered_box(.9, 1.2, 1.1, 1.2, depth, name=name).rx(90)
+
+
 def horizontal_large_thin_magnet_cutout(depth=1.8, name="magnet_cutout"):
     return tapered_box(1.45*2, 1.8*2, 1.7*2, 1.8*2, depth, name=name).rx(90)
 
@@ -619,7 +623,7 @@ def center_key():
     key_rim_height = .5
     key_thickness = 2
     post_length = 8.4 + 2.5
-    key_travel = 2.4
+    key_travel = 1.9
 
     fillet_radius = 1.2
 
@@ -659,7 +663,7 @@ def center_key():
     post = Union(upper_post, upper_mid_post_transition, mid_post, lower_mid_post_transition, filleted_lower_post,
                  name="post")
 
-    back_stop = Box(3.5, 2.45, 4.3 + key_rim_height, name="back_stop")
+    back_stop = Box(3.5, 2.45, 1.9 + key_travel + key_rim_height, name="back_stop")
     back_stop.place(~back_stop == ~key,
                     (-back_stop == +post) + 1.1,
                     -back_stop == +key)
@@ -673,7 +677,7 @@ def center_key():
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
-    magnet = horizontal_magnet_cutout(1.8)
+    magnet = horizontal_tiny_magnet_cutout(1.3)
     magnet.place(~magnet == ~post,
                  -magnet == -post,
                  (~magnet == +key_rim) + 3.5 + key_travel)
