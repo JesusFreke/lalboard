@@ -276,16 +276,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="16.03917"
-     inkscape:cy="19.51265"
+     inkscape:zoom="22.627417"
+     inkscape:cx="28.79281"
+     inkscape:cy="34.482453"
      inkscape:document-units="mm"
-     inkscape:current-layer="g9674"
+     inkscape:current-layer="layer8"
      showgrid="false"
      inkscape:window-width="1920"
-     inkscape:window-height="1119"
+     inkscape:window-height="1109"
      inkscape:window-x="0"
-     inkscape:window-y="28"
+     inkscape:window-y="33"
      inkscape:window-maximized="1"
      inkscape:snap-bbox="true"
      inkscape:bbox-paths="true"
@@ -407,7 +407,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -1355,7 +1355,7 @@
        id="path6860-5-2" />
   </g>
   <g
-     style="display:none"
+     style="display:inline"
      transform="translate(-137.03389,-288.59732)"
      id="g6447"
      inkscape:groupmode="layer"
@@ -2041,7 +2041,7 @@
        id="path6860-5-92" />
   </g>
   <g
-     style="display:none"
+     style="display:inline"
      transform="translate(-137.03389,-288.59732)"
      id="g6936"
      inkscape:groupmode="layer"
@@ -2468,7 +2468,7 @@
        id="path6860-5-86" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      transform="translate(-137.03389,-288.59732)"
      id="g9674"
      inkscape:groupmode="layer"
@@ -2536,7 +2536,7 @@
      inkscape:groupmode="layer"
      id="layer8"
      inkscape:label="Labels"
-     style="display:none">
+     style="display:inline">
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.41111112px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
@@ -2653,7 +2653,7 @@
          x="10.985336"
          y="35.316956"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:0.35277778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle;stroke-width:0.26458332"
-         id="tspan8383-21">150Ω</tspan><tspan
+         id="tspan3390">100Ω</tspan><tspan
          sodipodi:role="line"
          x="10.985336"
          y="35.757927"
