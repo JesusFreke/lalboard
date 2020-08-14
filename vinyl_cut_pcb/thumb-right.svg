@@ -346,11 +346,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="4.0000001"
-     inkscape:cx="77.420896"
-     inkscape:cy="48.917147"
+     inkscape:zoom="8.0000002"
+     inkscape:cx="40.605546"
+     inkscape:cy="61.381791"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer7"
+     inkscape:current-layer="g4286"
      showgrid="false"
      inkscape:window-width="1920"
      inkscape:window-height="1109"
@@ -1258,7 +1258,7 @@
        id="path5156-0-0" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      inkscape:label="Layer 1 - Path"
      id="g13700"
      inkscape:groupmode="layer"
@@ -1757,7 +1757,7 @@
        id="path5156-52" />
   </g>
   <g
-     style="display:none"
+     style="display:inline"
      inkscape:label="Layer 1 - Cut"
      id="g4286"
      inkscape:groupmode="layer"
@@ -1786,7 +1786,7 @@
     <path
        id="path4278"
        transform="scale(0.26458333)"
-       d="m 36.594429,120.98173 h 13.068333 l 0.0013,1.89132 h 7.558594 v -7.5586 h -7.558594 -1.746093 l -21.601563,-37.419919 -3.99741,-6.96e-4 -6.37e-4,-1.887976 h -7.558593 v 7.560547 h 7.558593 l 6.37e-4,-1.893274 h 1.8125 l 1.093113,1.893274 22.041158,38.176404 v 5.61074"
+       d="m 47.265767,127.35355 v -5.61074 L 25.224609,83.566406 24.131496,81.673132 h -1.8125 l -6.37e-4,1.893274 h -7.558593 v -7.560547 h 7.558593 l 6.37e-4,1.887976 3.99741,6.96e-4 21.601563,37.419919 h 1.746093 7.558594 v 7.5586 h -7.558594 l -0.0013,-1.89132 H 36.594429"
        style="display:inline;opacity:1;vector-effect:none;fill:none;fill-opacity:1;stroke:#ff0000;stroke-width:0.37795275;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccccccccccccc" />
@@ -1886,7 +1886,7 @@
        id="path5156-8" />
   </g>
   <g
-     style="display:inline"
+     style="display:none"
      inkscape:label="Layer 2 - Path"
      id="g15398"
      inkscape:groupmode="layer"
@@ -2521,7 +2521,7 @@
      inkscape:groupmode="layer"
      id="layer7"
      inkscape:label="Labels"
-     style="display:inline">
+     style="display:none">
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.41111112px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
