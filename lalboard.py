@@ -27,7 +27,7 @@ import time
 from fscad import *
 
 key_thickness = 1.8
-post_width = 4.5
+post_width = 6.4
 
 
 def small_pin():
@@ -159,19 +159,19 @@ def hole_array(radius, pitch, count):
 
 
 def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
-    front = Box(5, 2.2, 6.4 + extra_height, "front")
+    front = Box(6.8, 2.2, 6.4 + extra_height, "front")
 
-    pt_base = Box(5, 6.15, front.size().z, "phototransistor_base")
+    pt_base = Box(4.1, 6.15, front.size().z, "phototransistor_base")
     pt_base.place(+pt_base == -front, +pt_base == +front, -pt_base == -front)
     pt_cavity = make_pt_cavity()
-    pt_cavity.place(~pt_cavity.named_point("lens_center") == ~pt_base,
+    pt_cavity.place((-pt_cavity == -pt_base) + .625,
                     ~pt_cavity.named_point("lens_center") == ~pt_base,
                     (~pt_cavity.named_point("lens_center") == +pt_base) - 1.9)
 
-    led_base = Box(6, 6.15, front.size().z, "led_base")
+    led_base = Box(4.1, 6.15, front.size().z, "led_base")
     led_base.place(-led_base == +front, +led_base == +front, -led_base == -front)
     led_cavity = make_led_cavity()
-    led_cavity.place((~led_cavity.named_point("lens_center") == ~led_base) - .125,
+    led_cavity.place((-led_cavity == -led_base) + .525,
                      ~led_cavity.named_point("lens_center") == ~led_base,
                      (~led_cavity.named_point("lens_center") == +led_base) - 1.9)
 
