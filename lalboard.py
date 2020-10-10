@@ -77,6 +77,15 @@ def vertical_large_magnet_cutout(name="magnet_cutout"):
 
 
 def vertical_large_thin_magnet_cutout(name="magnet_cutout"):
+    base = Box(3.2, 3.2, 1, name=name + "_base")
+    taper = tapered_box(3.4, 3.2, 3.4, 3.2, .7, name=name + "_taper")
+    taper.place(~taper == ~base,
+                ~taper == ~base,
+                -taper == +base)
+    return Union(base, taper, name=name)
+
+
+def vertical_large_thin_double_magnet_cutout(name="magnet_cutout"):
     base = Box(3.0*2, 3.0, 1, name=name + "_base")
     taper = tapered_box(3.05*2, 3.0, 3.25*2, 3.2, .7, name=name + "_taper")
     taper.place(~taper == ~base,
@@ -454,6 +463,60 @@ def ball_socket_ball():
     return Sphere(3, "ball")
 
 
+def magnetic_attachment(base_height):
+    """This is the design for the magnetic attachments on the normal and thumb clusters.
+
+    It consists of an upper part that holds a small rectangular magnet, and then a lower part that is a spherical
+    indentation for a 5mm ball magnet.
+    """
+    ball = Sphere(2.5, "ball")
+    ball_radius = ball.size().x / 2
+
+    test_base = Cylinder(base_height, ball_radius*2)
+
+    # place the bottom at the height where the sphere's tangent is 45 degrees
+    test_base.place(
+        ~test_base == ~ball,
+        ~test_base == ~ball,
+        (-test_base == ~ball) + (ball.size().z/2) * math.sin(math.radians(45)))
+
+    test_base_bottom = BRepComponent(test_base.bottom.brep)
+    cone_bottom = Intersection(ball, test_base_bottom)
+
+    cone_bottom_radius = cone_bottom.size().x / 2
+
+    # create a 45 degree cone that starts where the sphere's tangent is 45 degrees
+    cone_height = ball.max().z - test_base.min().z
+    cone = Cylinder(cone_height, cone_bottom_radius, cone_bottom_radius - cone_height)
+    cone.place(
+        ~cone == ~ball,
+        ~cone == ~ball,
+        +cone == +ball)
+
+    # now place the test base to match where the actual cluster base will be
+    test_base.place(
+        ~test_base == ~ball,
+        ~test_base == ~ball,
+        +test_base == +ball)
+
+    magnet_hole = vertical_large_thin_magnet_cutout()
+
+    base = Cylinder(base_height + magnet_hole.size().z, Intersection(ball, test_base).size().x/2 + .8)
+    base.place(
+        ~base == ~ball,
+        ~base == ~ball,
+        (-base == +ball) - 2)
+
+    magnet_hole.place(
+        ~magnet_hole == ~ball,
+        ~magnet_hole == ~ball,
+        -magnet_hole == +ball)
+
+    negatives = Union(ball, cone, magnet_hole, name="negatives")
+
+    return Difference(base, negatives, name="attachment")
+
+
 def ball_socket_base(base_height, mirrored=False):
     pin_hole_radius = 2.4
 
@@ -510,26 +573,25 @@ def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
 
 
 def cluster_front(cluster: Component, base_height):
-    extension_y_size = 13
+    extension_y_size = 9
 
-    socket_base = ball_socket_base(2)
-    opening = socket_base.find_children("negatives")[0]
+    attachment = magnetic_attachment(base_height)
 
-    socket_base.place(~socket_base == ~cluster,
-                      (~socket_base == -cluster) - extension_y_size / 2)
+    attachment.place(~attachment == ~cluster,
+                     (-attachment == -cluster) - extension_y_size)
 
-    socket_base_circle = Circle(socket_base.size().x/2 + .4)
-    socket_base_circle.place(~socket_base_circle == ~socket_base,
-                             ~socket_base_circle == ~socket_base)
+    attachment_circle = Circle(attachment.size().x / 2)
+    attachment_circle.place(~attachment_circle == ~attachment,
+                             ~attachment_circle == ~attachment)
     left_point = cluster.named_point("lower_left_corner").point
     right_point = cluster.named_point("lower_right_corner").point
-    left_tangents = find_tangent_intersection_on_circle(socket_base_circle, left_point)
+    left_tangents = find_tangent_intersection_on_circle(attachment_circle, left_point)
     if left_tangents[0].geometry.y < left_tangents[1].geometry.y:
         left_tangent_point = left_tangents[0].geometry
     else:
         left_tangent_point = left_tangents[1].geometry
 
-    right_tangents = find_tangent_intersection_on_circle(socket_base_circle, right_point)
+    right_tangents = find_tangent_intersection_on_circle(attachment_circle, right_point)
     if right_tangents[0].geometry.y < right_tangents[1].geometry.y:
         right_tangent_point = right_tangents[0].geometry
     else:
@@ -538,11 +600,6 @@ def cluster_front(cluster: Component, base_height):
     base = Polygon(left_point, left_tangent_point, right_tangent_point, right_point)
 
     base = Extrude(base, base_height)
-    rounded_end = Cylinder(base_height, socket_base.size().x/2 + .4, name="rounded_end")
-    rounded_end.place(~rounded_end == ~socket_base,
-                      ~rounded_end == ~socket_base,
-                      -rounded_end == -base)
-    base = Union(base, rounded_end)
     base.place(~base == ~cluster,
                +base == right_point.y,
                -base == -cluster)
@@ -553,27 +610,25 @@ def cluster_front(cluster: Component, base_height):
                          Extrude(Polygon(right_point, right_tangent_point,
                                          Point3D.create(cluster.max().x, cluster.min().y, 0)), base_height))
 
-    socket_base.place(z=-socket_base == +base)
+    attachment.place(z=-attachment == -base)
 
-    return cluster, Difference(Union(base, socket_base), opening)
+    return cluster, Difference(Union(base, attachment), attachment.find_children("negatives")[0])
 
 
 def cluster_back(cluster: Component, pcb: Component, base_height: float):
-    socket_base = ball_socket_base(2)
-    opening = socket_base.find_children("negatives")[0]
+    attachment = magnetic_attachment(base_height).rz(180)
 
-    base = Box(cluster.size().x, pcb.max().y - cluster.max().y + 6.5 + socket_base.size().y/2, base_height)
+    base = Box(cluster.size().x, pcb.max().y - cluster.max().y + 6.5 + attachment.size().y/2, base_height)
     base.place(~base == ~cluster,
                -base == +cluster,
                -base == -cluster)
 
-    socket_base.place((-socket_base == -cluster) + .4,
-                      (+socket_base == +base) - .4,
-                      -socket_base == +base)
+    attachment.place(-attachment == -cluster,
+                     +attachment == +base,
+                     -attachment == -base)
 
-    other_socket_base = socket_base.copy()
-    other_opening = other_socket_base.find_children("negatives")[0]
-    other_socket_base.place((+other_socket_base == +cluster) - .4)
+    other_attachment = attachment.copy()
+    other_attachment.place(+attachment == +cluster)
 
     hole_bounding_box = None
     for body in pcb.bodies:
@@ -595,9 +650,11 @@ def cluster_back(cluster: Component, pcb: Component, base_height: float):
                      ~pcb_relief == holes_mid_point,
                      -pcb_relief == -base)
 
-    base = Fillet(base.shared_edges([base.back], [base.left, base.right]), socket_base.size().x/2 + .4)
+    base = Fillet(base.shared_edges([base.back], [base.left, base.right]), attachment.size().x/2)
 
-    return Difference(Union(base, socket_base, other_socket_base), opening, other_opening), pcb_relief
+    return Difference(Union(base, attachment, other_attachment),
+                      attachment.find_children("negatives")[0],
+                      other_attachment.find_children("negatives")[0]), pcb_relief
 
 
 def center_key():
@@ -966,7 +1023,7 @@ def ballscrew_cap():
 
 def ballscrew_base(screw_length, screw_hole_radius_adjustment=0, name=None):
     screw_length = screw_length - 2
-    magnet = vertical_large_thin_magnet_cutout()
+    magnet = vertical_large_thin_double_magnet_cutout()
 
     base_polygon = RegularPolygon(6, 5, is_outer_radius=False)
     base = Extrude(base_polygon, screw_length + magnet.size().z)
