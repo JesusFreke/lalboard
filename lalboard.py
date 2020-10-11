@@ -692,47 +692,6 @@ def magnetic_attachment(base_height):
     return Difference(base, negatives, name="attachment")
 
 
-def ball_socket_base(base_height, mirrored=False):
-    pin_hole_radius = 2.4
-
-    ball = ball_socket_ball()
-    ball_radius = ball.size().x / 2
-
-    # the radio of the total diameter of the ball to sink into the base. The size of the hole for the downwards-facing
-    # pin is determined by the intersection of the top of the base with the sphere, so sinking the ball lower results
-    # in a larger opening and more range of motion for the pin, but also a shorter standoff
-    ball_sink_ratio = .05
-
-    # tall enough to reach the middle of the ball
-    base = Cylinder(
-        ball_radius - (ball_radius * 2 * ball_sink_ratio), ball_radius + .8)
-    base = Threads(base, ((0, 0), (.99, .99), (0, .99)), 1)
-    ball.place(~ball == ~base,
-               ~ball == ~base,
-               (-ball == -base) - (ball_radius * ball_sink_ratio * 2))
-
-    pin_hole = Cylinder(base.size().z, pin_hole_radius)
-    base = Difference(base, ball, pin_hole)
-
-    # This is the cone that a line from the center of the ball would form if it swept along the hole.
-    # cone_inverse_slope = pin_hole_radius / (ball.mid().z - base.find_faces(pin_hole.side)[0].size().z / 2)
-    ball_socket_opening = Cylinder(
-        base_height + base.find_faces(pin_hole)[0].size().z/2, ball_radius + .8 + .59, pin_hole_radius,
-        "ball_socket_opening")
-
-    ball_socket_opening.place(~ball_socket_opening == ~ball,
-                              ~ball_socket_opening == ~ball,
-                              (-ball_socket_opening == -base) - base_height)
-
-    negatives = Union(ball_socket_opening, ball, name="negatives")
-    result = Difference(base, negatives, name="ball_socket_base")
-
-    if mirrored:
-        result.scale(-1, 1, 1, center=base.mid())
-
-    return result
-
-
 def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
     left_point_to_mid = point.vectorTo(circle.mid())
     left_point_to_mid.scaleBy(.5)
@@ -1325,105 +1284,55 @@ def thumb_base(left_hand=False):
                      (-upper_base == -base) + 11,
                      -upper_base == -base)
 
-    lower_ball_socket = ball_socket_base(2, left_hand)
-    lower_ball_socket_negatives = lower_ball_socket.find_children("negatives")[0]
-    lower_ball_socket.place(~lower_ball_socket == (upper_base.min().x + key_stand_lower.max().x) / 2,
-                            (-lower_ball_socket == -base) + .4,
-                            -lower_ball_socket == +base)
+    lower_attachment = magnetic_attachment(base.size().z)
+    lower_attachment_negatives = lower_attachment.find_children("negatives")[0]
+    lower_attachment.place(~lower_attachment == (upper_base.min().x + key_stand_lower.max().x) / 2,
+                           (-lower_attachment == -base),
+                           -lower_attachment == -base)
 
-    upper_ball_socket = ball_socket_base(2, left_hand)
-    upper_ball_socket_negatives = upper_ball_socket.find_children("negatives")[0]
-    upper_ball_socket.place(~upper_ball_socket == ~mid_key_stop,
-                            (~upper_ball_socket == +mid_key_stop) + 7,
-                            -upper_ball_socket == +base)
-    upper_ball_socket_base = Cylinder(base.size().z, upper_ball_socket.size().y/2 + .4)
-    upper_ball_socket_base.place(~upper_ball_socket_base == ~upper_ball_socket,
-                                 ~upper_ball_socket_base == ~upper_ball_socket,
-                                 -upper_ball_socket_base == -base)
+    upper_attachment = magnetic_attachment(base.size().z)
+    upper_attachment_negatives = upper_attachment.find_children("negatives")[0]
+    upper_attachment.place(~upper_attachment == ~mid_key_stop,
+                           +upper_attachment == +base,
+                           -upper_attachment == -base)
 
-    extension_point_finder = Box(1, 100, 2)
-    extension_point = extension_point_finder.rz(-45, center=extension_point_finder.max()).closest_points(
-        upper_ball_socket_base)[1]
-    extension_point2 = Point3D.create(2 * upper_ball_socket_base.mid().x - extension_point.x,
-                                      extension_point.y,
-                                      extension_point.z)
-    upper_extension_face = Rect(extension_point2.x - extension_point.x, base.size().z).rx(90)
-    upper_extension_face.place(~upper_extension_face == ~upper_ball_socket_base,
-                               ~upper_extension_face == extension_point.y,
-                               -upper_extension_face == -base)
-    upper_extension_face2 = Rect(extension_point2.x - extension_point.x + (extension_point.y - base.max().y) * 2,
-                                 base.size().z)
-    upper_extension_face2.rx(90)
-    upper_extension_face2.place(~upper_extension_face2 == ~upper_ball_socket_base,
-                                (~upper_extension_face2 == +base),
-                                -upper_extension_face2 == -base)
-    upper_extension = Loft(upper_extension_face, upper_extension_face2)
+    side_attachment = magnetic_attachment(base.size().z)
+    side_attachment_negatives = side_attachment.find_children("negatives")[0]
 
-    side_ball_socket = ball_socket_base(2, left_hand)
-    side_ball_socket_negatives = side_ball_socket.find_children("negatives")[0]
+    side_attachment.place(-side_attachment == -upper_outer_base,
+                          ~side_attachment == ~Union(upper_outer_base.copy(False), lower_outer_base.copy(False)),
+                          -side_attachment == -base)
 
-    upper_circle = Cylinder(1, 7)
-    upper_circle.place(~upper_circle == upper_outer_base.min(),
-                       ~upper_circle == upper_outer_base.min(),
-                       ~upper_circle == -base)
-    lower_circle = Cylinder(1, 7)
-    lower_circle.place(~lower_circle == lower_outer_base.min(),
-                       ~lower_circle == lower_outer_base.max(),
-                       ~lower_circle == -base)
-
-    side_ball_socket_placement = Intersection(upper_circle, lower_circle)
-    side_ball_socket_center = None
-    for edge in side_ball_socket_placement.shared_edges(upper_circle.side, lower_circle.side):
-        if edge.brep.pointOnEdge.x < upper_outer_base.min().x:
-            side_ball_socket_center = edge.brep.pointOnEdge
-
-    side_ball_socket.place(~side_ball_socket == side_ball_socket_center,
-                           ~side_ball_socket == side_ball_socket_center,
-                           -side_ball_socket == +base)
-    side_ball_socket_base = Cylinder(base.size().z, side_ball_socket.size().x/2 + .4)
-    side_ball_socket_base.place(~side_ball_socket_base == ~side_ball_socket,
-                                ~side_ball_socket_base == ~side_ball_socket,
-                                -side_ball_socket_base == -base)
-
-    extension_point = Box(1, 100, 2).rz(45).closest_points(side_ball_socket_base)[1]
-    extension_point2 = Point3D.create(extension_point.x,
-                                      2 * side_ball_socket_base.mid().y - extension_point.y,
-                                      extension_point.z)
-
-    side_extension_face = Rect(extension_point2.y - extension_point.y, base.size().z).rx(90).rz(90)
-    side_extension_face.place(~side_extension_face == extension_point.x,
-                              ~side_extension_face == ~side_ball_socket_base,
-                              -side_extension_face == -base)
-    side_extension_face2 = Rect(extension_point2.y - extension_point.y + (base.min().x - extension_point.x) * 2,
-                                base.size().z)
-    side_extension_face2.rx(90).rz(90)
-    side_extension_face2.place((~side_extension_face2 == -base),
-                               ~side_extension_face2 == ~side_ball_socket_base,
-                               -side_extension_face2 == -base)
-    side_extension = Loft(side_extension_face, side_extension_face2)
-
-    lower_ball_socket_circle = Circle(lower_ball_socket.size().x/2 + .4)
-    lower_ball_socket_circle.place(~lower_ball_socket_circle == ~lower_ball_socket,
-                                   ~lower_ball_socket_circle == ~lower_ball_socket,
-                                   ~lower_ball_socket_circle == +base)
+    lower_attachment_circle = Circle(lower_attachment.size().x/2)
+    lower_attachment_circle.place(~lower_attachment_circle == ~lower_attachment,
+                                  ~lower_attachment_circle == ~lower_attachment,
+                                  ~lower_attachment_circle == +base)
     upper_base_corner = Point3D.create(
         upper_base.max().x,
         upper_base.min().y,
         base.max().z)
 
-    lower_ball_socket_tangents = find_tangent_intersection_on_circle(lower_ball_socket_circle, upper_base_corner)
-    if lower_ball_socket_tangents[0].geometry.x > lower_ball_socket_tangents[1].geometry.x:
-        lower_ball_socket_tangent = lower_ball_socket_tangents[0].geometry
+    lower_attachment_tangents = find_tangent_intersection_on_circle(lower_attachment_circle, upper_base_corner)
+    if lower_attachment_tangents[0].geometry.x > lower_attachment_tangents[1].geometry.x:
+        lower_attachment_tangent = lower_attachment_tangents[0].geometry
     else:
-        lower_ball_socket_tangent = lower_ball_socket_tangents[1].geometry
+        lower_attachment_tangent = lower_attachment_tangents[1].geometry
 
-    tangent_vector = upper_base_corner.vectorTo(lower_ball_socket_tangent)
+    tangent_vector = upper_base_corner.vectorTo(lower_attachment_tangent)
     tangent_vector.scaleBy(2)
     tangent_line_corner = upper_base_corner.copy()
     tangent_line_corner.translateBy(tangent_vector)
+
     lower_cut_corner = Polygon(
-        upper_base_corner, tangent_line_corner, Point3D.create(base.max().x, base.min().y, base.max().z))
+        upper_base_corner, lower_attachment_tangent,
+        Point3D.create(
+            lower_attachment.mid().x,
+            lower_attachment.min().y,
+            base.max().z),
+        Point3D.create(
+            base.max().x, base.min().y, base.max().z))
     lower_cut_corner = ExtrudeTo(lower_cut_corner, base.bottom)
+    lower_cut_corner = Difference(lower_cut_corner, lower_attachment)
 
     upper_cut_corner = Box(100, 100, 100).rz(20)
     upper_cut_corner.place(-upper_cut_corner == +base,
@@ -1433,12 +1342,13 @@ def thumb_base(left_hand=False):
 
     result = Difference(
         Union(
-            base, key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base, mid_led_base,
-            upper_outer_base, lower_outer_base, inner_base, upper_base, lower_ball_socket, upper_ball_socket,
-            upper_extension, upper_ball_socket_base, side_ball_socket, side_extension, side_ball_socket_base),
+            base,
+            key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base, mid_led_base,
+            upper_outer_base, lower_outer_base, inner_base, upper_base, lower_attachment, upper_attachment,
+            side_attachment),
         magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives, lower_outer_base_negatives,
-        inner_base_negatives, upper_base_negatives, lower_ball_socket_negatives, upper_ball_socket_negatives,
-        side_ball_socket_negatives, lower_cut_corner, upper_cut_corner)
+        inner_base_negatives, upper_base_negatives, lower_attachment_negatives, upper_attachment_negatives,
+        side_attachment_negatives, lower_cut_corner, upper_cut_corner)
 
     result = SplitFace(result, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
     result.add_named_faces("bottom", *result.find_faces(base.bottom))
