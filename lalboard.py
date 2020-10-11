@@ -94,37 +94,6 @@ def vertical_large_thin_double_magnet_cutout(name="magnet_cutout"):
     return Union(base, taper, name=name)
 
 
-def make_pt_cavity():
-    lens_height = 4.5
-    lens_radius = .75
-
-    body = Box(1.8, 5, 5.7, "body")
-
-    lens_hole = Circle(lens_radius, name="lens_hole")
-    lens_hole.ry(90).place(-lens_hole == +body, ~lens_hole == ~body, ~lens_hole == lens_height)
-    lens_slot = Box(lens_radius + .05, lens_radius * 2 + .1, body.max().z - lens_hole.min().z, "lens_slot")
-    lens_slot.place(-lens_slot == +body, ~lens_slot == ~body, -lens_slot == -lens_hole)
-    lens_hole.place(~lens_hole == +lens_slot)
-
-    cavity = Union(body, lens_slot, name="phototransistor_cavity")
-    cavity = SplitFace(cavity, lens_hole)
-
-    leg = small_pin()
-    leg.place(~leg == ~body, (~leg == ~body) + 2.54/2, +leg == -body)
-    leg2 = leg.copy().ty(-2.54)
-    legs = Union(leg, leg2, name="legs")
-    cavity = SplitFace(cavity, legs)
-
-    cavity.add_named_faces("legs", *cavity.find_faces((leg, leg2)))
-    cavity.add_named_faces("lens_hole", *cavity.find_faces(lens_hole))
-    cavity.add_named_faces("top", *cavity.find_faces(body.top))
-
-    cavity.add_named_point("lens_center",
-                           (cavity.mid().x, cavity.mid().y, lens_hole.bodies[0].faces[0].brep.centroid.z))
-
-    return cavity
-
-
 def make_bottom_entry_led_cavity():
     lens_height = 4.5
     lens_radius = .75
@@ -149,40 +118,6 @@ def make_bottom_entry_led_cavity():
     return cavity
 
 
-def make_led_cavity():
-    lens_radius = .75
-    lens_height = 2.9
-
-    body = Box(1.8, 5.1, 4.8, "body")
-
-    slot = Box(1.1, body.size().y, body.size().z, "slot")
-    slot.place(+slot == -body, ~slot == ~body, -slot == -body)
-
-    lens_hole = Circle(lens_radius, name="lens_hole").ry(90)
-    lens_hole.place(+lens_hole == -slot, ~lens_hole == ~body, ~lens_hole == lens_height)
-
-    cavity = Union(body, slot, name="led_cavity")
-    cavity = SplitFace(cavity, lens_hole)
-
-    leg = small_pin()
-    leg.place((~leg == +body) - .9,
-              (~leg == ~body) + 2.54/2,
-              +leg == -body)
-    leg2 = leg.copy().ty(-2.54)
-    legs = Union(leg, leg2, name="legs")
-
-    cavity = SplitFace(cavity, legs)
-
-    cavity.add_named_faces("legs", *cavity.find_faces((leg, leg2)))
-    cavity.add_named_faces("lens_hole", *cavity.find_faces(lens_hole))
-    cavity.add_named_faces("top", *cavity.find_faces((body.top, slot.top)))
-
-    cavity.add_named_point("lens_center",
-                           (cavity.mid().x, cavity.mid().y, lens_hole.bodies[0].faces[0].brep.centroid.z))
-
-    return cavity
-
-
 def hole_array(radius, pitch, count):
     hole = Circle(radius)
     holes = []
@@ -191,7 +126,7 @@ def hole_array(radius, pitch, count):
     return Union(*holes)
 
 
-def new_vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
+def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
     front = Box(7.6, 2.2, 6.4 + extra_height, "front")
 
     pt_base = Box(3.65, 6.15, front.size().z, "phototransistor_base")
@@ -354,168 +289,9 @@ def new_vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, m
     return result
 
 
-def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
-    front = Box(6.8, 2.2, 6.4 + extra_height, "front")
-
-    pt_base = Box(4.1, 6.15, front.size().z, "phototransistor_base")
-    pt_base.place(+pt_base == -front, +pt_base == +front, -pt_base == -front)
-    pt_cavity = make_pt_cavity()
-    pt_cavity.place((-pt_cavity == -pt_base) + .625,
-                    ~pt_cavity.named_point("lens_center") == ~pt_base,
-                    (~pt_cavity.named_point("lens_center") == +pt_base) - 1.9)
-
-    led_base = Box(4.1, 6.15, front.size().z, "led_base")
-    led_base.place(-led_base == +front, +led_base == +front, -led_base == -front)
-    led_cavity = make_led_cavity()
-    led_cavity.place((-led_cavity == -led_base) + .525,
-                     ~led_cavity.named_point("lens_center") == ~led_base,
-                     (~led_cavity.named_point("lens_center") == +led_base) - 1.9)
-
-    temp = Union(front.copy(), pt_base.copy(), led_base.copy())
-    base = Box(temp.size().x, temp.size().y, base_height, name="base")
-    base.place(-base == -temp,
-               -base == -temp,
-               +base == -temp)
-
-    key_pivot = Cylinder(front.size().x, 1, name="key-pivot").ry(90)
-    key_pivot.place(~key_pivot == ~front,
-                    +key_pivot == -front,
-                    ~key_pivot == -front)
-
-    sloped_key = Box(front.size().x, key_pivot.size().y, front.size().z * 2, "sloped_key")
-    sloped_key.place(~sloped_key == ~key_pivot,
-                     ~sloped_key == ~key_pivot,
-                     -sloped_key == ~key_pivot)
-    sloped_key = Union(sloped_key, key_pivot).rx(pressed_key_angle, center=(0, sloped_key.mid().y, 0))
-
-    target_tip_thickness = .8
-    back_bottom = Rect(front.size().x, led_base.size().y - front.size().y - key_pivot.size().y - target_tip_thickness,
-                       "back_bottom")
-    back_bottom.place(~back_bottom == ~front,
-                      (-back_bottom == -led_base) + target_tip_thickness)
-    back_bottom = Difference(back_bottom, sloped_key.copy())
-    back_sloped = ExtrudeTo(back_bottom, sloped_key, "back_sloped")
-
-    remaining_back = Box(front.size().x, target_tip_thickness, back_sloped.size().z, "remaining_back")
-    remaining_back.place(~remaining_back == ~front,
-                         +remaining_back == -back_sloped,
-                         -remaining_back == -back_sloped)
-    back = Union(remaining_back, back_sloped, name="back")
-
-    def rotated(vector, angle):
-        vector = vector.copy()
-        matrix = Matrix3D.create()
-        matrix.setToRotation(math.radians(angle), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
-        vector.transformBy(matrix)
-        return vector
-
-    def vectorTo(point, vector, length):
-        vector = vector.copy()
-        vector.scaleBy(length)
-        point = point.copy()
-        point.translateBy(vector)
-        return point
-
-    # how much it sticks out
-    retaining_ridge_thickness = .3
-    retaining_ridge_lower_angle = 45
-    # the length of the "face" of the ridge
-    retaining_ridge_width = .3
-
-    # the distance along the angled backstop from where the flat part meets the bottom cylindrical part
-    # this is placed so that there's just enough room for the key to be able to slid into place vertically,
-    # but as soon as it starts to rotate, the groove in the key post engages with the ridge, retaining the key
-    retaining_ridge_dist = retaining_ridge_thickness / math.tan(math.radians(pressed_key_angle))
-    retaining_ridge_y = retaining_ridge_dist * math.sin(math.radians(pressed_key_angle))
-    retaining_ridge_z = retaining_ridge_dist * math.cos(math.radians(pressed_key_angle))
-
-    origin = Point3D.create(0, 0, 0)
-    up = Vector3D.create(0, 1, 0)
-    right = rotated(up, -90)
-    down = rotated(right, -90)
-    left = rotated(down, -90)
-
-    lines = []
-    lines.append(adsk.core.InfiniteLine3D.create(
-        origin,
-        rotated(down, -pressed_key_angle)))
-    lines.append(adsk.core.InfiniteLine3D.create(
-        origin,
-        left))
-
-    point = vectorTo(origin, rotated(left, -pressed_key_angle), retaining_ridge_thickness)
-    lines.append(adsk.core.InfiniteLine3D.create(
-        point,
-        rotated(down, -pressed_key_angle)))
-
-    point = lines[1].intersectWithCurve(lines[2])[0]
-    lines.append(adsk.core.InfiniteLine3D.create(
-        vectorTo(point, rotated(down, -pressed_key_angle), retaining_ridge_width),
-        rotated(down, retaining_ridge_lower_angle)))
-
-    points = []
-    for i in range(-1, 3):
-        points.append(lines[i].intersectWithCurve(lines[i+1])[0])
-
-    retaining_ridge = Polygon(*points, name="retaining_ridge_profile")
-    retaining_ridge = Extrude(retaining_ridge, back.size().x)
-
-    retaining_ridge.rz(-90)
-    retaining_ridge.ry(-90)
-
-    lowest_edge = None
-    for edge in retaining_ridge.bodies[0].brep.edges:
-        if lowest_edge is None or edge.pointOnEdge.z < lowest_edge.pointOnEdge.z:
-            lowest_edge = edge
-
-    retaining_ridge.add_named_point("lowest_edge", Point3D.create(
-        retaining_ridge.mid().x, lowest_edge.pointOnEdge.y, lowest_edge.pointOnEdge.z))
-
-    retaining_ridge.place(~retaining_ridge == ~back,
-                          (~retaining_ridge.named_point("lowest_edge") == +back_sloped) - retaining_ridge_y,
-                          (~retaining_ridge.named_point("lowest_edge") == -back_sloped) + retaining_ridge_z)
-
-    result = Union(pt_base, led_base, front, back, base)
-    result = Difference(result, sloped_key)
-    result = Union(result, retaining_ridge)
-
-    magnet_cutout = horizontal_rotated_magnet_cutout()
-    magnet_cutout.place(~magnet_cutout == ~front,
-                        -magnet_cutout == -front,
-                        (+magnet_cutout == +front) - .45)
-
-    extruded_led_cavity = ExtrudeTo(led_cavity.named_faces("lens_hole"), result.copy(False))
-    extruded_led_cavity = ExtrudeTo(
-        extruded_led_cavity.find_faces(led_cavity.named_faces("legs")), result.copy(False))
-
-    extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("lens_hole"), result.copy(False))
-    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("legs")), result.copy(False))
-    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("top")), result.copy(False))
-
-    negatives = Union(extruded_pt_cavity, extruded_led_cavity, magnet_cutout, key_pivot)
-    bounding_box = Box(
-        result.bounding_box.size().x,
-        result.bounding_box.size().y,
-        min(result.bounding_box.size().z, 6.4 + extra_height + base_height))
-    bounding_box.place(-bounding_box == -result,
-                       -bounding_box == -result,
-                       -bounding_box == -result)
-
-    negatives = Intersection(negatives, bounding_box, name="negatives")
-
-    result = Difference(Intersection(result, bounding_box), negatives,  name="vertical_key_base")
-
-    result.add_named_point("midpoint", (magnet_cutout.mid().x, result.mid().y, result.mid().z))
-
-    if mirrored:
-        result.scale(-1, 1, 1, center=result.mid())
-
-    return result
-
-
 def cluster():
     base = Box(24.9, 24.9, 2, "base")
-    key_base = new_vertical_key_base(2)
+    key_base = vertical_key_base(2)
 
     key_base.place(~key_base.named_point("midpoint") == ~base,
                    -key_base == -base,
@@ -1207,8 +983,8 @@ def thumb_base(left_hand=False):
                        (~mid_key_stop == +key_stand_lower) + 23,
                        -mid_key_stop == +base)
 
-    mid_pt_base = Box(5, 5.9, 5.1)
-    pt_cavity = make_pt_cavity()
+    mid_pt_base = Box(5, 5.8, 4.5)
+    pt_cavity = make_bottom_entry_led_cavity()
     if left_hand:
         mid_pt_base.place((-mid_pt_base == ~key_stand_lower) + 1.5,
                           (~mid_pt_base == +key_stand_lower) + 9,
@@ -1220,28 +996,26 @@ def thumb_base(left_hand=False):
                           -mid_pt_base == +base)
     pt_cavity.place(~pt_cavity.named_point("lens_center") == ~mid_pt_base,
                     ~pt_cavity.named_point("lens_center") == ~mid_pt_base,
-                    (~pt_cavity.named_point("lens_center") == +mid_pt_base) - 1.8)
-    extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("top"), mid_pt_base)
-    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("lens_hole")), mid_pt_base)
-    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("legs")), base)
+                    +pt_cavity == +mid_pt_base)
+    extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("lens_hole"), mid_pt_base)
+    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("bottom")), base.bottom)
 
-    mid_led_base = Box(5.5, 5.9, 5.1)
-    led_cavity = make_led_cavity()
+    mid_led_base = Box(5, 5.8, 4.5)
+    led_cavity = make_bottom_entry_led_cavity()
     if left_hand:
         mid_led_base.place((+mid_led_base == ~key_stand_lower) - 1.5,
                            (~mid_led_base == ~mid_pt_base),
                            -mid_led_base == +base)
-        led_cavity.rz(180)
     else:
         mid_led_base.place((-mid_led_base == ~key_stand_lower) + 1.5,
                            (~mid_led_base == ~mid_pt_base),
                            -mid_led_base == +base)
+        led_cavity.rz(180)
     led_cavity.place(~led_cavity.named_point("lens_center") == ~mid_led_base,
                      ~led_cavity.named_point("lens_center") == ~mid_led_base,
-                     ~led_cavity.named_point("lens_center") == pt_cavity.named_point("lens_center").point)
-    extruded_led_cavity = ExtrudeTo(led_cavity.named_faces("top"), mid_led_base)
-    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.named_faces("lens_hole")), mid_led_base)
-    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.named_faces("legs")), base.bottom)
+                     +led_cavity == +mid_led_base)
+    extruded_led_cavity = ExtrudeTo(led_cavity.named_faces("lens_hole"), mid_led_base)
+    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.named_faces("bottom")), base.bottom)
 
     upper_outer_base = vertical_key_base(
         base.size().z, extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
