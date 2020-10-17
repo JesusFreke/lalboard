@@ -126,6 +126,64 @@ def hole_array(radius, pitch, count):
     return Union(*holes)
 
 
+def retaining_ridge_design(pressed_key_angle, length):
+    def rotated(vector, angle):
+        vector = vector.copy()
+        matrix = Matrix3D.create()
+        matrix.setToRotation(math.radians(angle), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
+        vector.transformBy(matrix)
+        return vector
+
+    def vectorTo(point, vector, length):
+        vector = vector.copy()
+        vector.scaleBy(length)
+        point = point.copy()
+        point.translateBy(vector)
+        return point
+
+    # how much it sticks out
+    retaining_ridge_thickness = .3
+    retaining_ridge_lower_angle = 45
+    # the length of the "face" of the ridge
+    retaining_ridge_width = .3
+
+    origin = Point3D.create(0, 0, 0)
+    up = Vector3D.create(0, 1, 0)
+    right = rotated(up, -90)
+    down = rotated(right, -90)
+    left = rotated(down, -90)
+
+    lines = []
+    lines.append(adsk.core.InfiniteLine3D.create(
+        origin,
+        rotated(down, -pressed_key_angle)))
+    lines.append(adsk.core.InfiniteLine3D.create(
+        origin,
+        left))
+
+    point = vectorTo(origin, rotated(left, -pressed_key_angle), retaining_ridge_thickness)
+    lines.append(adsk.core.InfiniteLine3D.create(
+        point,
+        rotated(down, -pressed_key_angle)))
+
+    point = lines[1].intersectWithCurve(lines[2])[0]
+    lines.append(adsk.core.InfiniteLine3D.create(
+        vectorTo(point, rotated(down, -pressed_key_angle), retaining_ridge_width),
+        rotated(down, retaining_ridge_lower_angle)))
+
+    points = []
+    for i in range(-1, 3):
+        points.append(lines[i].intersectWithCurve(lines[i+1])[0])
+
+    retaining_ridge = Polygon(*points, name="retaining_ridge_profile")
+    retaining_ridge = Extrude(retaining_ridge, length)
+
+    retaining_ridge.rz(-90)
+    retaining_ridge.ry(-90)
+
+    return retaining_ridge
+
+
 def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirrored=False):
     front = Box(7.6, 2.2, 6.4 + extra_height, "front")
 
@@ -176,78 +234,15 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
                          -remaining_back == -back_sloped)
     back = Union(remaining_back, back_sloped, name="back")
 
-    def rotated(vector, angle):
-        vector = vector.copy()
-        matrix = Matrix3D.create()
-        matrix.setToRotation(math.radians(angle), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
-        vector.transformBy(matrix)
-        return vector
+    retaining_ridge = retaining_ridge_design(pressed_key_angle, front.size().x)
 
-    def vectorTo(point, vector, length):
-        vector = vector.copy()
-        vector.scaleBy(length)
-        point = point.copy()
-        point.translateBy(vector)
-        return point
+    sloped_key_front = sloped_key.find_children("sloped_key")[0].front
 
-    # how much it sticks out
-    retaining_ridge_thickness = .3
-    retaining_ridge_lower_angle = 45
-    # the length of the "face" of the ridge
-    retaining_ridge_width = .3
+    retaining_ridge.place(~retaining_ridge == ~front,
+                          (+retaining_ridge == -key_pivot) - .05,
+                          +retaining_ridge == +front)
 
-    # the distance along the angled backstop from where the flat part meets the bottom cylindrical part
-    # this is placed so that there's just enough room for the key to be able to slid into place vertically,
-    # but as soon as it starts to rotate, the groove in the key post engages with the ridge, retaining the key
-    retaining_ridge_dist = retaining_ridge_thickness / math.tan(math.radians(pressed_key_angle))
-    retaining_ridge_y = retaining_ridge_dist * math.sin(math.radians(pressed_key_angle))
-    retaining_ridge_z = retaining_ridge_dist * math.cos(math.radians(pressed_key_angle))
-
-    origin = Point3D.create(0, 0, 0)
-    up = Vector3D.create(0, 1, 0)
-    right = rotated(up, -90)
-    down = rotated(right, -90)
-    left = rotated(down, -90)
-
-    lines = []
-    lines.append(adsk.core.InfiniteLine3D.create(
-        origin,
-        rotated(down, -pressed_key_angle)))
-    lines.append(adsk.core.InfiniteLine3D.create(
-        origin,
-        left))
-
-    point = vectorTo(origin, rotated(left, -pressed_key_angle), retaining_ridge_thickness)
-    lines.append(adsk.core.InfiniteLine3D.create(
-        point,
-        rotated(down, -pressed_key_angle)))
-
-    point = lines[1].intersectWithCurve(lines[2])[0]
-    lines.append(adsk.core.InfiniteLine3D.create(
-        vectorTo(point, rotated(down, -pressed_key_angle), retaining_ridge_width),
-        rotated(down, retaining_ridge_lower_angle)))
-
-    points = []
-    for i in range(-1, 3):
-        points.append(lines[i].intersectWithCurve(lines[i+1])[0])
-
-    retaining_ridge = Polygon(*points, name="retaining_ridge_profile")
-    retaining_ridge = Extrude(retaining_ridge, back.size().x)
-
-    retaining_ridge.rz(-90)
-    retaining_ridge.ry(-90)
-
-    lowest_edge = None
-    for edge in retaining_ridge.bodies[0].brep.edges:
-        if lowest_edge is None or edge.pointOnEdge.z < lowest_edge.pointOnEdge.z:
-            lowest_edge = edge
-
-    retaining_ridge.add_named_point("lowest_edge", Point3D.create(
-        retaining_ridge.mid().x, lowest_edge.pointOnEdge.y, lowest_edge.pointOnEdge.z))
-
-    retaining_ridge.place(~retaining_ridge == ~back,
-                          (~retaining_ridge.named_point("lowest_edge") == +back_sloped) - retaining_ridge_y,
-                          (~retaining_ridge.named_point("lowest_edge") == -back_sloped) + retaining_ridge_z)
+    retaining_ridge.align_to(sloped_key_front, Vector3D.create(0, 0, -1))
 
     sloped_key = Difference(sloped_key, retaining_ridge)
 
@@ -694,7 +689,7 @@ def side_key(key_height, key_angle, name):
         key_angle=key_angle,
         key_protrusion=False,
         key_displacement=False,
-        groove_height=1.575,
+        groove_height=1.503,
         magnet_height=5.4,
         name=name)
 
@@ -721,19 +716,19 @@ def thumb_side_key(key_width, key_height, groove_height, key_displacement: float
 
 
 def inner_thumb_key():
-    return thumb_side_key(25, 13.5, 2.443, key_displacement=-.5, name="inner_thumb_key")
+    return thumb_side_key(25, 13.5, 2.68, key_displacement=-.5, name="inner_thumb_key")
 
 
 def outer_upper_thumb_key():
-    return thumb_side_key(20, 16, 2.566, name="outer_upper_thumb_key")
+    return thumb_side_key(20, 16, 2.68, name="outer_upper_thumb_key")
 
 
 def outer_lower_thumb_key():
-    return thumb_side_key(20, 20, 4.159, name="outer_lower_thumb_key")
+    return thumb_side_key(20, 20, 4.546, name="outer_lower_thumb_key")
 
 
 def thumb_mode_key(left_hand=False):
-    key_post = vertical_key_post(23, 2.566, 9.05, groove_width=1)
+    key_post = vertical_key_post(23, 2.68, 9.05, groove_width=1)
 
     face_finder = Box(1, 1, 1)
     face_finder.place(~face_finder == ~key_post,
