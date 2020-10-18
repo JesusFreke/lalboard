@@ -94,7 +94,7 @@ def vertical_large_thin_double_magnet_cutout(name="magnet_cutout"):
     return Union(base, taper, name=name)
 
 
-def make_bottom_entry_led_cavity():
+def make_bottom_entry_led_cavity(name="led_cavity"):
     lens_height = 4.5
     lens_radius = .75
 
@@ -106,8 +106,8 @@ def make_bottom_entry_led_cavity():
     lens_slot.place(-lens_slot == +body, ~lens_slot == ~body, +lens_slot == +lens_hole)
     lens_hole.place(~lens_hole == +lens_slot)
 
-    cavity = Union(body, lens_slot, name="phototransistor_cavity")
-    cavity = SplitFace(cavity, lens_hole)
+    cavity = Union(body, lens_slot)
+    cavity = SplitFace(cavity, lens_hole, name=name)
 
     cavity.add_named_faces("lens_hole", *cavity.find_faces(lens_hole))
     cavity.add_named_faces("bottom", *cavity.find_faces(body.bottom))
@@ -189,14 +189,14 @@ def vertical_key_base(base_height, extra_height=0, pressed_key_angle=12.5, mirro
 
     pt_base = Box(3.65, 6.15, front.size().z, "phototransistor_base")
     pt_base.place(+pt_base == -front, +pt_base == +front, -pt_base == -front)
-    pt_cavity = make_bottom_entry_led_cavity()
+    pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
     pt_cavity.place((-pt_cavity == -pt_base) + .525,
                     (-pt_cavity == -pt_base) + .525,
                     +pt_cavity == +pt_base)
 
     led_base = Box(3.65, 6.15, front.size().z, "led_base")
     led_base.place(-led_base == +front, +led_base == +front, -led_base == -front)
-    led_cavity = make_bottom_entry_led_cavity()
+    led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
     led_cavity.rz(180)
     led_cavity.place((+led_cavity == +led_base) - .525,
                      (-led_cavity == -led_base) + .525,
@@ -340,14 +340,14 @@ def cluster():
     right_base = key_bases[1]
     left_base = key_bases[3]
 
-    central_led_cavity = make_bottom_entry_led_cavity()
+    central_led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
     central_led_cavity.place(-central_led_cavity == -solid_center,
                              -central_led_cavity == -solid_center,
                              +central_led_cavity == +combined_cluster)
     central_led_cavity.align_to(left_cavity.bodies[0], Vector3D.create(-1, 0, 0))
     central_led_cavity.align_to(back.bodies[0], Vector3D.create(0, -1, 0))
 
-    central_pt_cavity = make_bottom_entry_led_cavity().scale(-1, 1, 1)
+    central_pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity").scale(-1, 1, 1)
     central_pt_cavity.place(+central_pt_cavity == +solid_center,
                             -central_pt_cavity == -solid_center,
                             +central_pt_cavity == +combined_cluster)
@@ -979,7 +979,7 @@ def thumb_base(left_hand=False):
                        -mid_key_stop == +base)
 
     mid_pt_base = Box(5, 5.8, 4.5)
-    pt_cavity = make_bottom_entry_led_cavity()
+    pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
     if left_hand:
         mid_pt_base.place((-mid_pt_base == ~key_stand_lower) + 1.5,
                           (~mid_pt_base == +key_stand_lower) + 9,
@@ -996,7 +996,7 @@ def thumb_base(left_hand=False):
     extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("bottom")), base.bottom)
 
     mid_led_base = Box(5, 5.8, 4.5)
-    led_cavity = make_bottom_entry_led_cavity()
+    led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
     if left_hand:
         mid_led_base.place((+mid_led_base == ~key_stand_lower) - 1.5,
                            (~mid_led_base == ~mid_pt_base),
