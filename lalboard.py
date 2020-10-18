@@ -324,12 +324,12 @@ def cluster():
     center_nub_hole = Box(4, 3, 4.5)
     center_nub_hole.place(
         ~center_nub_hole == ~base,
-        -center_nub_hole == -solid_center,
+        +center_nub_hole == +solid_center,
         +center_nub_hole == +solid_center)
 
     central_magnet_cutout = horizontal_magnet_cutout(name="central_magnet_cutout")
     central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
-                                -central_magnet_cutout == +center_hole,
+                                +central_magnet_cutout == -center_hole,
                                 (~central_magnet_cutout == +combined_cluster) - 3.5)
 
     # TODO: is there a better way to find the desired children?
@@ -342,14 +342,14 @@ def cluster():
 
     central_led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
     central_led_cavity.place(-central_led_cavity == -solid_center,
-                             -central_led_cavity == -solid_center,
+                             +central_led_cavity == +solid_center,
                              +central_led_cavity == +combined_cluster)
     central_led_cavity.align_to(left_cavity.bodies[0], Vector3D.create(-1, 0, 0))
     central_led_cavity.align_to(back.bodies[0], Vector3D.create(0, -1, 0))
 
     central_pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity").scale(-1, 1, 1)
     central_pt_cavity.place(+central_pt_cavity == +solid_center,
-                            -central_pt_cavity == -solid_center,
+                            +central_pt_cavity == +solid_center,
                             +central_pt_cavity == +combined_cluster)
     central_pt_cavity.align_to(right_cavity.bodies[0], Vector3D.create(1, 0, 0))
     central_pt_cavity.align_to(back.bodies[0], Vector3D.create(0, -1, 0))
@@ -364,8 +364,8 @@ def cluster():
 
     result = Difference(combined_cluster, *key_base_negatives, center_hole, center_nub_hole, central_magnet_cutout,
                         extruded_led_cavity, extruded_pt_cavity)
-    result.add_named_point("lower_left_corner", [right_base.max().x, right_base.max().y, 0])
-    result.add_named_point("lower_right_corner", [left_base.min().x, left_base.max().y, 0])
+    result.add_named_point("lower_left_corner", [left_base.min().x, left_base.min().y, 0])
+    result.add_named_point("lower_right_corner", [right_base.max().x, right_base.min().y, 0])
     return result
 
 
@@ -833,7 +833,6 @@ def cluster_pcb_sketch():
 
 def full_cluster():
     clust = cluster()
-    clust.rz(180, center=clust.mid())
 
     clust, front = cluster_front(clust, 2)
 
