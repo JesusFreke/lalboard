@@ -604,7 +604,7 @@ def center_key():
     key_radius = 7.5
     key_rim_height = .5
     key_thickness = 2
-    post_length = 8.4 + 2.5
+    post_length = 7.9 + 2
     key_travel = 1.9
 
     fillet_radius = 1.2
@@ -620,52 +620,34 @@ def center_key():
                          -key_rim_hollow == -key_rim)
     key_rim = Difference(key_rim, key_rim_hollow)
 
-    upper_post = Box(5 - .2, 5 - .1, key_rim_height + key_travel, name="upper_post")
-    lower_post = Box(5 - .2, 5 - .1, key_travel, name="upper_post")
-    mid_post = Box(5 - .2 - .8, 5 - .1 - .4,
-                   post_length + key_rim_height - upper_post.size().z - lower_post.size().z - 2, name="upper_post")
+    center_post = Box(5 - .2, 5 - .1, post_length + key_rim_height, name="center_post")
 
-    upper_post.place(~upper_post == ~key,
-                     (~upper_post == ~key) + .05,
-                     -upper_post == +key)
-    mid_post.place(~mid_post == ~upper_post,
-                   -mid_post == -upper_post,
-                   (-mid_post == +upper_post) + 1)
-    lower_post.place(~lower_post == ~upper_post,
-                     -lower_post == -upper_post,
-                     (-lower_post == +mid_post) + 1)
-
-    filleted_lower_post = Fillet(lower_post.shared_edges(
-        [lower_post.top],
-        [lower_post.front, lower_post.back, lower_post.left, lower_post.right]), fillet_radius)
-
-    upper_mid_post_transition = Loft(BRepComponent(upper_post.top.brep), BRepComponent(mid_post.bottom.brep))
-    lower_mid_post_transition = Loft(BRepComponent(mid_post.top.brep), BRepComponent(lower_post.bottom.brep))
-
-    post = Union(upper_post, upper_mid_post_transition, mid_post, lower_mid_post_transition, filleted_lower_post,
-                 name="post")
+    center_post.place(
+        ~center_post == ~key,
+        (~center_post == ~key) + .05,
+        -center_post == +key)
 
     interruptor_post = Box(3.5, 2, .65 + key_travel + key_rim_height, name="interruptor_post")
     interruptor_post.place(
         ~interruptor_post == ~key,
-        (-interruptor_post == +post) + 1.2,
+        (-interruptor_post == +center_post) + 1.2,
         -interruptor_post == +key)
     fillet_edges = interruptor_post.shared_edges(
         [interruptor_post.top, interruptor_post.back, interruptor_post.right, interruptor_post.left],
         [interruptor_post.top, interruptor_post.back, interruptor_post.right, interruptor_post.left])
     interruptor_post = Fillet(fillet_edges, fillet_radius)
 
-    bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
+    bounding_cylinder = Cylinder(center_post.max().z - key.min().z, key_radius)
     bounding_cylinder.place(~bounding_cylinder == ~key,
                             ~bounding_cylinder == ~key,
                             -bounding_cylinder == -key)
 
     magnet = horizontal_tiny_magnet_cutout(1.3)
-    magnet.place(~magnet == ~post,
-                 -magnet == -post,
+    magnet.place(~magnet == ~center_post,
+                 -magnet == -center_post,
                  (~magnet == +key_rim) + 3.5 + key_travel)
 
-    result = Difference(Union(key, key_rim, post, interruptor_post), magnet, name="center_key")
+    result = Difference(Union(key, key_rim, center_post, interruptor_post), magnet, name="center_key")
 
     return result
 
