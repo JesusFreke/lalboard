@@ -407,7 +407,7 @@ def underside_magnetic_attachment(base_height):
     magnet_hole = vertical_large_thin_magnet_cutout(depth=1)
     magnet_hole.rx(180)
 
-    base = Cylinder(base_height, 3.25)
+    base = Cylinder(base_height, 3.5)
 
     magnet_hole.place(
         ~magnet_hole == ~base,
