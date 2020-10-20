@@ -77,12 +77,16 @@ def vertical_large_magnet_cutout(name="magnet_cutout"):
 
 
 def vertical_large_thin_magnet_cutout(name="magnet_cutout", depth=1.8):
-    taper = tapered_box(3.35, 3.35, 3.5, 3.5, .7, name=name + "_taper")
-    base = Box(3.35, 3.35, depth - taper.size().z, name=name + "_base")
-    taper.place(~taper == ~base,
-                ~taper == ~base,
-                -taper == +base)
-    return Union(base, taper, name=name)
+    taper = tapered_box(3.35, 3.35, 3.5, 3.5, min(.7, depth), name=name + "_taper")
+
+    if depth > .7:
+        base = Box(3.35, 3.35, depth - taper.size().z, name=name + "_base")
+        taper.place(~taper == ~base,
+                    ~taper == ~base,
+                    -taper == +base)
+        return Union(base, taper, name=name)
+    else:
+        return Union(taper, name=name)
 
 
 def vertical_large_thin_double_magnet_cutout(name="magnet_cutout"):
@@ -419,7 +423,7 @@ def underside_magnetic_attachment(base_height):
     return Difference(base, negatives, name="attachment")
 
 
-def magnetic_attachment(base_height):
+def magnetic_attachment(ball_depth, rectangular_depth, radius=None):
     """This is the design for the magnetic attachments on the normal and thumb clusters.
 
     It consists of an upper part that holds a small rectangular magnet, and then a lower part that is a spherical
@@ -428,7 +432,7 @@ def magnetic_attachment(base_height):
     ball = Sphere(2.5, "ball")
     ball_radius = ball.size().x / 2
 
-    test_base = Cylinder(base_height, ball_radius*2)
+    test_base = Cylinder(ball_depth, ball_radius*2)
 
     # place the bottom at the height where the sphere's tangent is 45 degrees
     test_base.place(
@@ -455,13 +459,16 @@ def magnetic_attachment(base_height):
         ~test_base == ~ball,
         +test_base == +ball)
 
-    magnet_hole = vertical_large_thin_magnet_cutout()
+    magnet_hole = vertical_large_thin_magnet_cutout(depth=rectangular_depth)
 
-    base = Cylinder(base_height + magnet_hole.size().z, Intersection(ball, test_base).size().x/2 + .8)
+    if radius is None:
+        radius = Intersection(ball, test_base).size().x/2 + .8
+
+    base = Cylinder(ball_depth + rectangular_depth, radius)
     base.place(
         ~base == ~ball,
         ~base == ~ball,
-        (-base == +ball) - 2)
+        (-base == +ball) - ball_depth)
 
     magnet_hole.place(
         ~magnet_hole == ~ball,
@@ -862,6 +869,94 @@ def cluster_pcb_sketch():
     return sketch
 
 
+def cluster_back_clip():
+    cluster, pcb = full_cluster()
+
+    pcb_size = 1.6
+
+    left_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
+    right_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
+
+    left_attachment.place(
+        -left_attachment == -cluster,
+        +left_attachment == +cluster)
+
+    right_attachment.place(
+        +right_attachment == +cluster,
+        +right_attachment == +cluster,
+        ~right_attachment == ~left_attachment)
+
+    middle = Box(
+        right_attachment.mid().x - left_attachment.mid().x,
+        left_attachment.size().y,
+        left_attachment.size().z)
+
+    middle.place(
+        -middle == ~left_attachment,
+        +middle == +left_attachment,
+        ~middle == ~left_attachment)
+
+    flat_front = Box(
+        right_attachment.max().x - left_attachment.min().x,
+        left_attachment.size().y / 2,
+        left_attachment.size().z)
+
+    flat_front.place(
+        -flat_front == -left_attachment,
+        -flat_front == -left_attachment,
+        ~flat_front == ~left_attachment)
+
+    pcb_clip = Box(
+        flat_front.size().x,
+        3,
+        left_attachment.size().z - pcb_size)
+    pcb_clip.place(
+        ~pcb_clip == ~flat_front,
+        +pcb_clip == -flat_front,
+        -pcb_clip == -flat_front)
+
+    connector_cutout = Box(
+        13,
+        pcb_clip.size().y,
+        pcb_clip.size().z)
+    connector_cutout.place(
+        ~connector_cutout == ~pcb_clip,
+        ~connector_cutout == ~pcb_clip,
+        ~connector_cutout == ~pcb_clip)
+
+    left_attachment_cylinder = Cylinder(left_attachment.size().z, left_attachment.size().x / 2)
+    left_attachment_cylinder.place(
+        ~left_attachment_cylinder == ~left_attachment,
+        ~left_attachment_cylinder == ~left_attachment,
+        ~left_attachment_cylinder == ~left_attachment)
+
+    right_attachment_cylinder = Cylinder(right_attachment.size().z, right_attachment.size().x / 2)
+    right_attachment_cylinder.place(
+        ~right_attachment_cylinder == ~right_attachment,
+        ~right_attachment_cylinder == ~right_attachment,
+        ~right_attachment_cylinder == ~right_attachment)
+
+    # Add a hole for an fully inserted magnet, near where the magnet on the cluster will be. The magnet should be
+    # in the opposite orientation as the one on the cluster, and will provide a slight upwards force - enough to
+    # lightly hold the clip in place.
+    attachment_magnet = vertical_large_thin_magnet_cutout()
+    attachment_magnet.place(
+        (-attachment_magnet == +left_attachment.find_children("magnet_cutout")[0]) + .8,
+        ~attachment_magnet == ~left_attachment,
+        +attachment_magnet == +left_attachment)
+
+    return Difference(
+        Union(left_attachment, right_attachment,
+              Difference(
+                  pcb_clip,
+                  connector_cutout),
+              Difference(
+                  Union(middle, flat_front),
+                  left_attachment_cylinder,
+                  right_attachment_cylinder)),
+        attachment_magnet, name="cluster_back_clip")
+
+
 def full_cluster():
     clust = cluster()
     clust, front = cluster_front(clust)
@@ -1079,19 +1174,19 @@ def thumb_base(left_hand=False):
                      (-upper_base == -base) + 11,
                      -upper_base == -base)
 
-    lower_attachment = magnetic_attachment(base.size().z)
+    lower_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
     lower_attachment_negatives = lower_attachment.find_children("negatives")[0]
     lower_attachment.place(~lower_attachment == (upper_base.min().x + key_stand_lower.max().x) / 2,
                            (-lower_attachment == -base),
                            -lower_attachment == -base)
 
-    upper_attachment = magnetic_attachment(base.size().z)
+    upper_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
     upper_attachment_negatives = upper_attachment.find_children("negatives")[0]
     upper_attachment.place(~upper_attachment == ~mid_key_stop,
                            +upper_attachment == +base,
                            -upper_attachment == -base)
 
-    side_attachment = magnetic_attachment(base.size().z)
+    side_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
     side_attachment_negatives = side_attachment.find_children("negatives")[0]
 
     side_attachment.place(-side_attachment == -upper_outer_base,
