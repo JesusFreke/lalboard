@@ -645,14 +645,15 @@ def center_key():
     post = Union(upper_post, upper_mid_post_transition, mid_post, lower_mid_post_transition, filleted_lower_post,
                  name="post")
 
-    back_stop = Box(3.5, 2.45, .2 + key_travel + key_rim_height, name="back_stop")
-    back_stop.place(~back_stop == ~key,
-                    (-back_stop == +post) + 1.1,
-                    -back_stop == +key)
-    fillet_edges = back_stop.shared_edges(
-        [back_stop.top, back_stop.back, back_stop.right, back_stop.left],
-        [back_stop.top, back_stop.back, back_stop.right, back_stop.left])
-    back_stop = Fillet(fillet_edges, fillet_radius)
+    interruptor_post = Box(3.5, 2, .2 + key_travel + key_rim_height, name="interruptor_post")
+    interruptor_post.place(
+        ~interruptor_post == ~key,
+        (-interruptor_post == +post) + 1.2,
+        -interruptor_post == +key)
+    fillet_edges = interruptor_post.shared_edges(
+        [interruptor_post.top, interruptor_post.back, interruptor_post.right, interruptor_post.left],
+        [interruptor_post.top, interruptor_post.back, interruptor_post.right, interruptor_post.left])
+    interruptor_post = Fillet(fillet_edges, fillet_radius)
 
     bounding_cylinder = Cylinder(post.max().z - key.min().z, key_radius)
     bounding_cylinder.place(~bounding_cylinder == ~key,
@@ -664,7 +665,7 @@ def center_key():
                  -magnet == -post,
                  (~magnet == +key_rim) + 3.5 + key_travel)
 
-    result = Difference(Union(key, key_rim, post, back_stop), magnet, name="center_key")
+    result = Difference(Union(key, key_rim, post, interruptor_post), magnet, name="center_key")
 
     return result
 
