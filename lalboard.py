@@ -402,9 +402,9 @@ def underside_magnetic_attachment(base_height):
     both in place relative to each other.
     """
 
-    # Just a bit shallower than the thickness of the magnet, so the magnet sticks out a bit. The mating part will have
+    # A bit shallower than the thickness of the magnet, so the magnet sticks out a bit. The mating part will have
     # a hole that fits over the extending part of the magnet, to keep it from sliding.
-    magnet_hole = vertical_large_thin_magnet_cutout(depth=1.5)
+    magnet_hole = vertical_large_thin_magnet_cutout(depth=1)
     magnet_hole.rx(180)
 
     base = Cylinder(base_height, 3.25)
