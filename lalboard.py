@@ -492,7 +492,8 @@ def cluster_front(cluster: Component):
 
     extension_y_size = 11
 
-    attachment = underside_magnetic_attachment(upper_base.size().z)
+    # 1mm depth for magnet hole, +.3 mm for 2 .15 layers on top
+    attachment = underside_magnetic_attachment(1.3)
 
     attachment.place(~attachment == ~cluster,
                      (-attachment == -cluster) - extension_y_size,
@@ -524,6 +525,28 @@ def cluster_front(cluster: Component):
 
     base = Difference(base, cluster.bounding_box.make_box())
 
+    thin_front_tool = Box(
+        attachment.size().x * 10,
+        attachment.size().y,
+        base.size().z,
+        name="front_lower_section")
+
+    thin_front_tool.place(
+        ~thin_front_tool == ~attachment,
+        ~thin_front_tool == ~attachment,
+        +thin_front_tool == -attachment)
+
+    thin_front_extension_tool = Box(
+        attachment.size().x,
+        base.size().y,
+        base.size().z,
+        name="front_lower_section_extension")
+
+    thin_front_extension_tool.place(
+        ~thin_front_extension_tool == ~attachment,
+        +thin_front_extension_tool == +base,
+        +thin_front_extension_tool == +thin_front_tool)
+
     cluster = Difference(
         cluster,
         Extrude(Polygon(
@@ -535,9 +558,15 @@ def cluster_front(cluster: Component):
             right_tangent_point,
             Point3D.create(cluster.max().x, cluster.min().y, upper_base.min().z)), upper_base.size().z))
 
-    attachment.place(z=-attachment == -base)
+    attachment.place(z=+attachment == +base)
 
-    return cluster, Difference(Union(base, attachment), attachment.find_children("negatives")[0])
+    return cluster, Difference(
+        Union(
+            base,
+            attachment),
+        thin_front_tool,
+        thin_front_extension_tool,
+        attachment.find_children("negatives")[0])
 
 
 def cluster_back(cluster: Component):
