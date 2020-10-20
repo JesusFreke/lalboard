@@ -645,7 +645,7 @@ def center_key():
     post = Union(upper_post, upper_mid_post_transition, mid_post, lower_mid_post_transition, filleted_lower_post,
                  name="post")
 
-    interruptor_post = Box(3.5, 2, .2 + key_travel + key_rim_height, name="interruptor_post")
+    interruptor_post = Box(3.5, 2, .65 + key_travel + key_rim_height, name="interruptor_post")
     interruptor_post.place(
         ~interruptor_post == ~key,
         (-interruptor_post == +post) + 1.2,
