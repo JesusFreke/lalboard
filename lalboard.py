@@ -490,7 +490,7 @@ def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
 def cluster_front(cluster: Component):
     upper_base = cluster.find_children("upper_base")[0]
 
-    extension_y_size = 9
+    extension_y_size = 11
 
     attachment = underside_magnetic_attachment(upper_base.size().z)
 
