@@ -220,6 +220,17 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
                     (+key_pivot == +upper_base) - 2.6,
                     (~key_pivot == -key_base) + 2)
 
+    pivot_vee = Box(
+        key_pivot.size().x,
+        key_pivot.radius,
+        key_pivot.radius)
+    pivot_vee.rx(45)
+
+    pivot_vee.place(
+        ~pivot_vee == ~key_pivot,
+        ~pivot_vee == ~key_pivot,
+        +pivot_vee == ~key_pivot)
+
     straight_key = Box(post_hole_width, key_pivot.size().y, key_base.size().z * 2, "straight_key")
     straight_key.place(
         ~straight_key == ~key_pivot,
@@ -256,7 +267,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
     extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("lens_hole"), result.copy(False))
 
     negatives = Union(
-        extruded_pt_cavity, extruded_led_cavity, magnet_cutout, straight_key, sloped_key, name="negatives")
+        extruded_pt_cavity, extruded_led_cavity, magnet_cutout, straight_key, sloped_key, pivot_vee, name="negatives")
 
     result = Difference(result, negatives,  name="vertical_key_base")
 
