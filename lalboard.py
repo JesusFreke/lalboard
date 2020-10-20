@@ -957,6 +957,113 @@ def cluster_back_clip():
         attachment_magnet, name="cluster_back_clip")
 
 
+def cluster_front_clip():
+    clust = cluster()
+    clust, front = cluster_front(clust)
+
+    cluster_attachment = front.find_children("attachment")[0]
+    bottom_finder = front.bounding_box.make_box()
+    bottom_finder.place(
+        ~bottom_finder == ~front,
+        ~bottom_finder == ~front,
+        +bottom_finder == -front)
+    front_bottom_faces = Union(*[BRepComponent(face.brep) for face in front.find_faces(bottom_finder)])
+
+    back_selector = Extrude(front_bottom_faces, -clust.size().z).bounding_box.make_box()
+
+    front_attachment = magnetic_attachment(1.8, .6, 3.5)
+    front_attachment.place(
+        ~front_attachment == ~front,
+        -front_attachment == -front,
+        +front_attachment == -cluster_attachment)
+
+    ball_opening_slope = math.asin((2.5-1.8)/2.5)
+    ball_opening_radius = 2.5 * math.cos(ball_opening_slope)
+    ball_opening_cone_height = clust.size().z
+
+    ball_opening_cone_end_radius = math.tan(ball_opening_slope) * ball_opening_cone_height + ball_opening_radius
+
+    ball_insertion_cone = Cylinder(ball_opening_cone_height, ball_opening_cone_end_radius, ball_opening_radius)
+    ball_insertion_cone.place(
+        ~ball_insertion_cone == ~front_attachment,
+        ~ball_insertion_cone == ~front_attachment,
+        +ball_insertion_cone == -front_attachment)
+
+    front_attachment_cylinder = Cylinder(front_attachment.size().z, front_attachment.size().x / 2)
+    front_attachment_cylinder.place(
+        ~front_attachment_cylinder == ~front_attachment,
+        ~front_attachment_cylinder == ~front_attachment,
+        ~front_attachment_cylinder == ~front_attachment)
+
+    front_bottom_face = front.find_faces(front_attachment)[0]
+    front_bottom = Silhouette(front_bottom_face.outer_edges, front_bottom_face.get_plane())
+
+    back_part = Intersection(front_bottom, back_selector)
+    back_part_thin_tool = Box(
+        back_part.size().x - .6,
+        back_part.size().y,
+        10)
+    back_part_thin_tool.place(
+        ~back_part_thin_tool == ~back_part,
+        ~back_part_thin_tool == ~back_part,
+        ~back_part_thin_tool == ~back_part)
+    thinner_back_part = Intersection(back_part, back_part_thin_tool)
+
+    front_part = Difference(front_bottom, back_selector)
+
+    modified_front_bottom = Union(thinner_back_part, front_part)
+
+    sloped_front = Box(
+        cluster().size().y * 2,
+        cluster().size().y * 2,
+        cluster().size().y * 2)
+    sloped_front.place(
+        ~sloped_front == ~front,
+        +sloped_front == -front,
+        (+sloped_front == +front_attachment) - .5)
+    sloped_front.rx(55, center=sloped_front.max())
+    sloped_front_back_limit = Box(
+        sloped_front.size().x,
+        sloped_front.size().y,
+        sloped_front.size().z)
+    sloped_front_back_limit.place(
+        ~sloped_front_back_limit == ~sloped_front,
+        (-sloped_front_back_limit == -back_selector) - 1,
+        -sloped_front_back_limit == -sloped_front)
+    sloped_front = Difference(sloped_front, sloped_front_back_limit)
+
+    # Add a hole for an fully inserted magnet, near where the magnet on the cluster will be. The magnet should be
+    # in the opposite orientation as the one on the cluster, and will provide a slight upwards force - enough to
+    # lightly hold the clip in place.
+    attachment_magnet = vertical_large_thin_magnet_cutout()
+    attachment_magnet.place(
+        ~attachment_magnet == ~front,
+        (-attachment_magnet == +front_attachment.find_children("magnet_cutout")[0]) + 1.2,
+        +attachment_magnet == +front_attachment)
+
+    attachment_body = Extrude(
+        modified_front_bottom,
+        -(cluster_attachment.min().z - clust.min().z))
+
+    pcb_clip_outline = Silhouette(front, attachment_body.end_faces[0].get_plane())
+
+    pcb_clips = Extrude(pcb_clip_outline, 2.4-1.7)
+    pcb_clips.place(z=(+pcb_clip_outline == -attachment_body))
+
+    assembly = Difference(
+        Union(
+            front_attachment,
+            Difference(
+                Union(attachment_body, pcb_clips),
+                front_attachment_cylinder,
+                ball_insertion_cone,
+                front_attachment)),
+        attachment_magnet,
+        sloped_front)
+
+    return assembly
+
+
 def full_cluster():
     clust = cluster()
     clust, front = cluster_front(clust)
