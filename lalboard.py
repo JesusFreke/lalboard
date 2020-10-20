@@ -307,7 +307,7 @@ def cluster():
                       ~center_hole == ~base,
                       -center_hole == -base)
 
-    center_nub_hole = Box(4, 2.6, 4.5)
+    center_nub_hole = Box(center_hole.size().x, 2.6, 4.5)
     center_nub_hole.place(
         ~center_nub_hole == ~base,
         (-center_nub_hole == +center_hole) + .8,
