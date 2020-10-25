@@ -113,6 +113,14 @@ def make_bottom_entry_led_cavity(name="led_cavity"):
     cavity = Union(body, lens_slot)
     cavity = SplitFace(cavity, lens_hole, name=name)
 
+    leg = small_pin()
+    leg.place(~leg == ~body, (~leg == ~body) + 2.54/2, +leg == -body)
+    leg2 = leg.copy().ty(-2.54)
+    legs = Union(leg, leg2, name="legs")
+    cavity = SplitFace(cavity, legs)
+
+    cavity.add_named_faces("legs", *cavity.find_faces((leg, leg2)))
+
     cavity.add_named_faces("lens_hole", *cavity.find_faces(lens_hole))
     cavity.add_named_faces("bottom", *cavity.find_faces(body.bottom))
 
@@ -367,40 +375,75 @@ def cluster():
     return result
 
 
-def cluster_pcb(cluster):
+def cluster_pcb(clust, front, back, back_clip):
     hole_size = .35
 
-    bottom_finder = Circle(5)
-    bottom_finder.place(~bottom_finder == ~cluster,
-                        ~bottom_finder == ~cluster,
-                        ~bottom_finder == -cluster)
+    full_clust = Union(clust, front, back)
 
-    bottom = cluster.find_faces(bottom_finder)[0]
+    pcb_plane = Rect(1, 1, 1)
+    pcb_plane.place(
+        ~pcb_plane == ~clust,
+        ~pcb_plane == ~clust,
+        +pcb_plane == -back)
 
-    base = Extrude(BRepComponent(bottom.brep).bodies[0].faces[0], 1.2)
+    pcb_silhouette = Silhouette(full_clust, pcb_plane.get_plane())
 
-    base_extension = Box(base.size().x, 7, base.size().z)
-    base_extension.place(~base_extension == ~base,
-                         -base_extension == +base,
-                         -base_extension == -base)
+    bottom_finder = full_clust.bounding_box.make_box()
+    bottom_finder.place(
+        ~bottom_finder == ~full_clust,
+        ~bottom_finder == ~full_clust,
+        +bottom_finder == -full_clust)
+
+    key_wells = Extrude(
+        Union(*[face.make_component() for face in full_clust.find_faces(bottom_finder)]),
+        -full_clust.size().z)
+
+    front_edge_finder = full_clust.bounding_box.make_box()
+    front_edge_finder.place(
+        ~front_edge_finder == ~back,
+        +front_edge_finder == -key_wells,
+        +front_edge_finder == -front)
+    front_bottom_face = full_clust.find_faces(front_edge_finder.top)[0]
+
+    front_key_well_face = full_clust.find_faces(front_edge_finder.back)[0]
+    front_cut_out = Extrude(front_key_well_face.make_component(), full_clust.size().y)
+
+    front_trim_tool = full_clust.bounding_box.make_box()
+    front_trim_tool.place(
+        ~front_trim_tool == ~full_clust,
+        +front_trim_tool == -front_bottom_face,
+        ~front_trim_tool == ~pcb_silhouette)
+
+    back_trim_tool = full_clust.bounding_box.make_box()
+    back_trim_tool.place(
+        ~back_trim_tool == ~full_clust,
+        -back_trim_tool == ~back_clip.named_point("pcb_location"),
+        ~back_trim_tool == ~pcb_silhouette)
+
+    pcb_silhouette = Difference(pcb_silhouette, key_wells, front_trim_tool, front_cut_out, back_trim_tool)
+
+    for loop in pcb_silhouette.faces[0].loops:
+        offset_amount = -.2
+        if abs(loop.size().x - loop.size().y) < app().pointTolerance:
+            # for the square hole in the center, enlarge it enough to ensure the rounded corners don't interfere
+            # with the center key post
+            offset_amount = -.4
+        pcb_silhouette = OffsetEdges(pcb_silhouette.faces[0],
+                                     pcb_silhouette.find_edges(loop.edges),
+                                     offset_amount)
 
     connector_holes = hole_array(hole_size, 1.5, 7)
-    connector_holes.place((~connector_holes == ~base_extension) - 1.8375,
-                          (~connector_holes == +base_extension) - 2.2,
-                          ~connector_holes == +base_extension)
-    extension_holes = ExtrudeTo(connector_holes, base_extension.bottom)
+    connector_holes.place((~connector_holes == ~pcb_silhouette),
+                          (~connector_holes == +pcb_silhouette) - 2.2,
+                          ~connector_holes == ~pcb_silhouette)
 
-    through_holes = hole_array(hole_size, 2.1, 7)
-    through_holes.place(~through_holes == ~connector_holes,
-                        (-through_holes == ~connector_holes) - 1.3-2.5,
-                        ~through_holes == +base_extension)
-    through_holes = ExtrudeTo(through_holes, base_extension.bottom)
+    legs = Union(*clust.find_children("legs"))
+    legs.place(
+        z=~legs == ~pcb_silhouette)
 
-    base_extension = Difference(base_extension, extension_holes, through_holes)
+    pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs)
 
-    base = Union(base, base_extension, name="cluster_pcb")
-    base.add_named_faces("bottom", *base.find_faces(bottom))
-    return base
+    return Extrude(pcb_silhouette, -1.6, name="pcb")
 
 
 def ball_socket_ball():
@@ -865,21 +908,20 @@ def cluster_pcb_sketch():
     return sketch
 
 
-def cluster_back_clip():
-    cluster, pcb = full_cluster()
-
+def cluster_back_clip(back):
     pcb_size = 1.6
 
     left_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
     right_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
 
     left_attachment.place(
-        -left_attachment == -cluster,
-        +left_attachment == +cluster)
+        -left_attachment == -back,
+        +left_attachment == +back,
+        +left_attachment == -back)
 
     right_attachment.place(
-        +right_attachment == +cluster,
-        +right_attachment == +cluster,
+        +right_attachment == +back,
+        +right_attachment == +back,
         ~right_attachment == ~left_attachment)
 
     middle = Box(
@@ -941,7 +983,7 @@ def cluster_back_clip():
         ~attachment_magnet == ~left_attachment,
         +attachment_magnet == +left_attachment)
 
-    return Difference(
+    assembly = Difference(
         Union(left_attachment, right_attachment,
               Difference(
                   pcb_clip,
@@ -952,11 +994,14 @@ def cluster_back_clip():
                   right_attachment_cylinder)),
         attachment_magnet, name="cluster_back_clip")
 
+    assembly.add_named_point("pcb_location", Point3D.create(
+        back.mid().x,
+        flat_front.min().y,
+        flat_front.mid().z))
+    return assembly
 
-def cluster_front_clip():
-    clust = cluster()
-    clust, front = cluster_front(clust)
 
+def cluster_front_clip(clust, front):
     cluster_attachment = front.find_children("attachment")[0]
     bottom_finder = front.bounding_box.make_box()
     bottom_finder.place(
@@ -1065,7 +1110,13 @@ def full_cluster():
     clust, front = cluster_front(clust)
     back = cluster_back(clust)
 
-    return Union(clust, front, back), None
+    front_clip = cluster_front_clip(clust, front)
+
+    back_clip = cluster_back_clip(back)
+
+    pcb = cluster_pcb(clust, front, back, back_clip)
+
+    return Union(clust, front, back), pcb
 
 
 def ballscrew(screw_length, name):
