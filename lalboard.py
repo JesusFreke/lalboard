@@ -191,10 +191,10 @@ def retaining_ridge_design(pressed_key_angle, length):
 def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
     post_hole_width = post_width + .3
 
-    key_base = Box(
+    key_well = Box(
         post_hole_width + .525*2,
         4.75,
-        8.4 + extra_height, "key_base")
+        8.4 + extra_height, "key_well")
 
     pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
     led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
@@ -206,23 +206,23 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
         name="upper_base")
 
     upper_base.place(
-        ~upper_base == ~key_base,
-        -upper_base == -key_base,
-        +upper_base == +key_base)
+        ~upper_base == ~key_well,
+        -upper_base == -key_well,
+        +upper_base == +key_well)
 
-    pt_cavity.place(+pt_cavity == -key_base,
+    pt_cavity.place(+pt_cavity == -key_well,
                     (-pt_cavity == -upper_base) + .525,
                     (+pt_cavity == +upper_base) - .3)
 
     led_cavity.rz(180)
-    led_cavity.place(-led_cavity == +key_base,
+    led_cavity.place(-led_cavity == +key_well,
                      (-led_cavity == -upper_base) + .525,
                      +led_cavity == +pt_cavity)
 
     key_pivot = Cylinder(post_hole_width, 1, name="key-pivot").ry(90)
-    key_pivot.place(~key_pivot == ~key_base,
+    key_pivot.place(~key_pivot == ~key_well,
                     (+key_pivot == +upper_base) - 2.6,
-                    (~key_pivot == -key_base) + 2)
+                    (~key_pivot == -key_well) + 2)
 
     pivot_vee = Box(
         key_pivot.size().x,
@@ -235,13 +235,13 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
         ~pivot_vee == ~key_pivot,
         +pivot_vee == ~key_pivot)
 
-    straight_key = Box(post_hole_width, key_pivot.size().y, key_base.size().z * 2, "straight_key")
+    straight_key = Box(post_hole_width, key_pivot.size().y, key_well.size().z * 2, "straight_key")
     straight_key.place(
         ~straight_key == ~key_pivot,
         ~straight_key == ~key_pivot,
         -straight_key == ~key_pivot)
 
-    sloped_key = Box(post_hole_width, key_pivot.size().y, key_base.size().z * 2, "sloped_key")
+    sloped_key = Box(post_hole_width, key_pivot.size().y, key_well.size().z * 2, "sloped_key")
     sloped_key.place(~sloped_key == ~key_pivot,
                      ~sloped_key == ~key_pivot,
                      -sloped_key == ~key_pivot)
@@ -251,7 +251,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
 
     sloped_key_front = sloped_key.find_children("sloped_key")[0].front
 
-    retaining_ridge.place(~retaining_ridge == ~key_base,
+    retaining_ridge.place(~retaining_ridge == ~key_well,
                           (+retaining_ridge == -key_pivot) - .05,
                           +retaining_ridge == +upper_base)
 
@@ -259,13 +259,13 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
 
     sloped_key = Difference(sloped_key, retaining_ridge)
 
-    result = Union(key_base, upper_base)
+    result = Union(key_well, upper_base)
     result = Difference(result, sloped_key, straight_key)
 
     magnet_cutout = horizontal_rotated_magnet_cutout()
-    magnet_cutout.place(~magnet_cutout == ~key_base,
+    magnet_cutout.place(~magnet_cutout == ~key_well,
                         -magnet_cutout == +straight_key,
-                        (+magnet_cutout == +key_base) - .45)
+                        (+magnet_cutout == +key_well) - .45)
 
     extruded_led_cavity = ExtrudeTo(led_cavity.named_faces("lens_hole"), result.copy(False))
     extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("lens_hole"), result.copy(False))
@@ -288,14 +288,29 @@ def cluster():
 
     base = Box(24.9, 24.9, key_base_upper.size().z, "base")
 
+    key_well: Box = key_base.find_children("key_well")[0]
+    key_base = Fillet(
+        key_base.shared_edges(
+            key_base.find_faces(key_well.back),
+            key_base.find_faces([key_well.left, key_well.right])),
+        .8)
+
     key_base.place(~key_base == ~base,
                    -key_base == -base,
                    +key_base == +base)
 
+    back_key_base = key_base.copy()
+    back_key_base = Fillet(
+        back_key_base.shared_edges(
+            back_key_base.find_faces(key_well.front),
+            back_key_base.find_faces([key_well.left, key_well.right])),
+        .8)
+    back_key_base.scale(-1, 1, 1, center=key_base.mid()).rz(180, base.mid())
+
     key_bases = (
         key_base.copy().scale(-1, 1, 1, center=key_base.mid()),
         key_base.copy().rz(90, base.mid()),
-        key_base.copy().scale(-1, 1, 1, center=key_base.mid()).rz(180, base.mid()),
+        back_key_base,
         key_base.rz(270, base.mid())
     )
     key_base_negatives = (
@@ -322,8 +337,6 @@ def cluster():
                                 +central_magnet_cutout == -center_hole,
                                 (~central_magnet_cutout == +combined_cluster) - 3.5)
 
-    # TODO: is there a better way to find the desired children?
-    back = key_base_negatives[0]
     left_cavity = key_base_negatives[3]
     left_pt_cavity = left_cavity.find_children("pt_cavity")[0]
     right_cavity = key_base_negatives[1]
