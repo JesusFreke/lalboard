@@ -289,7 +289,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
     return result
 
 
-def cluster():
+def cluster_design():
     key_base = vertical_key_base()
 
     key_base_upper = key_base.find_children("upper_base")[0]
@@ -375,48 +375,48 @@ def cluster():
     return result
 
 
-def cluster_pcb(clust, front, back, back_clip):
+def cluster_pcb(cluster, front, back, back_clip):
     hole_size = .35
 
-    full_clust = Union(clust, front, back)
+    full_cluster = Union(cluster, front, back)
 
     pcb_plane = Rect(1, 1, 1)
     pcb_plane.place(
-        ~pcb_plane == ~clust,
-        ~pcb_plane == ~clust,
+        ~pcb_plane == ~cluster,
+        ~pcb_plane == ~cluster,
         +pcb_plane == -back)
 
-    pcb_silhouette = Silhouette(full_clust, pcb_plane.get_plane())
+    pcb_silhouette = Silhouette(full_cluster, pcb_plane.get_plane())
 
-    bottom_finder = full_clust.bounding_box.make_box()
+    bottom_finder = full_cluster.bounding_box.make_box()
     bottom_finder.place(
-        ~bottom_finder == ~full_clust,
-        ~bottom_finder == ~full_clust,
-        +bottom_finder == -full_clust)
+        ~bottom_finder == ~full_cluster,
+        ~bottom_finder == ~full_cluster,
+        +bottom_finder == -full_cluster)
 
     key_wells = Extrude(
-        Union(*[face.make_component() for face in full_clust.find_faces(bottom_finder)]),
-        -full_clust.size().z)
+        Union(*[face.make_component() for face in full_cluster.find_faces(bottom_finder)]),
+        -full_cluster.size().z)
 
-    front_edge_finder = full_clust.bounding_box.make_box()
+    front_edge_finder = full_cluster.bounding_box.make_box()
     front_edge_finder.place(
         ~front_edge_finder == ~back,
         +front_edge_finder == -key_wells,
         +front_edge_finder == -front)
-    front_bottom_face = full_clust.find_faces(front_edge_finder.top)[0]
+    front_bottom_face = full_cluster.find_faces(front_edge_finder.top)[0]
 
-    front_key_well_face = full_clust.find_faces(front_edge_finder.back)[0]
-    front_cut_out = Extrude(front_key_well_face.make_component(), full_clust.size().y)
+    front_key_well_face = full_cluster.find_faces(front_edge_finder.back)[0]
+    front_cut_out = Extrude(front_key_well_face.make_component(), full_cluster.size().y)
 
-    front_trim_tool = full_clust.bounding_box.make_box()
+    front_trim_tool = full_cluster.bounding_box.make_box()
     front_trim_tool.place(
-        ~front_trim_tool == ~full_clust,
+        ~front_trim_tool == ~full_cluster,
         +front_trim_tool == -front_bottom_face,
         ~front_trim_tool == ~pcb_silhouette)
 
-    back_trim_tool = full_clust.bounding_box.make_box()
+    back_trim_tool = full_cluster.bounding_box.make_box()
     back_trim_tool.place(
-        ~back_trim_tool == ~full_clust,
+        ~back_trim_tool == ~full_cluster,
         -back_trim_tool == ~back_clip.named_point("pcb_location"),
         ~back_trim_tool == ~pcb_silhouette)
 
@@ -448,7 +448,7 @@ def cluster_pcb(clust, front, back, back_clip):
         ~connector_legs_cutout == ~connector_holes,
         -connector_legs_cutout == ~connector_holes)
 
-    legs = Union(*clust.find_children("legs"))
+    legs = Union(*cluster.find_children("legs"))
     legs.place(
         z=~legs == ~pcb_silhouette)
 
@@ -888,7 +888,7 @@ def thumb_down_key():
 
 
 def cluster_pcb_sketch():
-    _, pcb = full_cluster()
+    _, pcb = cluster_assembly()
 
     cluster_pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep, name="cluster_pcb_sketch")
 
@@ -1012,7 +1012,7 @@ def cluster_back_clip(back):
     return assembly
 
 
-def cluster_front_clip(clust, front):
+def cluster_front_clip(cluster, front):
     cluster_attachment = front.find_children("attachment")[0]
     bottom_finder = front.bounding_box.make_box()
     bottom_finder.place(
@@ -1021,7 +1021,7 @@ def cluster_front_clip(clust, front):
         +bottom_finder == -front)
     front_bottom_faces = Union(*[BRepComponent(face.brep) for face in front.find_faces(bottom_finder)])
 
-    back_selector = Extrude(front_bottom_faces, -clust.size().z).bounding_box.make_box()
+    back_selector = Extrude(front_bottom_faces, -cluster.size().z).bounding_box.make_box()
 
     front_attachment = magnetic_attachment(1.8, .6, 3.5)
     front_attachment.place(
@@ -1031,7 +1031,7 @@ def cluster_front_clip(clust, front):
 
     ball_opening_slope = math.asin((2.5-1.8)/2.5)
     ball_opening_radius = 2.5 * math.cos(ball_opening_slope)
-    ball_opening_cone_height = clust.size().z
+    ball_opening_cone_height = cluster.size().z
 
     ball_opening_cone_end_radius = math.tan(ball_opening_slope) * ball_opening_cone_height + ball_opening_radius
 
@@ -1066,9 +1066,9 @@ def cluster_front_clip(clust, front):
     modified_front_bottom = Union(thinner_back_part, front_part)
 
     sloped_front = Box(
-        cluster().size().y * 2,
-        cluster().size().y * 2,
-        cluster().size().y * 2)
+        cluster_design().size().y * 2,
+        cluster_design().size().y * 2,
+        cluster_design().size().y * 2)
     sloped_front.place(
         ~sloped_front == ~front,
         +sloped_front == -front,
@@ -1095,7 +1095,7 @@ def cluster_front_clip(clust, front):
 
     attachment_body = Extrude(
         modified_front_bottom,
-        -(cluster_attachment.min().z - clust.min().z))
+        -(cluster_attachment.min().z - cluster.min().z))
 
     pcb_clip_outline = Silhouette(front, attachment_body.end_faces[0].get_plane())
 
@@ -1117,18 +1117,18 @@ def cluster_front_clip(clust, front):
     return assembly
 
 
-def full_cluster():
-    clust = cluster()
-    clust, front = cluster_front(clust)
-    back = cluster_back(clust)
+def cluster_assembly():
+    cluster = cluster_design()
+    cluster, front = cluster_front(cluster)
+    back = cluster_back(cluster)
 
-    front_clip = cluster_front_clip(clust, front)
+    front_clip = cluster_front_clip(cluster, front)
 
     back_clip = cluster_back_clip(back)
 
-    pcb, connector_legs_cutout = cluster_pcb(clust, front, back, back_clip)
+    pcb, connector_legs_cutout = cluster_pcb(cluster, front, back, back_clip)
 
-    return Difference(Union(clust, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip, back_clip
+    return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip, back_clip
 
 
 def ballscrew(screw_length, name):
