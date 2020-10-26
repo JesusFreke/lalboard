@@ -1,0 +1,15 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP IR908-7C-F
+D 940nm Sidelooker IR LED
+K IR LED
+F https://www.everlight.com/file/ProductFile/201407052136280483.pdf
+$ENDCMP
+#
+$CMP PT908-7B-F
+D 940nm Sidelooker Phototransistor
+K npn phototransistor
+F https://www.everlight.com/file/ProductFile/PT908-7B-F.pdf
+$ENDCMP
+#
+#End Doc Library
