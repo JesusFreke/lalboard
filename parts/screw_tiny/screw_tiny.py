@@ -16,13 +16,11 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import ballscrew_base
+from lalboard import screw_design
 
 
 def design():
-    # The screw tends to be a bit too loose using standard screw hole radius, since it has significantly less contact
-    # area than the longer bases/screws. So we use a bit smaller hole, to ensure it's not too loose.
-    ballscrew_base(5, screw_hole_radius_adjustment=-.05, name="ballscrew_base_tiny").create_occurrence(True, .1)
+    screw_design(4, name="screw_tiny").create_occurrence(scale=.1)
 
 
 def run(_):

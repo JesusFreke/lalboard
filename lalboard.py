@@ -457,8 +457,8 @@ def cluster_pcb(cluster, front, back, back_clip):
     return Extrude(pcb_silhouette, -1.6, name="pcb"), connector_legs_cutout
 
 
-def ball_socket_ball():
-    return Sphere(3, "ball")
+def ball_magnet():
+    return Sphere(2.5, "ball_magnet")
 
 
 def underside_magnetic_attachment(base_height):
@@ -496,7 +496,7 @@ def magnetic_attachment(ball_depth, rectangular_depth, radius=None):
     It consists of an upper part that holds a small rectangular magnet, and then a lower part that is a spherical
     indentation for a 5mm ball magnet.
     """
-    ball = Sphere(2.5, "ball")
+    ball = ball_magnet()
     ball_radius = ball.size().x / 2
 
     test_base = Cylinder(ball_depth, ball_radius*2)
@@ -1099,106 +1099,138 @@ def cluster_assembly():
     return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip, back_clip
 
 
-def ballscrew(screw_length, name):
-    screw_radius = 1.5
-    neck_length = 3
-    neck_lower_radius = 2
-    neck_upper_radius = 1.75
+def male_thread_chamfer_tool(end_radius, angle):
+    negative = Cylinder(
+        end_radius * 10,
+        end_radius,
+        end_radius + (end_radius * 10 * math.tan(math.radians(angle))),
+        name="negative")
 
-    ball = ball_socket_ball()
+    positive = Cylinder(end_radius * 10, end_radius * 2, end_radius * 2, name="positive")
+    positive.place(
+        ~positive == ~negative,
+        ~positive == ~negative,
+        (+positive == -negative) + end_radius)
+    chamfer_tool = Difference(positive, negative, name="chamfer_tool")
 
-    tmp = Cylinder(ball.size().z/2, neck_upper_radius)
-    tmp.place(~tmp == ~ball,
-              ~tmp == ~ball,
-              -tmp == ~ball)
-    screw_ball_intersection = Intersection(ball.copy(), tmp)
-    screw_ball_intersection_height = screw_ball_intersection.shared_edges(
-        ball.bodies[0].faces[0], tmp.side)[0].brep.pointOnEdge.z
+    chamfer_tool.add_named_point("end_point", Point3D.create(
+        negative.mid().x,
+        negative.mid().y,
+        negative.min().z))
 
-    ball_flattener = Box(ball.size().x, ball.size().y, screw_ball_intersection_height - ball.min().z)
-    ball_flattener.place(~ball_flattener == ~ball,
-                         ~ball_flattener == ~ball,
-                         +ball_flattener == +ball)
-    flat_ball = Intersection(ball, ball_flattener)
-
-    screw = Cylinder(screw_length - neck_length, screw_radius)
-
-    screw_neck = Cylinder(neck_length, neck_lower_radius, neck_upper_radius)
-    screw_neck.place(~screw_neck == ~screw,
-                     ~screw_neck == ~screw,
-                     -screw_neck == +screw)
-
-    flat_ball.place(~flat_ball == ~screw,
-                    ~flat_ball == ~screw,
-                    -flat_ball == +screw_neck)
-
-    screw = Threads(screw, ((0, 0), (.95, .95), (0, .95)), 1.0)
-
-    return Union(screw, screw_neck, flat_ball, name=name)
+    return chamfer_tool
 
 
-def ballscrew_cap():
-    ball = ball_socket_ball()
-
-    ball_radius = ball.size().x / 2
-
-    hexagon_width = ball_radius + 2.5
-
-    base_polygon = RegularPolygon(6, hexagon_width, is_outer_radius=False)
-    base = Extrude(base_polygon, ball.size().x * .8 - .3)
-
-    screw_cavity = Cylinder(ball_radius * .8, ball_radius + 1 + .1)
-    screw_cavity.place(~screw_cavity == ~base,
-                       ~screw_cavity == ~base,
-                       +screw_cavity == +base)
-
-    base = Difference(base, screw_cavity)
-
-    base = Threads(base, ((0, 0), (.99, .99), (0, .99)), 1.0, reverse_axis=True)
-
-    ball.place(~ball == ~base,
-               ~ball == ~base,
-               (~ball == -screw_cavity) + .8)
-
-    remaining_ball_height = ball_radius - ball.mid().z
-    extension_height = remaining_ball_height + 1
-    base = Extrude(base.find_faces(base_polygon), extension_height)
-
-    bottom_face = None
-    for face in base.end_faces:
-        if face.mid().z < 0:
-            bottom_face = face
-            break
-
-    base = Chamfer(base.shared_edges(base.side_faces, bottom_face), extension_height)
-
-    bottom_face = base.find_faces(bottom_face)[0]
-
-    base = Fillet(base.shared_edges(bottom_face.connected_faces, bottom_face.connected_faces), hexagon_width)
-
-    base = Difference(base, ball)
-
-    return base
+def screw_thread_profile(pitch=2):
+    return (((0, .075 * pitch),
+             (.4 * pitch, .375 * pitch),
+             (.4 * pitch, .525 * pitch),
+             (0, .925 * pitch)), pitch)
 
 
-def ballscrew_base(screw_length, screw_hole_radius_adjustment=0, name=None):
-    screw_length = screw_length - 2
-    magnet = vertical_large_thin_double_magnet_cutout()
+def screw_design(screw_length, name):
+    screw_radius = 2.9
 
-    base_polygon = RegularPolygon(6, 5, is_outer_radius=False)
-    base = Extrude(base_polygon, screw_length + magnet.size().z)
+    ball = ball_magnet()
 
-    magnet.place(~magnet == ~base,
-                 ~magnet == ~base,
-                 +magnet == +base)
+    screw = Cylinder(screw_length, screw_radius)
+    neck_intersection_tool = Cylinder(1.5, screw_radius)
 
-    screw_hole = Cylinder(screw_length, 1.65 + screw_hole_radius_adjustment)
+    neck_intersection_tool.place(
+        ~neck_intersection_tool == ~screw,
+        ~neck_intersection_tool == ~screw,
+        -neck_intersection_tool == +screw)
+
+    ball.place(
+        ~ball == ~neck_intersection_tool,
+        ~ball == ~neck_intersection_tool,
+        (-ball == +neck_intersection_tool) - (ball.size().z / 8))
+
+    ball_intersection = Intersection(ball, neck_intersection_tool)
+
+    neck = Cylinder(neck_intersection_tool.height, screw_radius, ball_intersection.size().x/2 + .45)
+    neck.place(
+        ~neck == ~screw,
+        ~neck == ~screw,
+        -neck == +screw)
+
+    # symmetric 53 degree thread, with truncated crest and trough
+    screw = Threads(screw,
+                    *screw_thread_profile())
+
+    lower_chamfer_tool = male_thread_chamfer_tool(screw_radius, 45)
+    lower_chamfer_tool.place(
+        ~lower_chamfer_tool.named_point("end_point") == ~screw,
+        ~lower_chamfer_tool.named_point("end_point") == ~screw,
+        ~lower_chamfer_tool.named_point("end_point") == -screw)
+
+    upper_chamfer_tool = male_thread_chamfer_tool(neck.bottom_radius, abs(neck.angle))
+    upper_chamfer_tool.rx(180)
+    upper_chamfer_tool.place(
+        ~upper_chamfer_tool.named_point("end_point") == ~neck,
+        ~upper_chamfer_tool.named_point("end_point") == ~neck,
+        ~upper_chamfer_tool.named_point("end_point") == -neck)
+
+    return Difference(Union(Difference(screw, upper_chamfer_tool, lower_chamfer_tool), neck), ball, name=name)
+
+
+def screw_base_threaded_section(screw_length, screw_hole_radius_adjustment):
+    base_polygon = RegularPolygon(6, 5, is_outer_radius=False, name="polygon")
+    base_polygon.tz(screw_length)
+    base = Extrude(base_polygon, -screw_length)
+
+    screw_hole = Cylinder(screw_length, 2.9 + screw_hole_radius_adjustment)
     screw_hole.place(~screw_hole == ~base,
                      ~screw_hole == ~base,
                      -screw_hole == -base)
 
-    base = Difference(base, magnet, screw_hole)
-    return Threads(base, ((0, 0), (.99, .99), (0, .99)), 1, reverse_axis=True, name=name)
+    return Threads(
+        Difference(base, screw_hole),
+        *screw_thread_profile(), name="threaded_section")
+
+
+def screw_base(screw_length, screw_hole_radius_adjustment=.1, name=None):
+    magnet = vertical_large_thin_double_magnet_cutout()
+
+    threaded_section = screw_base_threaded_section(screw_length, screw_hole_radius_adjustment)
+
+    magnet_section = Extrude(threaded_section.find_children("polygon")[0], magnet.size().z + .5)
+
+    magnet.place(~magnet == ~magnet_section,
+                 ~magnet == ~magnet_section,
+                 +magnet == +magnet_section)
+
+    return Union(
+        Difference(magnet_section, magnet, name="magnet_section"),
+        threaded_section,
+        name=name)
+
+
+def screw_base_extension(extension_thread_length, screw_length, screw_hole_radius_adjustment=.1, name=None):
+    threaded_section = screw_base_threaded_section(extension_thread_length, screw_hole_radius_adjustment)
+
+    solid_top = Extrude(threaded_section.find_children("polygon")[0], .5)
+
+    upper_screw = Cylinder(screw_length, 2.9)
+    upper_screw.place(
+        ~upper_screw == ~solid_top,
+        ~upper_screw == ~solid_top,
+        -upper_screw == +solid_top)
+
+    upper_chamfer_tool = male_thread_chamfer_tool(upper_screw.size().x / 2, 45)
+    upper_chamfer_tool.rx(180)
+    upper_chamfer_tool.place(
+        ~upper_chamfer_tool.named_point("end_point") == ~upper_screw,
+        ~upper_chamfer_tool.named_point("end_point") == ~upper_screw,
+        ~upper_chamfer_tool.named_point("end_point") == +upper_screw)
+
+    return Union(
+        threaded_section,
+        solid_top,
+        Difference(
+            Threads(upper_screw, *screw_thread_profile()),
+            upper_chamfer_tool),
+        name=name or "screw_base_extension")
 
 
 def thumb_base(left_hand=False):
