@@ -20,7 +20,7 @@ from lalboard import full_cluster
 
 
 def design():
-    cluster, cluster_pcb = full_cluster()
+    cluster, cluster_pcb, _, _ = full_cluster()
     cluster_pcb.create_occurrence(scale=.1)
 
 

@@ -1111,7 +1111,8 @@ def cluster_front_clip(clust, front):
                 ball_insertion_cone,
                 front_attachment)),
         attachment_magnet,
-        sloped_front)
+        sloped_front,
+        name="cluster_front_clip")
 
     return assembly
 
@@ -1127,7 +1128,7 @@ def full_cluster():
 
     pcb, connector_legs_cutout = cluster_pcb(clust, front, back, back_clip)
 
-    return Difference(Union(clust, front, back), connector_legs_cutout, name="cluster"), pcb
+    return Difference(Union(clust, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip, back_clip
 
 
 def ballscrew(screw_length, name):

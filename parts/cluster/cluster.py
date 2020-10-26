@@ -20,7 +20,8 @@ from lalboard import full_cluster
 
 
 def design():
-    cluster, _ = full_cluster()
+    cluster, _, _, _ = full_cluster()
+    cluster.rx(180)
     cluster.create_occurrence(scale=.1)
 
 

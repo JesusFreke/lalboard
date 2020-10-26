@@ -16,11 +16,12 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import cluster, cluster_back_clip
+from lalboard import full_cluster
 
 
 def design():
-    cluster_back_clip(cluster()).create_occurrence(scale=.1, create_children=True)
+    cluster, pcb, front_clip, back_clip = full_cluster()
+    back_clip.create_occurrence(scale=.1)
 
 
 def run(_):
