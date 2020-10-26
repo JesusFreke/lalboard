@@ -887,38 +887,6 @@ def thumb_down_key():
                       name="thumb_down_key")
 
 
-def cluster_pcb_sketch():
-    _, pcb = cluster_assembly()
-
-    cluster_pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep, name="cluster_pcb_sketch")
-
-    rects = []
-    for edge in cluster_pcb_bottom.bodies[0].brep.edges:
-        if not isinstance(edge.geometry, adsk.core.Circle3D):
-            continue
-
-        if cluster_pcb_bottom.max().y - edge.geometry.center.y < 3:
-            rect_size = (1.25, 1.25)
-        elif cluster_pcb_bottom.max().y - edge.geometry.center.y < 6:
-            rect_size = (1.75, 2)
-        else:
-            rect_size = (2, 2)
-
-        rect = Rect(*rect_size)
-        rect.place(~rect == edge.geometry.center,
-                   ~rect == edge.geometry.center,
-                   ~rect == edge.geometry.center)
-        rects.append(rect)
-    split_face = SplitFace(cluster_pcb_bottom, Union(*rects), name="cluster_pcb_sketch")
-    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
-    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
-    sketch.name = "cluster_pcb_sketch"
-    for face in occurrence.bRepBodies[0].faces:
-        sketch.include(face)
-
-    return sketch
-
-
 def cluster_back_clip(back):
     pcb_size = 1.6
 
