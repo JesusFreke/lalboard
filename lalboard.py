@@ -437,13 +437,24 @@ def cluster_pcb(clust, front, back, back_clip):
                           (~connector_holes == +pcb_silhouette) - 2.2,
                           ~connector_holes == ~pcb_silhouette)
 
+    # A cutout behind the pcb in the cluster, for the soldered connector legs.
+    connector_legs_cutout = Box(
+        connector_holes.size().x + 2,
+        connector_holes.size().y + 2,
+        2.5,
+        name="connector_legs_cutout")
+    connector_legs_cutout.place(
+        ~connector_legs_cutout == ~connector_holes,
+        ~connector_legs_cutout == ~connector_holes,
+        -connector_legs_cutout == ~connector_holes)
+
     legs = Union(*clust.find_children("legs"))
     legs.place(
         z=~legs == ~pcb_silhouette)
 
     pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs)
 
-    return Extrude(pcb_silhouette, -1.6, name="pcb")
+    return Extrude(pcb_silhouette, -1.6, name="pcb"), connector_legs_cutout
 
 
 def ball_socket_ball():
@@ -1114,9 +1125,9 @@ def full_cluster():
 
     back_clip = cluster_back_clip(back)
 
-    pcb = cluster_pcb(clust, front, back, back_clip)
+    pcb, connector_legs_cutout = cluster_pcb(clust, front, back, back_clip)
 
-    return Union(clust, front, back), pcb
+    return Difference(Union(clust, front, back), connector_legs_cutout, name="cluster"), pcb
 
 
 def ballscrew(screw_length, name):
