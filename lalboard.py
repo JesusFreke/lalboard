@@ -1354,14 +1354,29 @@ def thumb_base(left_hand=False):
 
     down_key_left_stop = down_key_right_stop.copy().scale(-1, 1, 1, center=down_key_body_hole.mid())
 
-    result = Difference(
+    down_key_magnet_extension = Box(
+        down_key_slot.size().x,
+        down_key_body_hole.min().y - down_key.find_children("magnet")[0].max().y,
+        base.min().z - down_key.min().z)
+    down_key_magnet_extension.place(
+        ~down_key_magnet_extension == ~down_key,
+        -down_key_magnet_extension == +down_key.find_children("magnet")[0],
+        +down_key_magnet_extension == -base)
+
+    down_key_magnet = horizontal_rotated_magnet_cutout(1.8)
+    down_key_magnet.place(
+        ~down_key_magnet == ~down_key_magnet_extension,
+        -down_key_magnet == -down_key_magnet_extension,
+        ~down_key_magnet == ~down_key.find_children("magnet")[0])
+
     assembly = Difference(
         Union(
-            base,
+            base, down_key_magnet_extension,
             upper_outer_base, lower_outer_base, inner_base, upper_base),
         upper_outer_base_negatives, lower_outer_base_negatives,
         inner_base_negatives, upper_base_negatives,
         down_key_slot, down_key_slot_angle,
+        down_key_magnet,
         Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop))
 
     assembly = SplitFace(assembly, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
