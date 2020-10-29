@@ -1369,14 +1369,30 @@ def thumb_base(left_hand=False):
         -down_key_magnet == -down_key_magnet_extension,
         ~down_key_magnet == ~down_key.find_children("magnet")[0])
 
+    down_key_led_cavity = make_bottom_entry_led_cavity("down_key_led_cavity")
+    down_key_led_cavity.rz(180)
+    upper_outer_led_cavity = upper_outer_base.find_children("led_cavity")[0]
+    down_key_led_cavity.place(
+        (-down_key_led_cavity == +down_key_body_hole) + .8,
+        (~down_key_led_cavity == -down_key_body_hole) + 16,
+        +down_key_led_cavity == +upper_outer_led_cavity)
+    down_key_led_cavity = ExtrudeTo(down_key_led_cavity.named_faces("lens_hole"), down_key_body_hole)
+
+    down_key_pt_cavity = make_bottom_entry_led_cavity("down_key_pt_cavity")
+    down_key_pt_cavity.place(
+        (+down_key_pt_cavity == -down_key_body_hole) - .8,
+        ~down_key_pt_cavity == ~down_key_led_cavity,
+        +down_key_pt_cavity == +upper_outer_led_cavity)
+    down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole)
+
+
     assembly = Difference(
         Union(
             base, down_key_magnet_extension,
             upper_outer_base, lower_outer_base, inner_base, upper_base),
         upper_outer_base_negatives, lower_outer_base_negatives,
         inner_base_negatives, upper_base_negatives,
-        down_key_slot, down_key_slot_angle,
-        down_key_magnet,
+        down_key_slot, down_key_slot_angle, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
         Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop))
 
     assembly = SplitFace(assembly, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
