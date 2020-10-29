@@ -855,36 +855,53 @@ def thumb_down_key():
                -post == -key_base,
                -post == +key_base)
 
-    slot = Box(key_base.size().x, 2, post.size().z*2)
-    slot = Fillet(slot.shared_edges([slot.front, slot.back], [slot.bottom]), slot.size().y/2)
-    slot.place(~slot == ~key_base,
-               -slot == +post,
-               -slot == +key_base)
-    angled_slot = slot.copy()
-    angled_slot.rx(-9, center=(0, slot.mid().y, slot.min().z + slot.size().y/2))
+    angled_back_base = Box(key_base.size().x, 10, 10)
+    angled_back_base.place(
+        ~angled_back_base == ~key_base,
+        (-angled_back_base == +post) + 2.35,
+        -angled_back_base == +key_base)
+    angled_back_base.rx(-9, center=(
+        angled_back_base.mid().x,
+        angled_back_base.min().y,
+        angled_back_base.min().z))
 
-    slot_backing = Box(key_base.size().x, post.size().y + slot.size().y, 1.8)
-    slot_backing.place(~slot_backing == ~key_base,
-                       -slot_backing == -key_base,
-                       -slot_backing == +key_base)
-    slot_stop = Box(key_base.size().x, 1.5, 4)
-    slot_stop.place(~slot_stop == ~key_base,
-                    -slot_stop == +slot_backing,
-                    -slot_stop == +key_base)
+    angled_back_bottom_tool = Box(
+        angled_back_base.size().x,
+        key_base.size().y,
+        angled_back_base.size().z)
+    angled_back_bottom_tool.place(
+        ~angled_back_bottom_tool == ~angled_back_base,
+        -angled_back_bottom_tool == -angled_back_base,
+        (-angled_back_bottom_tool == +key_base) + 2.5)
 
-    interruptor = Box(2, 3.5, 4.7)
-    interruptor.place(~interruptor == ~key_base,
-                      (~interruptor == ~key_base) - 1,
-                      -interruptor == +key_base)
+    angled_back_back_tool = angled_back_bottom_tool.copy()
+    angled_back_back_tool.place(
+        ~angled_back_back_tool == ~angled_back_base,
+        (-angled_back_back_tool == -angled_back_base) + 2,
+        -angled_back_back_tool == +key_base)
 
-    magnet = horizontal_rotated_magnet_cutout()
+    angled_back = Difference(angled_back_base, angled_back_bottom_tool, angled_back_back_tool)
+
+    magnet = horizontal_rotated_magnet_cutout(name="magnet")
     magnet.rz(180)
     magnet.place(~magnet == ~key_base,
                  +magnet == +post,
                  (~magnet == +post) - 1.9)
 
-    return Difference(Union(key_base, post, slot_backing, slot_stop, interruptor), slot, angled_slot, magnet,
-                      name="thumb_down_key")
+    assembly = Difference(Union(key_base, post, angled_back), magnet, name="thumb_down_key")
+
+    assembly.add_named_edges("pivot", assembly.shared_edges(
+        assembly.find_faces(angled_back_base.front),
+        assembly.find_faces(key_base.top))[0])
+
+    assembly.add_named_edges("back_lower_edge", assembly.shared_edges(
+        assembly.find_faces(key_base.top),
+        assembly.find_faces(key_base.back))[0])
+
+    assembly.add_named_faces("pivot_back_face", assembly.find_faces(
+        angled_back_back_tool.front)[0])
+
+    return assembly
 
 
 def cluster_back_clip(back):
@@ -1234,87 +1251,16 @@ def screw_base_extension(extension_thread_length, screw_length, screw_hole_radiu
 
 
 def thumb_base(left_hand=False):
-    base = Box(44 - .55 - 1.05, 44.5, 2)
-
-    key_stand_lower = Box(15, 2.2, 3)
-    key_stand_lower.place((-key_stand_lower == -base) + 11.45,
-                          (-key_stand_lower == -base) + 11.3,
-                          -key_stand_lower == +base)
-
-    key_stand_transition_top = Rect(15, 1.8)
-    key_stand_transition_top.place(~key_stand_transition_top == ~key_stand_lower,
-                                   -key_stand_transition_top == -key_stand_lower,
-                                   (~key_stand_transition_top == +key_stand_lower) + 1)
-    key_stand_transition = Loft(BRepComponent(key_stand_lower.top.brep), key_stand_transition_top)
-    key_stand_upper = Box(15, 1.8, 4 + 1.8/2)
-    key_stand_upper.place(~key_stand_upper == ~key_stand_lower,
-                          -key_stand_upper == -key_stand_lower,
-                          -key_stand_upper == +key_stand_transition)
-    key_stand_upper = Fillet(key_stand_upper.shared_edges(
-        key_stand_upper.top,
-        [key_stand_upper.front, key_stand_upper.back]),
-        key_stand_upper.size().y/2)
-
-    magnet = horizontal_rotated_magnet_cutout(1.8)
-    magnet.place(~magnet == ~key_stand_lower,
-                 -magnet == -key_stand_lower,
-                 (~magnet == +base) + 1.9)
-
-    mid_key_stop = Box(15, 3, 5.1)
-    mid_key_stop.place(~mid_key_stop == ~key_stand_lower,
-                       (~mid_key_stop == +key_stand_lower) + 23,
-                       -mid_key_stop == +base)
-
-    mid_pt_base = Box(5, 5.8, 4.5)
-    pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
-    if left_hand:
-        mid_pt_base.place((-mid_pt_base == ~key_stand_lower) + 1.5,
-                          (~mid_pt_base == +key_stand_lower) + 9,
-                          -mid_pt_base == +base)
-        pt_cavity.rz(180)
-    else:
-        mid_pt_base.place((+mid_pt_base == ~key_stand_lower) - 1.5,
-                          (~mid_pt_base == +key_stand_lower) + 9,
-                          -mid_pt_base == +base)
-    pt_cavity.place(~pt_cavity.named_point("lens_center") == ~mid_pt_base,
-                    ~pt_cavity.named_point("lens_center") == ~mid_pt_base,
-                    +pt_cavity == +mid_pt_base)
-    extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("lens_hole"), mid_pt_base)
-    extruded_pt_cavity = ExtrudeTo(extruded_pt_cavity.find_faces(pt_cavity.named_faces("bottom")), base.bottom)
-
-    mid_led_base = Box(5, 5.8, 4.5)
-    led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
-    if left_hand:
-        mid_led_base.place((+mid_led_base == ~key_stand_lower) - 1.5,
-                           (~mid_led_base == ~mid_pt_base),
-                           -mid_led_base == +base)
-    else:
-        mid_led_base.place((-mid_led_base == ~key_stand_lower) + 1.5,
-                           (~mid_led_base == ~mid_pt_base),
-                           -mid_led_base == +base)
-        led_cavity.rz(180)
-    led_cavity.place(~led_cavity.named_point("lens_center") == ~mid_led_base,
-                     ~led_cavity.named_point("lens_center") == ~mid_led_base,
-                     +led_cavity == +mid_led_base)
-    extruded_led_cavity = ExtrudeTo(led_cavity.named_faces("lens_hole"), mid_led_base)
-    extruded_led_cavity = ExtrudeTo(extruded_led_cavity.find_faces(led_cavity.named_faces("bottom")), base.bottom)
-
     upper_outer_base = vertical_key_base(
         extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
 
-    upper_outer_base.place((-upper_outer_base == -base),
-                           (+upper_outer_base == +base) - 2.5,
-                           -upper_outer_base == -base)
-
     lower_outer_base = vertical_key_base(
         extra_height=4, pressed_key_angle=4.2, mirrored=not left_hand)
     lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
-    lower_outer_base.place(-lower_outer_base == -upper_outer_base,
-                           (-lower_outer_base == -base),
-                           -lower_outer_base == -upper_outer_base)
+
     magnet_cutout = lower_outer_base.find_children("magnet_cutout", True)[0]
 
     lower_outer_insertion_cutout = Box(4, 2, 2.5)
@@ -1328,83 +1274,94 @@ def thumb_base(left_hand=False):
         extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
-    inner_base.place((+inner_base == +base) - .1,
-                     +inner_base == +base,
-                     -inner_base == -base)
 
     upper_base = vertical_key_base(
         extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
     upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
+
+    key_base_upper = upper_outer_base.find_children("upper_base")[0]
+
+    base = Box(44 - .55 - 1.05, 44.5, key_base_upper.size().z, "base")
+
+    upper_outer_base.place((-upper_outer_base == -base),
+                           (+upper_outer_base == +base) - 2.5,
+                           +upper_outer_base == +base)
+
+    lower_outer_base.place(-lower_outer_base == -upper_outer_base,
+                           (-lower_outer_base == -base),
+                           +lower_outer_base == +upper_outer_base)
+
+    inner_base.place((+inner_base == +base) - .1,
+                     +inner_base == +base,
+                     +inner_base == +base)
+
     upper_base.place((+upper_base == +base),
                      (-upper_base == -base) + 11,
-                     -upper_base == -base)
+                     +upper_base == +base)
 
-    lower_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
-    lower_attachment_negatives = lower_attachment.find_children("negatives")[0]
-    lower_attachment.place(~lower_attachment == (upper_base.min().x + key_stand_lower.max().x) / 2,
-                           (-lower_attachment == -base),
-                           -lower_attachment == -base)
+    down_key = thumb_down_key()
+    down_key.ry(180)
+    down_key.place(
+        (-down_key == -base) + 11.45,
+        (-down_key == -base) + 9.1,
+        -down_key.named_edges("pivot")[0] == +base)
 
-    upper_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
-    upper_attachment_negatives = upper_attachment.find_children("negatives")[0]
-    upper_attachment.place(~upper_attachment == ~mid_key_stop,
-                           +upper_attachment == +base,
-                           -upper_attachment == -base)
+    down_key_slot = Box(15.5, 3, base.size().z * 2)
+    down_key_slot.place(
+        ~down_key_slot == ~down_key,
+        +down_key_slot == +down_key.find_children("magnet")[0],
+        +down_key_slot == +base)
 
-    side_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
-    side_attachment_negatives = side_attachment.find_children("negatives")[0]
+    down_key_slot_angle = down_key_slot.copy()
+    down_key_slot_angle.rx(-9, center=Point3D.create(
+        down_key_slot.mid().x,
+        down_key_slot.min().y,
+        down_key_slot.max().z))
 
-    side_attachment.place(-side_attachment == -upper_outer_base,
-                          ~side_attachment == ~Union(upper_outer_base.copy(False), lower_outer_base.copy(False)),
-                          -side_attachment == -base)
+    down_key_body_hole = Box(
+        down_key_slot.size().x,
+        (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .4,
+        base.size().z * 10)
 
-    lower_attachment_circle = Circle(lower_attachment.size().x/2)
-    lower_attachment_circle.place(~lower_attachment_circle == ~lower_attachment,
-                                  ~lower_attachment_circle == ~lower_attachment,
-                                  ~lower_attachment_circle == +base)
-    upper_base_corner = Point3D.create(
-        upper_base.max().x,
-        upper_base.min().y,
-        base.max().z)
+    down_key_body_hole.place(
+        ~down_key_body_hole == ~down_key,
+        (-down_key_body_hole == ~down_key.named_edges("pivot")[0]) - .15,
+        +down_key_body_hole == +base)
 
-    lower_attachment_tangents = find_tangent_intersection_on_circle(lower_attachment_circle, upper_base_corner)
-    if lower_attachment_tangents[0].geometry.x > lower_attachment_tangents[1].geometry.x:
-        lower_attachment_tangent = lower_attachment_tangents[0].geometry
-    else:
-        lower_attachment_tangent = lower_attachment_tangents[1].geometry
+    down_key_right_stop = base.bounding_box.make_box()
+    down_key_right_stop.place(
+        +down_key_right_stop == +down_key_body_hole,
+        ~down_key_right_stop == ~base,
+        +down_key_right_stop == +base)
 
-    tangent_vector = upper_base_corner.vectorTo(lower_attachment_tangent)
-    tangent_vector.scaleBy(2)
-    tangent_line_corner = upper_base_corner.copy()
-    tangent_line_corner.translateBy(tangent_vector)
+    down_key_right_stop.ry(-45, center=(
+        down_key_right_stop.max().x,
+        down_key_right_stop.mid().y,
+        down_key_right_stop.max().z))
+    down_key_right_stop.rx(-9, center=(
+        down_key_body_hole.max().x,
+        down_key_body_hole.min().y,
+        down_key_body_hole.max().z))
 
-    lower_cut_corner = Polygon(
-        upper_base_corner, lower_attachment_tangent,
-        Point3D.create(
-            lower_attachment.mid().x,
-            lower_attachment.min().y,
-            base.max().z),
-        Point3D.create(
-            base.max().x, base.min().y, base.max().z))
-    lower_cut_corner = ExtrudeTo(lower_cut_corner, base.bottom)
-    lower_cut_corner = Difference(lower_cut_corner, lower_attachment)
+    down_key_right_stop_bounds_tool = down_key_right_stop.bounding_box.make_box()
+    down_key_right_stop_bounds_tool .place(
+        (-down_key_right_stop_bounds_tool == +down_key_body_hole) - 1,
+        (-down_key_right_stop_bounds_tool == ~down_key.named_faces("pivot_back_face")[0]) + .2,
+        ~down_key_right_stop_bounds_tool == ~down_key_right_stop)
 
-    upper_cut_corner = Box(100, 100, 100).rz(20)
-    upper_cut_corner.place(-upper_cut_corner == +base,
-                           ~upper_cut_corner == +base,
-                           -upper_cut_corner == -base)
-    upper_cut_corner.align_to(inner_base, Vector3D.create(-1, 0, 0))
+    down_key_right_stop = Intersection(down_key_right_stop, down_key_right_stop_bounds_tool)
+
+    down_key_left_stop = down_key_right_stop.copy().scale(-1, 1, 1, center=down_key_body_hole.mid())
 
     result = Difference(
         Union(
             base,
-            key_stand_lower, key_stand_transition, key_stand_upper, mid_key_stop, mid_pt_base, mid_led_base,
-            upper_outer_base, lower_outer_base, inner_base, upper_base, lower_attachment, upper_attachment,
-            side_attachment),
-        magnet, extruded_pt_cavity, extruded_led_cavity, upper_outer_base_negatives, lower_outer_base_negatives,
-        inner_base_negatives, upper_base_negatives, lower_attachment_negatives, upper_attachment_negatives,
-        side_attachment_negatives, lower_cut_corner, upper_cut_corner)
+            upper_outer_base, lower_outer_base, inner_base, upper_base),
+        upper_outer_base_negatives, lower_outer_base_negatives,
+        inner_base_negatives, upper_base_negatives,
+        down_key_slot, down_key_slot_angle,
+        Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop))
 
     result = SplitFace(result, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
     result.add_named_faces("bottom", *result.find_faces(base.bottom))
@@ -1512,15 +1469,15 @@ def thumb_pcb_sketch(left_hand=False):
 
 def full_thumb(left_hand=False):
     base = thumb_base(left_hand)
-    pcb, relief = thumb_pcb(base)
+    """pcb, relief = thumb_pcb(base)
 
     base = Difference(base, relief, name=base.name)
 
     if left_hand:
         base.scale(-1, 1, 1, center=base.mid())
-        pcb.scale(-1, 1, 1, center=base.mid())
+        pcb.scale(-1, 1, 1, center=base.mid())"""
 
-    return base, pcb
+    return base, None
 
 
 def place_header(header: Component, x: int, y: int):
