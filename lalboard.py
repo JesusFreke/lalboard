@@ -1355,6 +1355,7 @@ def thumb_base(left_hand=False):
     down_key_left_stop = down_key_right_stop.copy().scale(-1, 1, 1, center=down_key_body_hole.mid())
 
     result = Difference(
+    assembly = Difference(
         Union(
             base,
             upper_outer_base, lower_outer_base, inner_base, upper_base),
@@ -1363,10 +1364,10 @@ def thumb_base(left_hand=False):
         down_key_slot, down_key_slot_angle,
         Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop))
 
-    result = SplitFace(result, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
-    result.add_named_faces("bottom", *result.find_faces(base.bottom))
+    assembly = SplitFace(assembly, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
+    assembly.add_named_faces("bottom", *assembly.find_faces(base.bottom))
 
-    return result
+    return assembly, down_key
 
 
 def thumb_pcb(thumb_base: Component):
@@ -1468,7 +1469,7 @@ def thumb_pcb_sketch(left_hand=False):
 
 
 def full_thumb(left_hand=False):
-    base = thumb_base(left_hand)
+    base, down_key = thumb_base(left_hand)
     """pcb, relief = thumb_pcb(base)
 
     base = Difference(base, relief, name=base.name)
@@ -1477,7 +1478,7 @@ def full_thumb(left_hand=False):
         base.scale(-1, 1, 1, center=base.mid())
         pcb.scale(-1, 1, 1, center=base.mid())"""
 
-    return base, None
+    return base, down_key
 
 
 def place_header(header: Component, x: int, y: int):
