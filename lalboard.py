@@ -44,7 +44,9 @@ def tapered_box(bottom_x, bottom_y, top_x, top_y, height, name):
 
 
 def horizontal_rotated_magnet_cutout(depth=1.8, name="magnet_cutout"):
-    return tapered_box(1.45, 1.45, 1.7, 1.7, depth, name=name).rx(90).ry(45)
+    result = tapered_box(1.45, 1.45, 1.7, 1.7, depth, name=name).rx(90).ry(45)
+    result.add_named_faces("front", result.top)
+    return result
 
 
 def horizontal_magnet_cutout(depth=1.8, name="magnet_cutout"):
@@ -64,7 +66,9 @@ def vertical_magnet_cutout(depth=1.6, name="magnet_cutout"):
 
 
 def vertical_rotated_magnet_cutout(depth=1.6, name="magnet_cutout"):
-    return tapered_box(1.7, 1.7, 1.8, 1.8, depth, name).rz(45)
+    result = tapered_box(1.7, 1.7, 1.8, 1.8, depth, name).rz(45)
+    result.add_named_faces("front", result.top)
+    return result
 
 
 def vertical_large_magnet_cutout(name="magnet_cutout"):
@@ -196,7 +200,7 @@ def retaining_ridge_design(pressed_key_angle, length):
     return retaining_ridge
 
 
-def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
+def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False, name=None):
     post_hole_width = post_width + .3
 
     key_well = Box(
@@ -281,7 +285,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False):
     negatives = Union(
         extruded_pt_cavity, extruded_led_cavity, magnet_cutout, straight_key, sloped_key, pivot_vee, name="negatives")
 
-    result = Difference(result, negatives,  name="vertical_key_base")
+    result = Difference(result, negatives,  name=name or "vertical_key_base")
 
     if mirrored:
         result.scale(-1, 1, 1, center=result.mid())
@@ -1252,12 +1256,12 @@ def screw_base_extension(extension_thread_length, screw_length, screw_hole_radiu
 
 def thumb_base(left_hand=False):
     upper_outer_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
+        extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="upper_outer_base")
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
 
     lower_outer_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=4.2, mirrored=not left_hand)
+        extra_height=4, pressed_key_angle=4.2, mirrored=not left_hand, name="lower_outer_base")
     lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
 
@@ -1271,12 +1275,12 @@ def thumb_base(left_hand=False):
     lower_outer_base = Difference(lower_outer_base, lower_outer_insertion_cutout)
 
     inner_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
+        extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="inner_base")
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
 
     upper_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, mirrored=not left_hand)
+        extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="upper_base")
     upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
 
@@ -1499,17 +1503,47 @@ def thumb_pcb_sketch(left_hand=False):
         sketch.include(face)
 
 
+def _align_key(base_magnet_cutout: Component, key: Component):
+    key_magnet_cutout = key.find_children("magnet_cutout")[0]
+
+    vertical = Vector3D.create(0, 0, 1)
+    key_normal = key_magnet_cutout.named_faces("front")[0].get_plane().normal
+    key_other = key_normal.crossProduct(vertical)
+
+    base_reverse_normal = base_magnet_cutout.named_faces("front")[0].get_plane().normal
+    base_reverse_normal.scaleBy(-1)
+    base_other = base_reverse_normal.crossProduct(vertical)
+
+    matrix = Matrix3D.create()
+    matrix.setToAlignCoordinateSystems(
+        key_magnet_cutout.named_faces("front")[0].mid(),
+        key_normal, key_other, vertical,
+        base_magnet_cutout.named_faces("front")[0].mid(),
+        base_reverse_normal, base_other, vertical)
+
+    key.transform(matrix)
+
+
 def full_thumb(left_hand=False):
     base, down_key = thumb_base(left_hand)
-    """pcb, relief = thumb_pcb(base)
 
-    base = Difference(base, relief, name=base.name)
+    outer_lower_key = outer_lower_thumb_key()
+    outer_lower_key.rx(90)
+    _align_key(base.find_children("lower_outer_base")[0].find_children("magnet_cutout")[0], outer_lower_key)
 
-    if left_hand:
-        base.scale(-1, 1, 1, center=base.mid())
-        pcb.scale(-1, 1, 1, center=base.mid())"""
+    outer_upper_key = outer_upper_thumb_key()
+    outer_upper_key.rx(90)
+    _align_key(base.find_children("upper_outer_base")[0].find_children("magnet_cutout")[0], outer_upper_key)
 
-    return base, down_key
+    inner_key = inner_thumb_key()
+    inner_key.rx(90)
+    _align_key(base.find_children("inner_base")[0].find_children("magnet_cutout")[0], inner_key)
+
+    mode_key = thumb_mode_key()
+    mode_key.rx(90)
+    _align_key(base.find_children("upper_base")[0].find_children("magnet_cutout")[0], mode_key)
+
+    return base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key
 
 
 def place_header(header: Component, x: int, y: int):
