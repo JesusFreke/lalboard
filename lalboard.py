@@ -465,7 +465,7 @@ def ball_magnet():
     return Sphere(2.5, "ball_magnet")
 
 
-def underside_magnetic_attachment(base_height):
+def underside_magnetic_attachment(base_height, name=None):
     """This is the design for the magnetic attachments on the normal and thumb clusters.
 
     It consists of a rectangular magnet partially sticking out of the underside of the cluster. The other side
@@ -491,7 +491,7 @@ def underside_magnetic_attachment(base_height):
 
     negatives = Union(magnet_hole, name="negatives")
 
-    return Difference(base, negatives, name="attachment")
+    return Difference(base, negatives, name=name or "attachment")
 
 
 def magnetic_attachment(ball_depth, rectangular_depth, radius=None):
@@ -1285,15 +1285,28 @@ def screw_base_extension(extension_thread_length, screw_length, screw_hole_radiu
 
 
 def thumb_base(left_hand=False):
+    down_key = thumb_down_key()
+    down_key.ry(180)
+
     upper_outer_base = vertical_key_base(
         extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="upper_outer_base")
+    upper_outer_base_magnet_front = upper_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
+    upper_outer_base.place(
+        (~upper_outer_base_magnet_front == -down_key) - 6.025,
+        (~upper_outer_base_magnet_front == +down_key) - 3.55,
+        (+upper_outer_base == -down_key.named_edges("pivot")[0]))
 
     lower_outer_base = vertical_key_base(
         extra_height=4, pressed_key_angle=4.2, mirrored=not left_hand, name="lower_outer_base")
+    lower_outer_base_magnet_front = lower_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
+    lower_outer_base.place(
+        -lower_outer_base == -upper_outer_base,
+        (-lower_outer_base_magnet_front == -down_key) - 1.65,
+        +lower_outer_base == +upper_outer_base)
 
     magnet_cutout = lower_outer_base.find_children("magnet_cutout", True)[0]
 
@@ -1306,50 +1319,65 @@ def thumb_base(left_hand=False):
 
     inner_base = vertical_key_base(
         extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="inner_base")
+    inner_base_magnet_front = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
+    inner_base.place(
+        (~inner_base_magnet_front == +down_key) + 4.892,
+        (~inner_base_magnet_front == +down_key) - 3.662,
+        +inner_base == +upper_outer_base)
 
     upper_base = vertical_key_base(
         extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="upper_base")
+    upper_base_magnet_front = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
+    upper_base.place(
+        (~upper_base_magnet_front == +down_key) + 7,
+        (~upper_base_magnet_front == -down_key) + 7.35,
+        +upper_base == +upper_outer_base)
 
     key_base_upper = upper_outer_base.find_children("upper_base")[0]
 
-    base = Box(44 - .55 - 1.05, 44.5, key_base_upper.size().z, "base")
+    lower_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="lower_attachment")
+    lower_attachment.place(
+        +lower_attachment == -upper_base,
+        -lower_attachment == -lower_outer_base,
+        +lower_attachment == +upper_outer_base)
 
-    upper_outer_base.place((-upper_outer_base == -base) + 1.475,
-                           (+upper_outer_base == +base) - 2.5,
-                           +upper_outer_base == +base)
+    upper_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="upper_attachment")
+    upper_attachment.place(
+        ~upper_attachment == ~down_key,
+        -upper_attachment == +down_key,
+        +upper_attachment == +upper_outer_base)
 
-    lower_outer_base.place(-lower_outer_base == -upper_outer_base,
-                           (-lower_outer_base == -base),
-                           +lower_outer_base == +upper_outer_base)
+    side_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="side_attachment")
+    side_attachment.place(
+        -side_attachment == -upper_outer_base,
+        ~side_attachment == (upper_outer_base.min().y + lower_outer_base.max().y)/2,
+        +side_attachment == +upper_outer_base)
 
-    inner_base.place((+inner_base == +base) - .1,
-                     +inner_base == +base,
-                     +inner_base == +base)
-    inner_direction = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0].get_plane().normal
-    inner_direction.normalize()
-    inner_direction.scaleBy(-5)
-    inner_base.translate(*inner_direction.asArray())
+    body_entities = Union(
+        upper_outer_base,
+        lower_outer_base,
+        inner_base,
+        upper_base,
+        lower_attachment,
+        upper_attachment,
+        side_attachment)
 
-    upper_base.place((+upper_base == +base) - 5,
-                     (-upper_base == -base) + 9,
-                     +upper_base == +base)
+    top_face_finder = body_entities.bounding_box.make_box()
+    top_face_finder.place(z=-top_face_finder == +body_entities)
 
-    down_key = thumb_down_key()
-    down_key.ry(180)
-    down_key.place(
-        (-down_key == -base) + 11.45,
-        (-down_key == -base) + 9.1,
-        -down_key.named_edges("pivot")[0] == +base)
+    body = Extrude(
+        Hull(Union(*[face.make_component() for face in body_entities.find_faces(top_face_finder)])),
+        -key_base_upper.size().z)
 
-    down_key_slot = Box(15.5, 3, base.size().z * 2)
+    down_key_slot = Box(15.5, 3, body.size().z * 2)
     down_key_slot.place(
         ~down_key_slot == ~down_key,
         +down_key_slot == +down_key.find_children("magnet")[0],
-        +down_key_slot == +base)
+        +down_key_slot == +body)
 
     down_key_slot_angle = down_key_slot.copy()
     down_key_slot_angle.rx(-9, center=Point3D.create(
@@ -1360,18 +1388,18 @@ def thumb_base(left_hand=False):
     down_key_body_hole = Box(
         down_key_slot.size().x,
         (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .4,
-        base.size().z * 10)
+        body.size().z * 10)
 
     down_key_body_hole.place(
         ~down_key_body_hole == ~down_key,
         (-down_key_body_hole == ~down_key.named_edges("pivot")[0]) - .15,
-        +down_key_body_hole == +base)
+        +down_key_body_hole == +body)
 
-    down_key_right_stop = base.bounding_box.make_box()
+    down_key_right_stop = body.bounding_box.make_box()
     down_key_right_stop.place(
         +down_key_right_stop == +down_key_body_hole,
-        ~down_key_right_stop == ~base,
-        +down_key_right_stop == +base)
+        ~down_key_right_stop == ~body,
+        +down_key_right_stop == +body)
 
     down_key_right_stop.ry(-45, center=(
         down_key_right_stop.max().x,
@@ -1395,11 +1423,11 @@ def thumb_base(left_hand=False):
     down_key_magnet_extension = Box(
         down_key_slot.size().x,
         down_key_body_hole.min().y - down_key.find_children("magnet")[0].max().y,
-        base.min().z - down_key.min().z)
+        body.min().z - down_key.min().z)
     down_key_magnet_extension.place(
         ~down_key_magnet_extension == ~down_key,
         -down_key_magnet_extension == +down_key.find_children("magnet")[0],
-        +down_key_magnet_extension == -base)
+        +down_key_magnet_extension == -body)
 
     down_key_magnet = horizontal_rotated_magnet_cutout(1.8)
     down_key_magnet.place(
@@ -1425,15 +1453,14 @@ def thumb_base(left_hand=False):
 
     assembly = Difference(
         Union(
-            base, down_key_magnet_extension,
-            upper_outer_base, lower_outer_base, inner_base, upper_base),
+            body, body_entities, down_key_magnet_extension),
         upper_outer_base_negatives, lower_outer_base_negatives,
         inner_base_negatives, upper_base_negatives,
+        *lower_attachment.find_children("negatives"),
+        *upper_attachment.find_children("negatives"),
+        *side_attachment.find_children("negatives"),
         down_key_slot, down_key_slot_angle, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
         Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop))
-
-    assembly = SplitFace(assembly, base.bottom, name="left_thumb_cluster" if left_hand else "right_thumb_cluster")
-    assembly.add_named_faces("bottom", *assembly.find_faces(base.bottom))
 
     return assembly, down_key
 
