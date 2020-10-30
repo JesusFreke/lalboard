@@ -808,19 +808,46 @@ def thumb_side_key(key_width, key_height, groove_height, key_displacement: float
 
 
 def inner_thumb_key():
-    return thumb_side_key(25, 13.5, 2.68, key_displacement=-.5, name="inner_thumb_key")
+    return vertical_key(
+        post_length=12,
+        key_width=25,
+        key_height=13.5,
+        key_angle=0,
+        key_protrusion=2.5,
+        key_displacement=0,
+        groove_height=2.68,
+        magnet_height=8.748,
+        name="inner_thumb_key")
 
 
 def outer_upper_thumb_key():
-    return thumb_side_key(20, 16, 2.68, name="outer_upper_thumb_key")
+    return vertical_key(
+        post_length=12,
+        key_width=20,
+        key_height=14,
+        key_angle=0,
+        key_protrusion=4.5,
+        key_displacement=0,
+        groove_height=2.68,
+        magnet_height=8.748,
+        name="outer_upper_thumb_key")
 
 
 def outer_lower_thumb_key():
-    return thumb_side_key(20, 20, 4.546, name="outer_lower_thumb_key")
+    return vertical_key(
+        post_length=12,
+        key_width=20,
+        key_height=18,
+        key_angle=0,
+        key_protrusion=4.5,
+        key_displacement=0,
+        groove_height=4.546,
+        magnet_height=8.748,
+        name="outer_lower_thumb_key")
 
 
 def thumb_mode_key(left_hand=False):
-    key_post = vertical_key_post(23, 2.68, 9.05, groove_width=1)
+    key_post = vertical_key_post(25, 2.68, 9.05, groove_width=1)
 
     face_finder = Box(1, 1, 1)
     face_finder.place(~face_finder == ~key_post,
@@ -832,8 +859,11 @@ def thumb_mode_key(left_hand=False):
     end_face = BRepComponent(end_face.brep)
 
     mid_section_end = end_face.copy()
-    mid_section_end.ry(20, center=mid_section_end.mid())
-    mid_section_end .translate(-10, 10, math.sqrt(2*math.pow(10, 2)) * math.sin(math.radians(20)))
+    mid_section_end.translate(-12, 8, 0)
+    mid_section_end.ry(20, center=(
+        mid_section_end.max().x,
+        0,
+        mid_section_end.min().z))
 
     end_section_end = mid_section_end.copy()
     end_section_end.ty(10)
@@ -1288,7 +1318,7 @@ def thumb_base(left_hand=False):
 
     base = Box(44 - .55 - 1.05, 44.5, key_base_upper.size().z, "base")
 
-    upper_outer_base.place((-upper_outer_base == -base),
+    upper_outer_base.place((-upper_outer_base == -base) + 1.475,
                            (+upper_outer_base == +base) - 2.5,
                            +upper_outer_base == +base)
 
@@ -1299,9 +1329,13 @@ def thumb_base(left_hand=False):
     inner_base.place((+inner_base == +base) - .1,
                      +inner_base == +base,
                      +inner_base == +base)
+    inner_direction = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0].get_plane().normal
+    inner_direction.normalize()
+    inner_direction.scaleBy(-5)
+    inner_base.translate(*inner_direction.asArray())
 
-    upper_base.place((+upper_base == +base),
-                     (-upper_base == -base) + 11,
+    upper_base.place((+upper_base == +base) - 5,
+                     (-upper_base == -base) + 9,
                      +upper_base == +base)
 
     down_key = thumb_down_key()
@@ -1388,7 +1422,6 @@ def thumb_base(left_hand=False):
         ~down_key_pt_cavity == ~down_key_led_cavity,
         +down_key_pt_cavity == +upper_outer_led_cavity)
     down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole)
-
 
     assembly = Difference(
         Union(
