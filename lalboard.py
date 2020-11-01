@@ -885,7 +885,7 @@ def thumb_mode_key(name=None):
     return result
 
 
-def thumb_cluster_insertion_tool(cluster, name=None):
+def thumb_cluster_insertion_tool(cluster):
     upper_base = cluster.find_children("upper_key_base")[0]
     upper_base_upper_base = upper_base.find_children("upper_base")[0]
 
@@ -913,11 +913,11 @@ def thumb_cluster_insertion_tool(cluster, name=None):
 
     cluster.transform(matrix)
 
-    box = cluster.bounding_box.make_box()
-    box.place(
-        (+box == ~face) - 12,
-        ~box == ~cluster,
-        ~box == ~cluster)
+    right_plier_void = Box(5, 6, upper_base_upper_base.size().z)
+    right_plier_void.place(
+        (+right_plier_void == ~face) - 12,
+        ~right_plier_void == ~face,
+        +right_plier_void == +cluster)
 
     height_bounds = Box(
         cluster.bounding_box.size().x,
@@ -931,12 +931,21 @@ def thumb_cluster_insertion_tool(cluster, name=None):
 
     down_key_void = cluster.find_children("down_key_void")[0]
 
-    result = Difference(Intersection(down_key_void, height_bounds), box,
-                        name=name or "thumb_cluster_insertion_tool")
+    tool_base = Intersection(down_key_void, height_bounds)
 
     matrix.invert()
     cluster.transform(matrix)
-    result.transform(matrix)
+    tool_base.transform(matrix)
+    right_plier_void.transform(matrix)
+
+    left_plier_void = right_plier_void.copy(copy_children=False)
+    left_plier_void.scale(-1, 1, 1, center=tool_base.mid())
+
+    result = Difference(tool_base, right_plier_void, left_plier_void, name="thumb_cluster_insertion_tool")
+
+    result = result.scale(.975, .975, .975, center=result.mid())
+
+
     return result
 
 
@@ -1684,8 +1693,7 @@ def full_thumb(left_hand=False):
     mode_key.rx(90)
     _align_key(base.find_children("upper_key_base")[0].find_children("magnet_cutout")[0], mode_key)
 
-    insertion_tool = thumb_cluster_insertion_tool(
-        base, name="thumb_cluster_insertion_tool_" + suffix)
+    insertion_tool = thumb_cluster_insertion_tool(base)
 
     if left_hand:
         Group([base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool]).scale(-1, 1, 1)

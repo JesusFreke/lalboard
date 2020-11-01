@@ -21,8 +21,8 @@ from lalboard import full_thumb
 
 def design():
     (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool) = full_thumb(left_hand=True)
-    insertion_tool.ry(-90)
+     insertion_tool) = full_thumb(left_hand=False)
+    insertion_tool.rx(180)
     insertion_tool.create_occurrence(scale=.1)
 
 
