@@ -886,7 +886,7 @@ def thumb_mode_key(name=None):
 
 
 def thumb_cluster_insertion_tool(cluster, name=None):
-    upper_base = cluster.find_children("upper_base")[0]
+    upper_base = cluster.find_children("upper_key_base")[0]
     upper_base_upper_base = upper_base.find_children("upper_base")[0]
 
     face = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
@@ -922,7 +922,8 @@ def thumb_cluster_insertion_tool(cluster, name=None):
     height_bounds = Box(
         cluster.bounding_box.size().x,
         cluster.bounding_box.size().y,
-        upper_base_upper_base.size().z)
+        upper_base_upper_base.size().z,
+        name="height_bounds")
     height_bounds.place(
         ~height_bounds == ~cluster,
         ~height_bounds == ~cluster,
@@ -1386,7 +1387,7 @@ def thumb_base(name=None):
     lower_outer_base = Difference(lower_outer_base, lower_outer_insertion_cutout)
 
     inner_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, name="inner_base")
+        extra_height=4, pressed_key_angle=7, name="inner_key_base")
     inner_base_magnet_front = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
@@ -1396,7 +1397,7 @@ def thumb_base(name=None):
         +inner_base == +upper_outer_base)
 
     upper_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, name="upper_base")
+        extra_height=4, pressed_key_angle=7, name="upper_key_base")
     upper_base_magnet_front = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
@@ -1406,7 +1407,18 @@ def thumb_base(name=None):
         (-upper_base_magnet_front == +inner_base) + 1.85,
         (~upper_base_magnet_front == ~inner_base),
         +upper_base == +upper_outer_base)
-    # and then rotate them back together
+
+    # Find and extrude the lower face of the keywell, to join the bottom part of the two keywells.
+    back_face_finder = Box(1, 1, 1)
+    back_face_finder.place(
+        +back_face_finder == -upper_base,
+        ~back_face_finder == ~upper_base,
+        (+back_face_finder == -upper_base) + .01)
+    upper_base = ExtrudeTo(
+        upper_base.find_faces(back_face_finder.align_to(upper_base, Vector3D.create(1, 0, 0))),
+        inner_base, name="extruded_upper_base")
+
+    # rotate both bases together back in place
     inner_base.rz(20, center=(0, 0, 0))
     upper_base.rz(20, center=(0, 0, 0))
 
@@ -1520,8 +1532,7 @@ def thumb_base(name=None):
     down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole)
 
     assembly = Difference(
-        Union(
-            body, body_entities, down_key_magnet_extension),
+        Union(body, body_entities, down_key_magnet_extension),
         upper_outer_base_negatives, lower_outer_base_negatives,
         inner_base_negatives, upper_base_negatives,
         *lower_attachment.find_children("negatives"),
@@ -1667,11 +1678,11 @@ def full_thumb(left_hand=False):
 
     inner_key = inner_thumb_key()
     inner_key.rx(90)
-    _align_key(base.find_children("inner_base")[0].find_children("magnet_cutout")[0], inner_key)
+    _align_key(base.find_children("inner_key_base")[0].find_children("magnet_cutout")[0], inner_key)
 
     mode_key = thumb_mode_key("thumb_mode_key_" + suffix)
     mode_key.rx(90)
-    _align_key(base.find_children("upper_base")[0].find_children("magnet_cutout")[0], mode_key)
+    _align_key(base.find_children("upper_key_base")[0].find_children("magnet_cutout")[0], mode_key)
 
     insertion_tool = thumb_cluster_insertion_tool(
         base, name="thumb_cluster_insertion_tool_" + suffix)
