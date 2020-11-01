@@ -946,6 +946,12 @@ def thumb_down_key():
                -post == -key_base,
                -post == +key_base)
 
+    key_base_extension = Box(key_base.size().x, 2.5, key_base.size().z)
+    key_base_extension.place(
+        ~key_base_extension == ~key_base,
+        +key_base_extension == -key_base,
+        ~key_base_extension == ~key_base)
+
     angled_back_base = Box(key_base.size().x, 10, 10)
     angled_back_base.place(
         ~angled_back_base == ~key_base,
@@ -979,7 +985,7 @@ def thumb_down_key():
                  +magnet == +post,
                  (~magnet == +post) - 1.9)
 
-    assembly = Difference(Union(key_base, post, angled_back), magnet, name="thumb_down_key")
+    assembly = Difference(Union(key_base, key_base_extension, post, angled_back), magnet, name="thumb_down_key")
 
     assembly.add_named_edges("pivot", assembly.shared_edges(
         assembly.find_faces(angled_back_base.front),
@@ -1362,7 +1368,7 @@ def thumb_base(name=None):
     lower_outer_base.rz(-90)
     lower_outer_base.place(
         -lower_outer_base == -upper_outer_base,
-        (-lower_outer_base_magnet_front == -down_key) - 1.65,
+        (-lower_outer_base_magnet_front == +down_key) - 30.65,
         +lower_outer_base == +upper_outer_base)
 
     magnet_cutout = lower_outer_base.find_children("magnet_cutout", True)[0]
@@ -1435,17 +1441,11 @@ def thumb_base(name=None):
         Hull(Union(*[face.make_component() for face in body_entities.find_faces(top_face_finder)])),
         -key_base_upper.size().z)
 
-    down_key_slot = Box(15.5, 3, body.size().z * 2)
+    down_key_slot = Box(15.5, 5, body.size().z * 2)
     down_key_slot.place(
         ~down_key_slot == ~down_key,
         +down_key_slot == +down_key.find_children("magnet")[0],
         +down_key_slot == +body)
-
-    down_key_slot_angle = down_key_slot.copy()
-    down_key_slot_angle.rx(-9, center=Point3D.create(
-        down_key_slot.mid().x,
-        down_key_slot.min().y,
-        down_key_slot.max().z))
 
     down_key_body_hole = Box(
         down_key_slot.size().x,
@@ -1521,7 +1521,7 @@ def thumb_base(name=None):
         *lower_attachment.find_children("negatives"),
         *upper_attachment.find_children("negatives"),
         *side_attachment.find_children("negatives"),
-        down_key_slot, down_key_slot_angle, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
+        down_key_slot, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
         Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop, name="down_key_void"),
         name=name or "thumb_cluster")
 
