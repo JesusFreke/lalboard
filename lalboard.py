@@ -940,8 +940,11 @@ def thumb_cluster_insertion_tool(cluster, name=None):
 
 
 def thumb_down_key():
-    key_base = Box(15, 29, 2.5)
-    post = Box(4.5, 2.2, 9)
+    key_base = Box(14.5, 29, 2.5)
+
+    filleted_key_base = Fillet(key_base.shared_edges([key_base.back], [key_base.left, key_base.right]), 1)
+
+    post = Box(7.3, 2.2, 9, name="post")
     post.place(~post == ~key_base,
                -post == -key_base,
                -post == +key_base)
@@ -985,7 +988,9 @@ def thumb_down_key():
                  +magnet == +post,
                  (~magnet == +post) - 1.9)
 
-    assembly = Difference(Union(key_base, key_base_extension, post, angled_back), magnet, name="thumb_down_key")
+    assembly = Difference(
+        Union(filleted_key_base, key_base_extension, post, angled_back),
+        magnet, name="thumb_down_key")
 
     assembly.add_named_edges("pivot", assembly.shared_edges(
         assembly.find_faces(angled_back_base.front),
@@ -1357,7 +1362,7 @@ def thumb_base(name=None):
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
     upper_outer_base.place(
-        (~upper_outer_base_magnet_front == -down_key) - 6.025,
+        (~upper_outer_base_magnet_front == ~down_key) - 13.525,
         (~upper_outer_base_magnet_front == +down_key) - 3.55,
         (+upper_outer_base == -down_key.named_edges("pivot")[0]))
 
@@ -1386,7 +1391,7 @@ def thumb_base(name=None):
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
     inner_base.place(
-        (~inner_base_magnet_front == +down_key) + 4.892,
+        (~inner_base_magnet_front == ~down_key) + 12.392,
         (~inner_base_magnet_front == +down_key) - 3.662,
         +inner_base == +upper_outer_base)
 
@@ -1441,15 +1446,16 @@ def thumb_base(name=None):
         Hull(Union(*[face.make_component() for face in body_entities.find_faces(top_face_finder)])),
         -key_base_upper.size().z)
 
-    down_key_slot = Box(15.5, 5, body.size().z * 2)
+    down_key_slot = Box(
+        down_key.find_children("post")[0].size().x + 1, 5, body.size().z * 2)
     down_key_slot.place(
         ~down_key_slot == ~down_key,
         +down_key_slot == +down_key.find_children("magnet")[0],
         +down_key_slot == +body)
 
     down_key_body_hole = Box(
-        down_key_slot.size().x,
-        (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .4,
+        down_key.size().x + 1,
+        (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55,
         body.size().z * 10)
 
     down_key_body_hole.place(
