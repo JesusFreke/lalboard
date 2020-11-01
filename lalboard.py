@@ -200,7 +200,7 @@ def retaining_ridge_design(pressed_key_angle, length):
     return retaining_ridge
 
 
-def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False, name=None):
+def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
     post_hole_width = post_width + .3
 
     key_well = Box(
@@ -286,9 +286,6 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, mirrored=False, na
         extruded_pt_cavity, extruded_led_cavity, magnet_cutout, straight_key, sloped_key, pivot_vee, name="negatives")
 
     result = Difference(result, negatives,  name=name or "vertical_key_base")
-
-    if mirrored:
-        result.scale(-1, 1, 1, center=result.mid())
 
     return result
 
@@ -846,8 +843,8 @@ def outer_lower_thumb_key():
         name="outer_lower_thumb_key")
 
 
-def thumb_mode_key(left_hand=False):
-    key_post = vertical_key_post(25, 2.68, 9.05, groove_width=1)
+def thumb_mode_key(name=None):
+    key_post = vertical_key_post(18, 2.68, 9.05, groove_width=1)
 
     face_finder = Box(1, 1, 1)
     face_finder.place(~face_finder == ~key_post,
@@ -859,26 +856,86 @@ def thumb_mode_key(left_hand=False):
     end_face = BRepComponent(end_face.brep)
 
     mid_section_end = end_face.copy()
-    mid_section_end.translate(-12, 8, 0)
-    mid_section_end.ry(20, center=(
-        mid_section_end.max().x,
-        0,
-        mid_section_end.min().z))
-
-    end_section_end = mid_section_end.copy()
-    end_section_end.ty(10)
-
+    mid_section_end.translate(5.5, 14, 3.5)
     mid_section = Loft(end_face, mid_section_end)
-    end_section = Loft(mid_section_end, end_section_end)
 
-    end_section_end_face = end_section.find_faces(end_section_end)[0]
+    horizontal_section = Box(key_post.size().x, key_post.size().z * .25, 4.3)
+    horizontal_section.place(
+        ~horizontal_section == ~mid_section_end,
+        -horizontal_section == -mid_section_end,
+        -horizontal_section == -mid_section_end)
 
-    end_section = Fillet(end_section_end_face.edges, key_thickness/2, False)
+    end_section = Box(key_post.size().x, 11, key_post.size().z)
+    end_section.place(
+        ~end_section == ~horizontal_section,
+        -end_section == -horizontal_section,
+        +end_section == +horizontal_section)
 
-    result = Union(key_post, mid_section, end_section,
-                   name="left_thumb_mode_key" if left_hand else "right_thumb_mode_key")
-    if left_hand:
-        result.scale(-1, 1, 1)
+    end_section_end_face = end_section.back
+
+    filleted_end_section = Fillet(end_section_end_face.edges, key_thickness/2, False)
+
+    result = Union(key_post, mid_section, horizontal_section, filleted_end_section)
+
+    result = Fillet(result.shared_edges(
+        [horizontal_section.front, horizontal_section.back],
+        [horizontal_section.top, horizontal_section.bottom, mid_section, end_section.bottom]), 3,
+        name=name or "thumb_mode_key")
+
+    return result
+
+
+def thumb_cluster_insertion_tool(cluster, name=None):
+    upper_base = cluster.find_children("upper_base")[0]
+    upper_base_upper_base = upper_base.find_children("upper_base")[0]
+
+    face = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
+
+    target_x_axis = face.get_plane().normal
+    target_x_axis.scaleBy(-1)
+    target_z_axis = Vector3D.create(0, 0, 1)
+    target_y_axis = target_x_axis.crossProduct(target_z_axis)
+
+    source_x_axis = Vector3D.create(-1, 0, 0)
+    source_y_axis = Vector3D.create(0, 1, 0)
+    source_z_axis = Vector3D.create(0, 0, 1)
+
+    matrix = Matrix3D.create()
+    matrix.setToAlignCoordinateSystems(
+        Point3D.create(0, 0, 0),
+        target_x_axis,
+        target_y_axis,
+        target_z_axis,
+        Point3D.create(0, 0, 0),
+        source_x_axis,
+        source_y_axis,
+        source_z_axis)
+
+    cluster.transform(matrix)
+
+    box = cluster.bounding_box.make_box()
+    box.place(
+        (+box == ~face) - 12,
+        ~box == ~cluster,
+        ~box == ~cluster)
+
+    height_bounds = Box(
+        cluster.bounding_box.size().x,
+        cluster.bounding_box.size().y,
+        upper_base_upper_base.size().z)
+    height_bounds.place(
+        ~height_bounds == ~cluster,
+        ~height_bounds == ~cluster,
+        -height_bounds == -upper_base_upper_base)
+
+    down_key_void = cluster.find_children("down_key_void")[0]
+
+    result = Difference(Intersection(down_key_void, height_bounds), box,
+                        name=name or "thumb_cluster_insertion_tool")
+
+    matrix.invert()
+    cluster.transform(matrix)
+    result.transform(matrix)
     return result
 
 
@@ -1284,12 +1341,12 @@ def screw_base_extension(extension_thread_length, screw_length, screw_hole_radiu
         name=name or "screw_base_extension")
 
 
-def thumb_base(left_hand=False):
+def thumb_base(name=None):
     down_key = thumb_down_key()
     down_key.ry(180)
 
     upper_outer_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="upper_outer_base")
+        extra_height=4, pressed_key_angle=7, name="upper_outer_base")
     upper_outer_base_magnet_front = upper_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
@@ -1299,7 +1356,7 @@ def thumb_base(left_hand=False):
         (+upper_outer_base == -down_key.named_edges("pivot")[0]))
 
     lower_outer_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=4.2, mirrored=not left_hand, name="lower_outer_base")
+        extra_height=4, pressed_key_angle=4.2, name="lower_outer_base")
     lower_outer_base_magnet_front = lower_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
@@ -1318,7 +1375,7 @@ def thumb_base(left_hand=False):
     lower_outer_base = Difference(lower_outer_base, lower_outer_insertion_cutout)
 
     inner_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="inner_base")
+        extra_height=4, pressed_key_angle=7, name="inner_base")
     inner_base_magnet_front = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
@@ -1328,14 +1385,19 @@ def thumb_base(left_hand=False):
         +inner_base == +upper_outer_base)
 
     upper_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, mirrored=not left_hand, name="upper_base")
+        extra_height=4, pressed_key_angle=7, name="upper_base")
     upper_base_magnet_front = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_base_negatives = upper_base.find_children("negatives")[0]
     upper_base.rz(90)
+    # rotate inner_base back to an orthogonal rotation so we can easily place upper_base behind it
+    inner_base.rz(-20, center=(0, 0, 0))
     upper_base.place(
-        (~upper_base_magnet_front == +down_key) + 7,
-        (~upper_base_magnet_front == -down_key) + 7.35,
+        (-upper_base_magnet_front == +inner_base) + 1.85,
+        (~upper_base_magnet_front == ~inner_base),
         +upper_base == +upper_outer_base)
+    # and then rotate them back together
+    inner_base.rz(20, center=(0, 0, 0))
+    upper_base.rz(20, center=(0, 0, 0))
 
     key_base_upper = upper_outer_base.find_children("upper_base")[0]
 
@@ -1460,7 +1522,8 @@ def thumb_base(left_hand=False):
         *upper_attachment.find_children("negatives"),
         *side_attachment.find_children("negatives"),
         down_key_slot, down_key_slot_angle, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
-        Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop))
+        Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop, name="down_key_void"),
+        name=name or "thumb_cluster")
 
     return assembly, down_key
 
@@ -1585,7 +1648,8 @@ def _align_key(base_magnet_cutout: Component, key: Component):
 
 
 def full_thumb(left_hand=False):
-    base, down_key = thumb_base(left_hand)
+    suffix = "left" if left_hand else "right"
+    base, down_key = thumb_base("thumb_cluster_" + suffix)
 
     outer_lower_key = outer_lower_thumb_key()
     outer_lower_key.rx(90)
@@ -1599,11 +1663,17 @@ def full_thumb(left_hand=False):
     inner_key.rx(90)
     _align_key(base.find_children("inner_base")[0].find_children("magnet_cutout")[0], inner_key)
 
-    mode_key = thumb_mode_key()
+    mode_key = thumb_mode_key("thumb_mode_key_" + suffix)
     mode_key.rx(90)
     _align_key(base.find_children("upper_base")[0].find_children("magnet_cutout")[0], mode_key)
 
-    return base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key
+    insertion_tool = thumb_cluster_insertion_tool(
+        base, name="thumb_cluster_insertion_tool_" + suffix)
+
+    if left_hand:
+        Group([base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool]).scale(-1, 1, 1)
+
+    return base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool
 
 
 def place_header(header: Component, x: int, y: int):

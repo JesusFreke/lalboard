@@ -20,13 +20,15 @@ from lalboard import full_thumb
 
 
 def design():
-    thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key = full_thumb(left_hand=False)
+    (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
+     insertion_tool) = full_thumb(left_hand=False)
     thumb_base.create_occurrence(scale=.1)
     down_key.create_occurrence(scale=.1)
     outer_lower_key.create_occurrence(scale=.1)
     outer_upper_key.create_occurrence(scale=.1)
     inner_key.create_occurrence(scale=.1)
     mode_key.create_occurrence(scale=.1)
+    insertion_tool.create_occurrence(scale=.1)
 
 
 def run(_):

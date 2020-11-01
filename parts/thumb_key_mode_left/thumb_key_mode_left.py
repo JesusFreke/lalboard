@@ -20,7 +20,7 @@ from lalboard import thumb_mode_key
 
 
 def design():
-    thumb_mode_key(left_hand=True).create_occurrence(scale=.1)
+    thumb_mode_key(name="thumb_mode_key_left").scale(-1, 1, 1).create_occurrence(scale=.1)
 
 
 def run(_):

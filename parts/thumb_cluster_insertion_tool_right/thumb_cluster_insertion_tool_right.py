@@ -16,11 +16,14 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import thumb_mode_key
+from lalboard import full_thumb
 
 
 def design():
-    thumb_mode_key(name="thumb_mode_key_right").create_occurrence(scale=.1)
+    (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
+     insertion_tool) = full_thumb(left_hand=False)
+    insertion_tool.ry(-90)
+    insertion_tool.create_occurrence(scale=.1)
 
 
 def run(_):
