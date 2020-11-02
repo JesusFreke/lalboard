@@ -25,10 +25,10 @@ F 3 "~" H 3900 3900 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L lalboard:PT908-7B-F Q1
+L lalboard:PT908-7B-F PT1
 U 1 1 5F96F978
 P 5950 1750
-F 0 "Q1" H 6141 1796 50  0000 L CNN
+F 0 "PT1" H 6141 1796 50  0000 L CNN
 F 1 "PT908-7B-F" H 6141 1705 50  0000 L CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 6430 1610 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/PT908-7B-F.pdf" H 5950 1750 50  0001 C CNN
@@ -47,10 +47,10 @@ F 3 "~" H 5300 1400 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L lalboard:IR908-7C-F D1
+L lalboard:IR908-7C-F IR1
 U 1 1 5F96F62E
 P 5450 1800
-F 0 "D1" V 5300 1700 50  0000 C CNN
+F 0 "IR1" V 5300 1700 50  0000 C CNN
 F 1 "IR908-7C-F" V 5400 1500 50  0000 C CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 5450 1975 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/201407052136280483.pdf" H 5400 1800 50  0001 C CNN
@@ -97,10 +97,10 @@ Wire Wire Line
 Wire Wire Line
 	5450 1400 5450 1600
 $Comp
-L lalboard:PT908-7B-F Q2
+L lalboard:PT908-7B-F PT2
 U 1 1 5F9B9EF8
 P 5950 2750
-F 0 "Q2" H 6141 2796 50  0000 L CNN
+F 0 "PT2" H 6141 2796 50  0000 L CNN
 F 1 "PT908-7B-F" H 6141 2705 50  0000 L CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 6430 2610 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/PT908-7B-F.pdf" H 5950 2750 50  0001 C CNN
@@ -119,10 +119,10 @@ F 3 "~" H 5300 2400 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L lalboard:IR908-7C-F D2
+L lalboard:IR908-7C-F IR2
 U 1 1 5F9B9F04
 P 5450 2800
-F 0 "D2" V 5300 2700 50  0000 C CNN
+F 0 "IR2" V 5300 2700 50  0000 C CNN
 F 1 "IR908-7C-F" V 5400 2500 50  0000 C CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 5450 2975 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/201407052136280483.pdf" H 5400 2800 50  0001 C CNN
@@ -169,10 +169,10 @@ Wire Wire Line
 Wire Wire Line
 	5450 2400 5450 2600
 $Comp
-L lalboard:PT908-7B-F Q3
+L lalboard:PT908-7B-F PT3
 U 1 1 5F9BC92B
 P 5950 3750
-F 0 "Q3" H 6141 3796 50  0000 L CNN
+F 0 "PT3" H 6141 3796 50  0000 L CNN
 F 1 "PT908-7B-F" H 6141 3705 50  0000 L CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 6430 3610 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/PT908-7B-F.pdf" H 5950 3750 50  0001 C CNN
@@ -191,10 +191,10 @@ F 3 "~" H 5300 3400 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L lalboard:IR908-7C-F D3
+L lalboard:IR908-7C-F IR3
 U 1 1 5F9BC937
 P 5450 3800
-F 0 "D3" V 5300 3700 50  0000 C CNN
+F 0 "IR3" V 5300 3700 50  0000 C CNN
 F 1 "IR908-7C-F" V 5400 3500 50  0000 C CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 5450 3975 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/201407052136280483.pdf" H 5400 3800 50  0001 C CNN
@@ -241,10 +241,10 @@ Wire Wire Line
 Wire Wire Line
 	5450 3400 5450 3600
 $Comp
-L lalboard:PT908-7B-F Q4
+L lalboard:PT908-7B-F PT4
 U 1 1 5F9BE283
 P 5950 4700
-F 0 "Q4" H 6141 4746 50  0000 L CNN
+F 0 "PT4" H 6141 4746 50  0000 L CNN
 F 1 "PT908-7B-F" H 6141 4655 50  0000 L CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 6430 4560 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/PT908-7B-F.pdf" H 5950 4700 50  0001 C CNN
@@ -263,10 +263,10 @@ F 3 "~" H 5300 4350 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L lalboard:IR908-7C-F D4
+L lalboard:IR908-7C-F IR4
 U 1 1 5F9BE28F
 P 5450 4750
-F 0 "D4" V 5300 4650 50  0000 C CNN
+F 0 "IR4" V 5300 4650 50  0000 C CNN
 F 1 "IR908-7C-F" V 5400 4450 50  0000 C CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 5450 4925 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/201407052136280483.pdf" H 5400 4750 50  0001 C CNN
@@ -313,10 +313,10 @@ Wire Wire Line
 Wire Wire Line
 	5450 4350 5450 4550
 $Comp
-L lalboard:PT908-7B-F Q5
+L lalboard:PT908-7B-F PT5
 U 1 1 5F9BF567
 P 5950 5750
-F 0 "Q5" H 6141 5796 50  0000 L CNN
+F 0 "PT5" H 6141 5796 50  0000 L CNN
 F 1 "PT908-7B-F" H 6141 5705 50  0000 L CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 6430 5610 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/PT908-7B-F.pdf" H 5950 5750 50  0001 C CNN
@@ -335,10 +335,10 @@ F 3 "~" H 5300 5400 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L lalboard:IR908-7C-F D5
+L lalboard:IR908-7C-F IR5
 U 1 1 5F9BF573
 P 5450 5800
-F 0 "D5" V 5300 5700 50  0000 C CNN
+F 0 "IR5" V 5300 5700 50  0000 C CNN
 F 1 "IR908-7C-F" V 5400 5500 50  0000 C CNN
 F 2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" H 5450 5975 50  0001 C CNN
 F 3 "https://www.everlight.com/file/ProductFile/201407052136280483.pdf" H 5400 5800 50  0001 C CNN
