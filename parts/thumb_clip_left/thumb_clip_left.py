@@ -20,17 +20,10 @@ from lalboard import full_thumb
 
 
 def design():
-    (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool, clip) = full_thumb(left_hand=True)
-    thumb_base.create_occurrence(scale=.1)
-    down_key.create_occurrence(scale=.1)
-    outer_lower_key.create_occurrence(scale=.1)
-    outer_upper_key.create_occurrence(scale=.1)
-    inner_key.create_occurrence(scale=.1)
-    mode_key.create_occurrence(scale=.1)
-    insertion_tool.create_occurrence(scale=.1)
-    clip.create_occurrence(scale=.1)
+    result = full_thumb(left_hand=True)
+    attachment = result[7]
+    attachment.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name="thumb_cluster_right_assembly")
+    run_design(design, message_box_on_error=False, document_name=__name__)
