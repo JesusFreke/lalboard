@@ -20,8 +20,9 @@ from lalboard import full_thumb
 
 
 def design():
-    _, thumb_pcb = full_thumb(left_hand=True)
-    thumb_pcb.create_occurrence(scale=.1)
+    result = full_thumb(left_hand=True)
+    pcb = result[8]
+    pcb.create_occurrence(scale=.1)
 
 
 def run(_):

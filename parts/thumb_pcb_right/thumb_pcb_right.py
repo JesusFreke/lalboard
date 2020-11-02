@@ -21,7 +21,7 @@ from lalboard import full_thumb
 
 def design():
     result = full_thumb(left_hand=False)
-    pcb = result[7]
+    pcb = result[8]
     pcb.create_occurrence(scale=.1)
 
 

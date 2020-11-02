@@ -21,7 +21,7 @@ from lalboard import full_thumb
 
 def design():
     (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool, clip) = full_thumb(left_hand=True)
+     insertion_tool, clip, pcb) = full_thumb(left_hand=True)
     thumb_base.create_occurrence(scale=.1)
     down_key.create_occurrence(scale=.1)
     outer_lower_key.create_occurrence(scale=.1)
@@ -30,6 +30,7 @@ def design():
     mode_key.create_occurrence(scale=.1)
     insertion_tool.create_occurrence(scale=.1)
     clip.create_occurrence(scale=.1)
+    pcb.create_occurrence(scale=.1)
 
 
 def run(_):

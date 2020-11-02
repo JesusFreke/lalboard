@@ -19,10 +19,6 @@ by the various part scripts in the "parts" directory.
 
 import adsk.core
 import adsk.fusion
-import inspect
-import math
-import os
-import time
 
 from fscad import *
 
@@ -491,7 +487,7 @@ def underside_magnetic_attachment(base_height, name=None):
     return Difference(base, negatives, name=name or "attachment")
 
 
-def magnetic_attachment(ball_depth, rectangular_depth, radius=None):
+def magnetic_attachment(ball_depth, rectangular_depth, radius=None, name="attachment"):
     """This is the design for the magnetic attachments on the normal and thumb clusters.
 
     It consists of an upper part that holds a small rectangular magnet, and then a lower part that is a spherical
@@ -545,7 +541,7 @@ def magnetic_attachment(ball_depth, rectangular_depth, radius=None):
 
     negatives = Union(ball, cone, magnet_hole, name="negatives")
 
-    return Difference(base, negatives, name="attachment")
+    return Difference(base, negatives, name=name)
 
 
 def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
@@ -1380,7 +1376,8 @@ def thumb_base(name=None):
     down_key_body_hole = Box(
         down_key.size().x + 1,
         (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55,
-        upper_outer_base.find_children("upper_base")[0].size().z)
+        upper_outer_base.find_children("upper_base")[0].size().z,
+        name="down_key_body_hole")
 
     down_key_body_hole.place(
         ~down_key_body_hole == ~down_key,
@@ -1467,10 +1464,11 @@ def thumb_base(name=None):
 
     body = Extrude(
         Hull(Union(*[face.make_component() for face in body_entities.find_faces(top_face_finder)])),
-        -key_base_upper.size().z)
+        -key_base_upper.size().z,
+        name="body")
 
     down_key_slot = Box(
-        down_key.find_children("post")[0].size().x + 1, 5, body.size().z * 2)
+        down_key.find_children("post")[0].size().x + 1, 5, body.size().z * 2, name="down_key_slot")
     down_key_slot.place(
         ~down_key_slot == ~down_key,
         +down_key_slot == +down_key.find_children("magnet")[0],
@@ -1504,7 +1502,8 @@ def thumb_base(name=None):
     down_key_magnet_extension = Box(
         down_key_slot.size().x,
         (down_key_body_hole.min().y - down_key.find_children("magnet")[0].max().y),
-        body.min().z - down_key.min().z)
+        body.min().z - down_key.min().z,
+        name="down_key_magnet_extension")
     down_key_magnet_extension.place(
         ~down_key_magnet_extension == ~down_key,
         -down_key_magnet_extension == +down_key.find_children("magnet")[0],
@@ -1543,21 +1542,30 @@ def thumb_base(name=None):
         Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop, name="down_key_void"),
         name=name or "thumb_cluster")
 
+    assembly.add_named_faces(
+        "body_bottom",
+        *assembly.find_faces(body.end_faces))
+
     return assembly, down_key
 
 
 def thumb_clip(thumb_cluster: Component, name="thumb_clip"):
-    side_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
+    side_attachment = magnetic_attachment(
+        ball_depth=1.8, rectangular_depth=.6, radius=3.5, name="side_attachment")
     side_attachment.place(
         ~side_attachment == ~thumb_cluster.find_children("side_attachment")[0],
         ~side_attachment == ~thumb_cluster.find_children("side_attachment")[0],
         +side_attachment == -thumb_cluster.find_children("side_attachment")[0])
-    upper_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
+    upper_attachment = magnetic_attachment(
+        ball_depth=1.8, rectangular_depth=.6, radius=3.5,
+        name="upper_attachment")
     upper_attachment.place(
         ~upper_attachment == ~thumb_cluster.find_children("upper_attachment")[0],
         ~upper_attachment == ~thumb_cluster.find_children("upper_attachment")[0],
         +upper_attachment == -thumb_cluster.find_children("upper_attachment")[0])
-    lower_attachment = magnetic_attachment(ball_depth=1.8, rectangular_depth=.6, radius=3.5)
+    lower_attachment = magnetic_attachment(
+        ball_depth=1.8, rectangular_depth=.6, radius=3.5,
+        name="lower_attachment")
     lower_attachment.place(
         ~lower_attachment == ~thumb_cluster.find_children("lower_attachment")[0],
         ~lower_attachment == ~thumb_cluster.find_children("lower_attachment")[0],
@@ -1625,102 +1633,92 @@ def thumb_clip(thumb_cluster: Component, name="thumb_clip"):
     return result
 
 
-def thumb_pcb(thumb_base: Component):
-    bottom = thumb_base.named_faces("bottom")[0]
-    pcb_thickness = 1.2
+def thumb_pcb(thumb_cluster: Component, thumb_clip: Component, name="thumb_pcb"):
+    hole_size = .35
 
-    cone_centers = []
-    for edge in bottom.brep.edges:
-        if ((isinstance(edge.geometry, adsk.core.Circle3D) or isinstance(edge.geometry, adsk.core.Arc3D)) and
-                edge.geometry.radius > 1):
-            center = edge.geometry.center.asArray()
-            if center not in cone_centers:
-                cone_centers.append(center)
+    down_key_magnet_extension = thumb_cluster.find_children("down_key_magnet_extension")[0]
 
-    standoff_cutouts = []
-    for cone_center in cone_centers:
-        cone_center = Point3D.create(*cone_center)
-        circle = Cylinder(pcb_thickness, 8.2)
-        circle.place(~circle == cone_center,
-                     ~circle == cone_center,
-                     +circle == ~bottom)
-        standoff_cutouts.append(circle)
-        if cone_center.y - bottom.min().y < 10:
-            cutout = Box(8.2*2, 8.2, pcb_thickness)
-            cutout.place(~cutout == ~circle,
-                         +cutout == cone_center,
-                         +cutout == ~bottom)
-            standoff_cutouts.append(cutout)
-            cutout = Box(bottom.max().x - cone_center.x, 12, pcb_thickness)
-            cutout.place(+cutout == +bottom,
-                         -cutout == -bottom,
-                         +cutout == ~bottom)
-            standoff_cutouts.append(cutout)
-        elif bottom.max().y - cone_center.y < 5:
-            cutout = Box(8.2*2, 8.2, pcb_thickness)
-            cutout.place(~cutout == ~circle,
-                         -cutout == cone_center,
-                         +cutout == ~bottom)
-            standoff_cutouts.append(cutout)
+    body_bottom_face = thumb_cluster.named_faces("body_bottom")[0]
+    pcb_silhouette = Silhouette(thumb_cluster, body_bottom_face.get_plane())
 
-    jst_holes = hole_array(.35, 1.5, 7)
-    jst_holes.place(~jst_holes == ~bottom,
-                    (~jst_holes == +bottom) - 11,
-                    ~jst_holes == ~bottom)
+    pcb_silhouette = Silhouette(pcb_silhouette.faces[0].outer_edges, pcb_silhouette.get_plane())
 
-    through_holes = hole_array(.35, 2.54, 7)
-    through_holes.place(~through_holes == ~jst_holes,
-                        (~through_holes == ~jst_holes) - 19,
-                        ~jst_holes == ~bottom)
+    top_finder = thumb_cluster.bounding_box.make_box()
+    top_finder.place(
+        ~top_finder == ~thumb_cluster,
+        ~top_finder == ~thumb_cluster,
+        -top_finder == +thumb_clip)
 
-    base = Union(Extrude(BRepComponent(brep().copy(bottom.brep)), 1.2))
+    clip_outlines = Union(*[Silhouette(face.outer_edges, pcb_silhouette.get_plane())
+                            for face in thumb_clip.find_faces(top_finder)])
 
-    result = Difference(base, *standoff_cutouts, ExtrudeTo(jst_holes, base), ExtrudeTo(through_holes, base),
-                        name=thumb_base.name + "_pcb")
-    result.add_named_faces("bottom", *result.find_faces(bottom))
+    side_attachment_face = clip_outlines.find_faces(thumb_clip.find_children("side_attachment"))[0]
+    upper_attachment_face = clip_outlines.find_faces(thumb_clip.find_children("upper_attachment"))[0]
 
-    jst_relief = Box(jst_holes.size().x + 2, jst_holes.size().y + 4.5, 1)
-    jst_relief.place(~jst_relief == ~jst_holes,
-                     (+jst_relief == +jst_holes) + 1.5,
-                     -jst_relief == +result)
+    lower_cutout = thumb_cluster.bounding_box.make_box()
+    lower_cutout.place(
+        -lower_cutout == -down_key_magnet_extension,
+        +lower_cutout == +down_key_magnet_extension,
+        ~lower_cutout == ~pcb_silhouette)
 
-    through_hole_relief = Box(through_holes.size().x + 3, through_holes.size().y + 4, 1)
-    through_hole_relief.place(~through_hole_relief == ~through_holes,
-                              (-through_hole_relief == -through_holes) - 1,
-                              -through_hole_relief == +result)
+    pcb_silhouette = Difference(
+        pcb_silhouette,
+        side_attachment_face.bounding_box.make_box(),
+        upper_attachment_face.bounding_box.make_box(),
+        lower_cutout,
+        thumb_cluster.find_children("down_key_slot")[0])
 
-    return result, Union(jst_relief, through_hole_relief)
+    pcb_silhouette.tz(-.01)
 
+    bottom_finder = thumb_cluster.bounding_box.make_box()
+    bottom_finder.place(
+        ~bottom_finder == ~thumb_cluster,
+        ~bottom_finder == ~thumb_cluster,
+        +bottom_finder == -thumb_cluster)
 
-def thumb_pcb_sketch(left_hand=False):
-    _, pcb = full_thumb(left_hand)
+    pcb_silhouette = Difference(
+        pcb_silhouette,
+        ExtrudeTo(
+            Union(*[face.make_component() for face in thumb_cluster.find_faces(bottom_finder)]),
+            body_bottom_face),
+        down_key_magnet_extension)
 
-    prefix = "left_" if left_hand else "right_"
-    pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep, name=prefix + "thumb_cluster_pcb_sketch")
+    pcb_silhouette = OffsetEdges(
+        pcb_silhouette.faces[0],
+        pcb_silhouette.faces[0].outer_edges,
+        -.2)
 
-    rects = []
-    for edge in pcb_bottom.bodies[0].brep.edges:
-        if not isinstance(edge.geometry, adsk.core.Circle3D):
-            continue
+    legs = Union(*thumb_cluster.find_children("legs"))
+    legs.place(
+        z=~legs == ~pcb_silhouette)
 
-        if edge.geometry.radius < .4 and pcb_bottom.max().y - edge.geometry.center.y < 12:
-            rect_size = (1.25, 1.25)
-        else:
-            rect_size = (2, 2)
+    down_key_body_hole = thumb_cluster.find_children("down_key_body_hole")[0]
 
-        rect = Rect(*rect_size)
-        rect.place(~rect == edge.geometry.center,
-                   ~rect == edge.geometry.center,
-                   ~rect == edge.geometry.center)
-        rects.append(rect)
+    connector_holes = hole_array(hole_size, 1.5, 7)
+    connector_holes.rz(90)
+    connector_holes.place(~connector_holes == ~down_key_body_hole,
+                          ~connector_holes == ~down_key_body_hole,
+                          ~connector_holes == ~pcb_silhouette)
 
-    name = prefix + "thumb_cluster_pcb_sketch"
-    split_face = SplitFace(pcb_bottom, Union(*rects), name=name)
-    occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
-    sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
-    sketch.name = name
-    for face in occurrence.bRepBodies[0].faces:
-        sketch.include(face)
+    # A cutout in the clip for the connector
+
+    connector_cutout = Box(
+        5,
+        13,
+        thumb_clip.size().z,
+        name="connector_cutout")
+    connector_cutout.place(
+        ~connector_cutout == ~connector_holes,
+        ~connector_cutout == ~connector_holes,
+        -connector_cutout == -thumb_clip)
+
+    pcb_silhouette = Difference(pcb_silhouette, legs, connector_holes)
+
+    pcb = Extrude(pcb_silhouette, -1.6, name=name)
+
+    pcb = SplitFace(pcb, thumb_clip, name=pcb.name)
+
+    return pcb, connector_cutout
 
 
 def _align_key(base_magnet_cutout: Component, key: Component):
@@ -1768,7 +1766,12 @@ def full_thumb(left_hand=False):
 
     clip = thumb_clip(base, name="thumb_clip_" + suffix)
 
-    all_components = [base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool, clip]
+    pcb, connector_cutout = thumb_pcb(base, clip, name="thumb_pcb_" + suffix)
+
+    clip = Difference(
+        clip, connector_cutout, name=clip.name)
+
+    all_components = [base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool, clip, pcb]
 
     if left_hand:
         Group(all_components).scale(-1, 1, 1)
