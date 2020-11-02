@@ -954,7 +954,7 @@ def thumb_down_key():
 
     filleted_key_base = Fillet(key_base.shared_edges([key_base.back], [key_base.left, key_base.right]), 1)
 
-    post = Box(7.3, 2.2, 9, name="post")
+    post = Box(7.3, 2.6, 9, name="post")
     post.place(~post == ~key_base,
                -post == -key_base,
                -post == +key_base)
@@ -968,7 +968,7 @@ def thumb_down_key():
     angled_back_base = Box(key_base.size().x, 10, 10)
     angled_back_base.place(
         ~angled_back_base == ~key_base,
-        (-angled_back_base == +post) + 2.35,
+        (-angled_back_base == +post) + 2.75,
         -angled_back_base == +key_base)
     angled_back_base.rx(-9, center=(
         angled_back_base.mid().x,
@@ -1393,7 +1393,7 @@ def thumb_base(name=None):
     inner_base.rz(90 + 20)
     inner_base.place(
         (~inner_base_magnet_front == ~down_key) + 12.392,
-        (~inner_base_magnet_front == +down_key) - 3.662,
+        (~inner_base_magnet_front == +down_key) - 3.2,
         +inner_base == +upper_outer_base)
 
     upper_base = vertical_key_base(
@@ -1468,7 +1468,7 @@ def thumb_base(name=None):
     down_key_body_hole = Box(
         down_key.size().x + 1,
         (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55,
-        body.size().z * 10)
+        body.size().z)
 
     down_key_body_hole.place(
         ~down_key_body_hole == ~down_key,
@@ -1502,7 +1502,7 @@ def thumb_base(name=None):
 
     down_key_magnet_extension = Box(
         down_key_slot.size().x,
-        down_key_body_hole.min().y - down_key.find_children("magnet")[0].max().y,
+        (down_key_body_hole.min().y - down_key.find_children("magnet")[0].max().y),
         body.min().z - down_key.min().z)
     down_key_magnet_extension.place(
         ~down_key_magnet_extension == ~down_key,
