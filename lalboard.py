@@ -1368,6 +1368,7 @@ def thumb_base(name=None):
 
     upper_outer_base = vertical_key_base(
         extra_height=4, pressed_key_angle=7, name="upper_outer_base")
+
     upper_outer_base_magnet_front = upper_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
     upper_outer_base.rz(-90)
@@ -1375,6 +1376,16 @@ def thumb_base(name=None):
         (~upper_outer_base_magnet_front == ~down_key) - 13.525,
         (~upper_outer_base_magnet_front == +down_key) - 3.55,
         (+upper_outer_base == -down_key.named_edges("pivot")[0]))
+
+    down_key_body_hole = Box(
+        down_key.size().x + 1,
+        (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55,
+        upper_outer_base.find_children("upper_base")[0].size().z)
+
+    down_key_body_hole.place(
+        ~down_key_body_hole == ~down_key,
+        (-down_key_body_hole == ~down_key.named_edges("pivot")[0]) - .15,
+        +down_key_body_hole == +upper_outer_base)
 
     lower_outer_base = vertical_key_base(
         extra_height=4, pressed_key_angle=4.2, name="lower_outer_base")
@@ -1433,7 +1444,7 @@ def thumb_base(name=None):
     upper_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="upper_attachment")
     upper_attachment.place(
         ~upper_attachment == ~down_key,
-        -upper_attachment == +down_key,
+        -upper_attachment == +down_key_body_hole,
         +upper_attachment == +upper_outer_base)
 
     side_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="side_attachment")
@@ -1464,16 +1475,6 @@ def thumb_base(name=None):
         ~down_key_slot == ~down_key,
         +down_key_slot == +down_key.find_children("magnet")[0],
         +down_key_slot == +body)
-
-    down_key_body_hole = Box(
-        down_key.size().x + 1,
-        (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55,
-        body.size().z)
-
-    down_key_body_hole.place(
-        ~down_key_body_hole == ~down_key,
-        (-down_key_body_hole == ~down_key.named_edges("pivot")[0]) - .15,
-        +down_key_body_hole == +body)
 
     down_key_right_stop = body.bounding_box.make_box()
     down_key_right_stop.place(
