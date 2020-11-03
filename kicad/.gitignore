@@ -2,3 +2,6 @@ fp-info-cache
 *.kicad_pcb-bak
 *.sch-bak
 *.net
+thumb_cluster_left-cache.lib
+thumb_cluster_right-cache.lib
+cluster-cache.lib

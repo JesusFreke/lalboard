@@ -6,7 +6,7 @@ EESchema-LIBRARY Version 2.4
 DEF IR908-7C-F D 0 40 N N 1 F N
 F0 "D" 20 70 50 H V L CNN
 F1 "IR908-7C-F" -40 -110 50 H V C CNN
-F2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" 0 175 50 H I C CNN
+F2 "lalboard:IR908-7C-F" 0 175 50 H I C CNN
 F3 "" -50 0 50 H I C CNN
 $FPLIST
  LED*SideEmitter*Rectangular*W4.5mm*H1.6mm*
@@ -28,7 +28,7 @@ ENDDEF
 DEF PT908-7B-F Q 0 0 Y N 1 F N
 F0 "Q" 200 50 50 H V L CNN
 F1 "PT908-7B-F" 200 -50 50 H V L CNN
-F2 "LED_THT:LED_SideEmitter_Rectangular_W4.5mm_H1.6mm" 480 -140 50 H I C CNN
+F2 "lalboard:PT908-7C-F" 480 -140 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 DRAW
 C 50 0 111 0 1 10 N
