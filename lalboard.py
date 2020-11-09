@@ -598,13 +598,13 @@ def cluster_front(cluster: Component):
 
     thin_front_tool = Box(
         attachment.size().x * 10,
-        attachment.size().y,
+        attachment.size().y * 10,
         base.size().z,
         name="front_lower_section")
 
     thin_front_tool.place(
         ~thin_front_tool == ~attachment,
-        ~thin_front_tool == ~attachment,
+        (+thin_front_tool == -cluster) - 4,
         +thin_front_tool == -attachment)
 
     thin_front_extension_tool = Box(
