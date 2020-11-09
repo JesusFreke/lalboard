@@ -1126,7 +1126,7 @@ def cluster_front_clip(cluster, front):
     ball_opening_radius = 2.5 * math.cos(ball_opening_slope)
     ball_opening_cone_height = cluster.size().z
 
-    ball_opening_cone_end_radius = math.tan(ball_opening_slope) * ball_opening_cone_height + ball_opening_radius
+    ball_opening_cone_end_radius = math.tan(math.radians(35)) * ball_opening_cone_height + ball_opening_radius
 
     ball_insertion_cone = Cylinder(ball_opening_cone_height, ball_opening_cone_end_radius, ball_opening_radius)
     ball_insertion_cone.place(
