@@ -417,7 +417,17 @@ def cluster_pcb(cluster, front, back, back_clip):
         -back_trim_tool == ~back_clip.named_point("pcb_location"),
         ~back_trim_tool == ~pcb_silhouette)
 
-    pcb_silhouette = Difference(pcb_silhouette, key_wells, front_trim_tool, front_cut_out, back_trim_tool)
+    pcb_back_cutout = back_clip.find_children("pcb_back_cutout")[0]
+    pcb_back = Rect(
+        pcb_back_cutout.size().x - 1,
+        pcb_back_cutout.size().y)
+    pcb_back.place(
+        ~pcb_back == ~back_clip,
+        +pcb_back == +back_clip)
+
+    pcb_silhouette = Union(
+        Difference(pcb_silhouette, key_wells, front_trim_tool, front_cut_out, back_trim_tool),
+        pcb_back)
 
     for loop in pcb_silhouette.faces[0].loops:
         offset_amount = -.2
@@ -431,7 +441,7 @@ def cluster_pcb(cluster, front, back, back_clip):
 
     connector_holes = hole_array(hole_size, 1.5, 7)
     connector_holes.place((~connector_holes == ~pcb_silhouette),
-                          (~connector_holes == +pcb_silhouette) - 2.2,
+                          (~connector_holes == -back_trim_tool) - 2.2,
                           ~connector_holes == ~pcb_silhouette)
 
     # A cutout behind the pcb in the cluster, for the soldered connector legs.
@@ -449,7 +459,9 @@ def cluster_pcb(cluster, front, back, back_clip):
     legs.place(
         z=~legs == ~pcb_silhouette)
 
-    pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs)
+    screw_hole = back.find_children("screw_hole")[0]
+
+    pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs, screw_hole)
 
     return Extrude(pcb_silhouette, -1.6, name="pcb"), connector_legs_cutout
 
@@ -657,11 +669,41 @@ def cluster_back(cluster: Component):
     other_attachment = attachment.copy()
     other_attachment.place(+attachment == +cluster)
 
+    screw_hole = Cylinder(base.size().z * 10, 3.1/2, name="screw_hole")
+    screw_hole.place(
+        ~screw_hole == ~base,
+        ~screw_hole == ~attachment,
+        (+screw_hole == +base) - .4)
+
+    nut_cutout = Box(
+        5.8,
+        cluster.size().y * 10,
+        2.6)
+    nut_cutout.place(
+        ~nut_cutout == ~screw_hole,
+        (-nut_cutout == ~screw_hole) - nut_cutout.size().x / 2,
+        (+nut_cutout == +screw_hole) - 1.5)
+
+    # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
+    # bridged over. This will fill in the screw hole, but a single layer can be cleaned out/pushed through easily.
+    nut_cutout_ceiling = Box(
+        nut_cutout.size().x,
+        nut_cutout.size().x,
+        .2)
+    nut_cutout_ceiling.place(
+        ~nut_cutout_ceiling == ~nut_cutout,
+        -nut_cutout_ceiling == -nut_cutout,
+        +nut_cutout_ceiling == -nut_cutout)
+
     base = Fillet(base.shared_edges([base.back], [base.left, base.right]), attachment.size().x/2)
 
-    return Difference(Union(base, attachment, other_attachment),
-                      attachment.find_children("negatives")[0],
-                      other_attachment.find_children("negatives")[0])
+    return Union(
+        Difference(Union(base, attachment, other_attachment),
+                   attachment.find_children("negatives")[0],
+                   other_attachment.find_children("negatives")[0],
+                   screw_hole,
+                   nut_cutout),
+        nut_cutout_ceiling)
 
 
 def center_key():
@@ -1057,6 +1099,16 @@ def cluster_back_clip(back):
         +pcb_clip == -flat_front,
         -pcb_clip == -flat_front)
 
+    pcb_back_cutout = Box(
+        (right_attachment.min().x - left_attachment.max().x),
+        back.max().y - flat_front.min().y,
+        pcb_size,
+        name="pcb_back_cutout")
+    pcb_back_cutout.place(
+        ~pcb_back_cutout == ~flat_front,
+        -pcb_back_cutout == -flat_front,
+        +pcb_back_cutout == +flat_front)
+
     connector_cutout = Box(
         13,
         pcb_clip.size().y,
@@ -1078,14 +1130,7 @@ def cluster_back_clip(back):
         ~right_attachment_cylinder == ~right_attachment,
         ~right_attachment_cylinder == ~right_attachment)
 
-    # Add a hole for an fully inserted magnet, near where the magnet on the cluster will be. The magnet should be
-    # in the opposite orientation as the one on the cluster, and will provide a slight upwards force - enough to
-    # lightly hold the clip in place.
-    attachment_magnet = vertical_large_thin_magnet_cutout()
-    attachment_magnet.place(
-        (-attachment_magnet == +left_attachment.find_children("magnet_cutout")[0]) + .8,
-        ~attachment_magnet == ~left_attachment,
-        +attachment_magnet == +left_attachment)
+    screw_hole = back.find_children("screw_hole")[0]
 
     assembly = Difference(
         Union(left_attachment, right_attachment,
@@ -1094,9 +1139,11 @@ def cluster_back_clip(back):
                   connector_cutout),
               Difference(
                   Union(middle, flat_front),
+                  pcb_back_cutout,
                   left_attachment_cylinder,
-                  right_attachment_cylinder)),
-        attachment_magnet, name="cluster_back_clip")
+                  right_attachment_cylinder,
+                  screw_hole)),
+        name="cluster_back_clip")
 
     assembly.add_named_point("pcb_location", Point3D.create(
         back.mid().x,
