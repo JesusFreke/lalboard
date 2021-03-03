@@ -20,11 +20,9 @@ from lalboard import cluster_assembly
 
 
 def design():
-    cluster, pcb, front_clip, back_clip = cluster_assembly()
+    cluster, pcb = cluster_assembly()
     cluster.create_occurrence(scale=.1)
     pcb.create_occurrence(scale=.1)
-    front_clip.create_occurrence(scale=.1)
-    back_clip.create_occurrence(scale=.1)
 
 
 def run(_):

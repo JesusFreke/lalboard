@@ -19,6 +19,7 @@ by the various part scripts in the "parts" directory.
 
 import adsk.core
 import adsk.fusion
+import math
 
 from fscad import *
 
@@ -76,17 +77,17 @@ def vertical_large_magnet_cutout(name="magnet_cutout"):
     return Union(base, taper, name=name)
 
 
-def vertical_large_thin_magnet_cutout(name="magnet_cutout", depth=1.8):
-    taper = tapered_box(3.35, 3.35, 3.5, 3.5, min(.7, depth), name=name + "_taper")
+def vertical_large_thin_magnet_cutout(name="magnet_cutout", depth=1.8, taper=.15):
+    upper_taper = tapered_box(3.35, 3.35, 3.35 + taper, 3.35 + taper, min(.7, depth), name=name + "_taper")
 
     if depth > .7:
-        base = Box(3.35, 3.35, depth - taper.size().z, name=name + "_base")
-        taper.place(~taper == ~base,
-                    ~taper == ~base,
-                    -taper == +base)
-        return Union(base, taper, name=name)
+        base = Box(3.35, 3.35, depth - upper_taper.size().z, name=name + "_base")
+        upper_taper.place(~upper_taper == ~base,
+                          ~upper_taper == ~base,
+                          -upper_taper == +base)
+        return Union(base, upper_taper, name=name)
     else:
-        return Union(taper, name=name)
+        return Union(upper_taper, name=name)
 
 
 def vertical_large_thin_double_magnet_cutout(name="magnet_cutout"):
@@ -324,6 +325,15 @@ def cluster_design():
         key_bases[2].find_children("negatives")[0],
         key_bases[3].find_children("negatives")[0])
 
+    front_base = key_bases[0]
+    right_base = key_bases[1]
+    back_base = key_bases[2]
+    left_base = key_bases[3]
+    front_base.name = "front_base"
+    right_base.name = "right_base"
+    back_base.name = "back_base"
+    left_base.name = "left_base"
+
     combined_cluster = Union(base, *key_bases, name="combined_cluster")
 
     center_hole = Box(5, 5, combined_cluster.size().z, name="center_hole")
@@ -372,10 +382,10 @@ def cluster_design():
     return result
 
 
-def cluster_pcb(cluster, front, back, back_clip):
+def cluster_pcb(cluster, front, back):
     hole_size = .35
 
-    full_cluster = Union(cluster, front, back)
+    full_cluster = Union(cluster, front, back).copy(copy_children=False)
 
     pcb_plane = Rect(1, 1, 1)
     pcb_plane.place(
@@ -414,16 +424,16 @@ def cluster_pcb(cluster, front, back, back_clip):
     back_trim_tool = full_cluster.bounding_box.make_box()
     back_trim_tool.place(
         ~back_trim_tool == ~full_cluster,
-        -back_trim_tool == ~back_clip.named_point("pcb_location"),
+        (-back_trim_tool == -back) + 4.8,
         ~back_trim_tool == ~pcb_silhouette)
 
-    pcb_back_cutout = back_clip.find_children("pcb_back_cutout")[0]
     pcb_back = Rect(
-        pcb_back_cutout.size().x - 1,
-        pcb_back_cutout.size().y)
+        8,
+        back.max().y - back_trim_tool.min().y,
+        name="pcb_back")
     pcb_back.place(
-        ~pcb_back == ~back_clip,
-        +pcb_back == +back_clip)
+        ~pcb_back == ~back,
+        +pcb_back == +back)
 
     pcb_silhouette = Union(
         Difference(pcb_silhouette, key_wells, front_trim_tool, front_cut_out, back_trim_tool),
@@ -571,85 +581,61 @@ def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
 
 
 def cluster_front(cluster: Component):
-    upper_base = cluster.find_children("upper_base")[0]
+    front_base = cluster.find_children("front_base")[0]
+    upper_base = front_base.find_children("upper_base")[0]
+    front_key_well = front_base.find_children("key_well")[0]
 
-    extension_y_size = 11
+    front_length = 4
+    front_width = 13
 
-    # 1mm depth for magnet hole, +.3 mm for 2 .15 layers on top
-    attachment = underside_magnetic_attachment(1.3)
-
-    attachment.place(~attachment == ~cluster,
-                     (-attachment == -cluster) - extension_y_size,
-                     +attachment == +upper_base)
-
-    attachment_circle = Circle(attachment.size().x / 2)
-    attachment_circle.place(~attachment_circle == ~attachment,
-                            ~attachment_circle == ~attachment)
     left_point = cluster.named_point("lower_left_corner").point
     right_point = cluster.named_point("lower_right_corner").point
-    left_tangents = find_tangent_intersection_on_circle(attachment_circle, left_point)
-    if left_tangents[0].geometry.y < left_tangents[1].geometry.y:
-        left_tangent_point = left_tangents[0].geometry
-    else:
-        left_tangent_point = left_tangents[1].geometry
 
-    right_tangents = find_tangent_intersection_on_circle(attachment_circle, right_point)
-    if right_tangents[0].geometry.y < right_tangents[1].geometry.y:
-        right_tangent_point = right_tangents[0].geometry
-    else:
-        right_tangent_point = right_tangents[1].geometry
+    front_nose = Box(
+        front_width,
+        front_length,
+        upper_base.size().z)
+    front_nose.place(
+        ~front_nose == ~cluster,
+        +front_nose == -cluster,
+        +front_nose == +cluster)
 
-    base = Polygon(left_point, left_tangent_point, right_tangent_point, right_point)
+    front_left_point = front_nose.min()
+    front_right_point = Point3D.create(
+        front_nose.max().x,
+        front_nose.min().y,
+        front_nose.min().z)
 
-    base = Extrude(base, upper_base.size().z)
-    base.place(~base == ~cluster,
-               +base == right_point.y,
-               +base == +cluster)
+    front_base = Extrude(Polygon(front_left_point, front_right_point, right_point, left_point), upper_base.size().z)
 
-    base = Difference(base, cluster.bounding_box.make_box())
+    front_cutout = Box(
+        front_key_well.size().x,
+        front_length - 1,
+        front_base.size().z / 2)
+    front_cutout.place(
+        ~front_cutout == ~cluster,
+        +front_cutout == -cluster,
+        -front_cutout == -upper_base)
 
-    thin_front_tool = Box(
-        attachment.size().x * 10,
-        attachment.size().y * 10,
-        base.size().z,
-        name="front_lower_section")
+    front_left_cut_corner = Point3D.create(
+        cluster.min().x,
+        front_base.min().y,
+        front_base.min().z)
+    front_right_cut_corner = Point3D.create(
+        cluster.max().x,
+        front_base.min().y,
+        front_base.min().z)
 
-    thin_front_tool.place(
-        ~thin_front_tool == ~attachment,
-        (+thin_front_tool == -cluster) - 4,
-        +thin_front_tool == -attachment)
+    left_cut = Extrude(
+        Polygon(front_left_cut_corner, front_left_point, left_point), front_base.size().z, name="left_cut")
 
-    thin_front_extension_tool = Box(
-        attachment.size().x,
-        base.size().y,
-        base.size().z,
-        name="front_lower_section_extension")
-
-    thin_front_extension_tool.place(
-        ~thin_front_extension_tool == ~attachment,
-        +thin_front_extension_tool == +base,
-        +thin_front_extension_tool == +thin_front_tool)
+    right_cut = Extrude(
+        Polygon(right_point, front_right_point, front_right_cut_corner), front_base.size().z, name="right_cut")
 
     cluster = Difference(
-        cluster,
-        Extrude(Polygon(
-            left_tangent_point,
-            left_point,
-            Point3D.create(cluster.min().x, cluster.min().y, upper_base.min().z)), upper_base.size().z),
-        Extrude(Polygon(
-            right_point,
-            right_tangent_point,
-            Point3D.create(cluster.max().x, cluster.min().y, upper_base.min().z)), upper_base.size().z))
+        cluster, left_cut, right_cut)
 
-    attachment.place(z=+attachment == +base)
-
-    return cluster, Difference(
-        Union(
-            base,
-            attachment),
-        thin_front_tool,
-        thin_front_extension_tool,
-        attachment.find_children("negatives")[0])
+    return cluster, Difference(front_base, cluster.bounding_box.make_box(), front_cutout, name="cluster_front")
 
 
 def cluster_back(cluster: Component):
@@ -702,8 +688,115 @@ def cluster_back(cluster: Component):
                    attachment.find_children("negatives")[0],
                    other_attachment.find_children("negatives")[0],
                    screw_hole,
-                   nut_cutout),
+                   nut_cutout,
+                   name="cluster_back"),
         nut_cutout_ceiling)
+
+
+def base_cluster_mount_design():
+    cluster, pcb = cluster_assembly()
+
+    front = cluster.find_children("cluster_front")[0]
+    back = cluster.find_children("cluster_back")[0]
+    back_magnets = Group(back.find_children("magnet_cutout"))
+
+    cluster_silhouette = Silhouette(
+        cluster.copy(),
+        adsk.core.Plane.create(
+            Point3D.create(0, 0, 0),
+            Vector3D.create(0, 0, 1)))
+
+    cluster_outline_column = Extrude(cluster_silhouette, 100)
+    cluster_outline_column.place(
+        ~cluster_outline_column == ~cluster,
+        ~cluster_outline_column == ~cluster,
+        ~cluster_outline_column == ~cluster)
+
+    attachment = Extrude(cluster_silhouette, 4)
+    attachment.place(
+        ~attachment == ~cluster,
+        ~attachment == ~cluster,
+        +attachment == -cluster)
+    front_cut_tool = Box(
+        front.size().x,
+        front.size().y,
+        attachment.size().z)
+    front_cut_tool.place(
+        ~front_cut_tool == ~attachment,
+        -front_cut_tool == -attachment,
+        -front_cut_tool == -attachment)
+    attachment = Difference(attachment, front_cut_tool)
+
+    attachment_front = attachment.find_faces(front_cut_tool)[0].make_component()
+
+    raised_sloped_front_face = attachment_front.copy()
+
+    raised_sloped_front_face.ty(
+        attachment_front.max().z - pcb.min().z)
+    raised_sloped_front_face.tz(
+        (pcb.min().z - attachment_front.max().z))
+
+    sloped_front_face = attachment_front.copy()
+    sloped_front_face.ty(
+        attachment_front.max().z - pcb.min().z)
+
+    sloped_front_face = Union(sloped_front_face, raised_sloped_front_face)
+
+    sloped_front = Intersection(
+        Union(
+            Loft(attachment_front, sloped_front_face),
+            Extrude(sloped_front_face,
+                    sloped_front_face.mid().y - pcb.min().y)),
+        cluster_outline_column)
+
+    pcb_back = pcb.find_children("pcb_back")[0]
+    pcb_screw_hole = pcb.find_children("screw_hole")[0]
+
+    back_magnet_riser = Box(
+        attachment.size().x,
+        pcb_back.size().y,
+        back.min().z - attachment.min().z)
+    back_magnet_riser.place(
+        ~back_magnet_riser == ~attachment,
+        +back_magnet_riser == +attachment,
+        -back_magnet_riser == -attachment)
+
+    back_magnet_riser_middle_tool = Box(
+        pcb_back.size().x,
+        pcb_back.size().y,
+        back_magnet_riser.size().z)
+    back_magnet_riser_middle_tool.place(
+        ~back_magnet_riser_middle_tool == ~back_magnet_riser,
+        ~back_magnet_riser_middle_tool == ~back_magnet_riser,
+        ~back_magnet_riser_middle_tool == ~back_magnet_riser)
+
+    screw_head_hole = Cylinder(3, 3)
+    screw_head_hole.place(
+        ~screw_head_hole == ~pcb_screw_hole,
+        ~screw_head_hole == ~pcb_screw_hole,
+        +screw_head_hole == -pcb)
+
+    cavities = []
+    for magnet in back_magnets.children():
+        cavity = vertical_large_thin_magnet_cutout(depth=2.3, taper=0)
+        cavity.place(
+            ~cavity == ~magnet,
+            ~cavity == ~magnet,
+            +cavity == -magnet)
+        cavities.append(cavity)
+    cavities.append(screw_head_hole)
+
+    pcb.create_occurrence(scale=.1)
+    cluster.create_occurrence(scale=.1)
+
+    attachment = Difference(
+        Union(attachment, sloped_front,
+              Difference(back_magnet_riser, back_magnet_riser_middle_tool)),
+        *cavities, name="attachment")
+
+    attachment.add_named_faces("back_face", attachment.find_faces(back_magnet_riser.back)[0])
+
+    return attachment
 
 
 def center_key():
@@ -1261,14 +1354,9 @@ def cluster_assembly():
     cluster = cluster_design()
     cluster, front = cluster_front(cluster)
     back = cluster_back(cluster)
+    pcb, connector_legs_cutout = cluster_pcb(cluster, front, back)
 
-    front_clip = cluster_front_clip(cluster, front)
-
-    back_clip = cluster_back_clip(back)
-
-    pcb, connector_legs_cutout = cluster_pcb(cluster, front, back, back_clip)
-
-    return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip, back_clip
+    return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb
 
 
 def male_thread_chamfer_tool(end_radius, angle):
