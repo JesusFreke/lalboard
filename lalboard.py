@@ -90,8 +90,8 @@ def vertical_large_thin_magnet_cutout(name="magnet_cutout", depth=1.8, taper=.15
         return Union(upper_taper, name=name)
 
 
-def vertical_large_thin_double_magnet_cutout(name="magnet_cutout"):
-    base = Box(3.0*2, 3.0, 1, name=name + "_base")
+def vertical_large_thin_double_magnet_cutout(extra_depth=0.0, name="magnet_cutout"):
+    base = Box(3.0*2, 3.0, 1 + extra_depth, name=name + "_base")
     taper = tapered_box(3.05*2, 3.0, 3.25*2, 3.2, .7, name=name + "_taper")
     taper.place(~taper == ~base,
                 ~taper == ~base,
@@ -1381,15 +1381,19 @@ def male_thread_chamfer_tool(end_radius, angle):
     return chamfer_tool
 
 
-def screw_thread_profile(pitch=2):
-    return (((0, .075 * pitch),
-             (.4 * pitch, .375 * pitch),
-             (.4 * pitch, .525 * pitch),
-             (0, .925 * pitch)), pitch)
+def screw_thread_profile(pitch=1.4, angle=37.5, flat_height=.2):
+    sloped_side_height = (pitch - flat_height*2)/2
+
+    return (((0, flat_height/2),
+             (sloped_side_height / math.tan(math.radians(angle)), flat_height/2 + sloped_side_height),
+             (sloped_side_height / math.tan(math.radians(angle)), flat_height/2 + sloped_side_height + flat_height),
+             (0, pitch - flat_height/2)), pitch)
 
 
-def screw_design(screw_length, name):
-    screw_radius = 2.9
+def screw_design(screw_length, radius_adjustment=-.2, name="screw"):
+    nominal_screw_radius = 3.0
+
+    screw_radius = nominal_screw_radius + radius_adjustment
 
     ball = ball_magnet()
 
@@ -1414,83 +1418,95 @@ def screw_design(screw_length, name):
         ~neck == ~screw,
         -neck == +screw)
 
-    # symmetric 53 degree thread, with truncated crest and trough
     screw = Threads(screw,
                     *screw_thread_profile())
 
-    lower_chamfer_tool = male_thread_chamfer_tool(screw_radius, 45)
-    lower_chamfer_tool.place(
-        ~lower_chamfer_tool.named_point("end_point") == ~screw,
-        ~lower_chamfer_tool.named_point("end_point") == ~screw,
-        ~lower_chamfer_tool.named_point("end_point") == -screw)
-
-    upper_chamfer_tool = male_thread_chamfer_tool(neck.bottom_radius, abs(neck.angle))
-    upper_chamfer_tool.rx(180)
-    upper_chamfer_tool.place(
-        ~upper_chamfer_tool.named_point("end_point") == ~neck,
-        ~upper_chamfer_tool.named_point("end_point") == ~neck,
-        ~upper_chamfer_tool.named_point("end_point") == -neck)
-
-    return Difference(Union(Difference(screw, upper_chamfer_tool, lower_chamfer_tool), neck), ball, name=name)
+    return Difference(Union(screw, neck), ball, name=name)
 
 
-def screw_base_threaded_section(screw_length, screw_hole_radius_adjustment):
+def screw_base_flare(clearance=0.0):
+    flare_bottom_polygon = RegularPolygon(6, 5.5 + clearance, is_outer_radius=False, name="flare_bottom_polygon")
+
+    flare_mid_polygon = flare_bottom_polygon.copy()
+    flare_mid_polygon.name = "flare_mid_polygon"
+    flare_mid_polygon.tz(1)
+
+    flare_top_polygon = RegularPolygon(6, 5 + clearance, is_outer_radius=False, name="polygon")
+    flare_top_polygon.name = "flare_top_polygon"
+    flare_top_polygon.place(
+        z=(~flare_top_polygon == ~flare_mid_polygon) + 1)
+
+    return Union(
+        Loft(flare_bottom_polygon, flare_mid_polygon),
+        Loft(flare_mid_polygon, flare_top_polygon),
+        name="flare")
+
+
+def screw_base(screw_length, screw_hole_radius_adjustment=.1, flared_base=True, name=None):
     base_polygon = RegularPolygon(6, 5, is_outer_radius=False, name="polygon")
-    base_polygon.tz(screw_length)
-    base = Extrude(base_polygon, -screw_length)
+    base = Extrude(base_polygon, screw_length)
 
-    screw_hole = Cylinder(screw_length, 2.9 + screw_hole_radius_adjustment)
+    screw_hole = Cylinder(screw_length, 3.0 + screw_hole_radius_adjustment)
     screw_hole.place(~screw_hole == ~base,
                      ~screw_hole == ~base,
                      -screw_hole == -base)
 
+    if flared_base:
+        base = Union(base, screw_base_flare())
+
     return Threads(
         Difference(base, screw_hole),
-        *screw_thread_profile(), name="threaded_section")
+        *screw_thread_profile(),
+        reverse_axis=False,
+        name=name or "screw_base")
 
 
-def screw_base(screw_length, screw_hole_radius_adjustment=.1, name=None):
-    magnet = vertical_large_thin_double_magnet_cutout()
+def support_base():
+    hole_body_polygon = RegularPolygon(6, 5 + .1, is_outer_radius=False)
+    hole_body = Extrude(hole_body_polygon, 4)
+    hole_body.rz(360/12)
+    flare = screw_base_flare(clearance=.1)
+    flare.place(
+        ~flare == ~hole_body,
+        ~flare == ~hole_body,
+        -flare == -hole_body)
+    flare.rz(360/12)
+    hole = Union(hole_body, flare)
 
-    threaded_section = screw_base_threaded_section(screw_length, screw_hole_radius_adjustment)
+    upper_magnet = vertical_large_thin_double_magnet_cutout(extra_depth=.2)
 
-    magnet_section = Extrude(threaded_section.find_children("polygon")[0], magnet.size().z + .5)
+    upper_magnet.place(
+        ~upper_magnet == ~hole,
+        (-upper_magnet == +hole) + 1,
+        -upper_magnet == -hole)
 
-    magnet.place(~magnet == ~magnet_section,
-                 ~magnet == ~magnet_section,
-                 +magnet == +magnet_section)
+    lower_magnet = upper_magnet.copy()
+    lower_magnet.place(
+        ~lower_magnet == ~hole,
+        (+lower_magnet == -hole) - 1,
+        -lower_magnet == -hole)
 
-    return Union(
-        Difference(magnet_section, magnet, name="magnet_section"),
-        threaded_section,
-        name=name)
+    lower_body_polygon = RegularPolygon(6, 6.5, is_outer_radius=False)
+    lower_body_polygon.rz(360/12)
 
+    upper_base = Circle((hole.size().x + 1) / 2)
+    upper_base.place(
+        ~upper_base == ~lower_body_polygon,
+        (+upper_base == +upper_magnet) + 2,
+        -upper_base == -lower_body_polygon)
 
-def screw_base_extension(extension_thread_length, screw_length, screw_hole_radius_adjustment=.1, name=None):
-    threaded_section = screw_base_threaded_section(extension_thread_length, screw_hole_radius_adjustment)
+    lower_base = upper_base.copy()
+    lower_base.place(
+        ~lower_base == ~lower_body_polygon,
+        (-lower_base == -lower_magnet) - 2,
+        -lower_base == -lower_body_polygon)
 
-    solid_top = Extrude(threaded_section.find_children("polygon")[0], .5)
-
-    upper_screw = Cylinder(screw_length, 2.9)
-    upper_screw.place(
-        ~upper_screw == ~solid_top,
-        ~upper_screw == ~solid_top,
-        -upper_screw == +solid_top)
-
-    upper_chamfer_tool = male_thread_chamfer_tool(upper_screw.size().x / 2, 45)
-    upper_chamfer_tool.rx(180)
-    upper_chamfer_tool.place(
-        ~upper_chamfer_tool.named_point("end_point") == ~upper_screw,
-        ~upper_chamfer_tool.named_point("end_point") == ~upper_screw,
-        ~upper_chamfer_tool.named_point("end_point") == +upper_screw)
-
-    return Union(
-        threaded_section,
-        solid_top,
-        Difference(
-            Threads(upper_screw, *screw_thread_profile()),
-            upper_chamfer_tool),
-        name=name or "screw_base_extension")
+    assembly = Difference(
+        Extrude(Hull(Union(lower_body_polygon, upper_base, lower_base)), 4),
+        hole,
+        upper_magnet,
+        lower_magnet, name="support_base")
+    return assembly
 
 
 def thumb_base(name=None):

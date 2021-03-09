@@ -20,8 +20,8 @@ from lalboard import screw_design
 
 
 def design():
-    screw_design(8, name="screw_short").create_occurrence(scale=.1)
+    screw_design(13, name="screw_13").create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    run_design(design)

@@ -16,12 +16,12 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import screw_base_extension
+from lalboard import screw_design
 
 
 def design():
-    screw_base_extension(8, 4, name="screw_base_extension_short").create_occurrence(scale=.1)
+    screw_design(7, name="screw_7").create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    run_design(design)
