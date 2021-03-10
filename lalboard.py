@@ -611,11 +611,20 @@ def cluster_front(cluster: Component):
     front_cutout = Box(
         front_key_well.size().x,
         front_length - 1,
-        front_base.size().z / 2)
+        cluster.size().z)
     front_cutout.place(
         ~front_cutout == ~cluster,
         +front_cutout == -cluster,
-        -front_cutout == -upper_base)
+        (+front_cutout == +cluster) - 1)
+
+    front_notch = Box(
+        front_cutout.size().x,
+        front_cutout.size().y * 10,
+        front_cutout.size().z)
+    front_notch.place(
+        ~front_notch == ~front_cutout,
+        +front_notch == ~front_cutout,
+        (+front_notch == +cluster) - 3)
 
     front_left_cut_corner = Point3D.create(
         cluster.min().x,
@@ -635,7 +644,8 @@ def cluster_front(cluster: Component):
     cluster = Difference(
         cluster, left_cut, right_cut)
 
-    return cluster, Difference(front_base, cluster.bounding_box.make_box(), front_cutout, name="cluster_front")
+    return cluster, Difference(
+        front_base, cluster.bounding_box.make_box(), front_cutout, front_notch, name="cluster_front")
 
 
 def cluster_back(cluster: Component):
