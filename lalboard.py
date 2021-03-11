@@ -611,7 +611,7 @@ def cluster_front(cluster: Component):
     front_cutout = Box(
         front_key_well.size().x,
         front_length - 1,
-        cluster.size().z)
+        cluster.size().z, name="front_cutout")
     front_cutout.place(
         ~front_cutout == ~cluster,
         +front_cutout == -cluster,
@@ -620,7 +620,7 @@ def cluster_front(cluster: Component):
     front_notch = Box(
         front_cutout.size().x,
         front_cutout.size().y * 10,
-        front_cutout.size().z)
+        front_cutout.size().z, name="front_notch")
     front_notch.place(
         ~front_notch == ~front_cutout,
         +front_notch == ~front_cutout,
@@ -807,6 +807,61 @@ def base_cluster_mount_design():
     attachment.add_named_faces("back_face", attachment.find_faces(back_magnet_riser.back)[0])
 
     return attachment
+
+
+def cluster_front_mount_clip(front, extra_height=0, name="cluster_front_mount_clip"):
+    cutout = front.find_children("front_cutout")[0]
+    notch = front.find_children("front_notch")[0]
+
+    insert = Box(
+        cutout.size().x - .2,
+        cutout.size().y - .2,
+        (cutout.max().z - notch.max().z) - .2)
+    insert.place(
+        ~insert == ~cutout,
+        ~insert == ~cutout,
+        (+insert == +cutout) - .2)
+
+    bottom = Box(
+        insert.size().x,
+        (insert.max().y - front.min().y) + 1.6,
+        1)
+    bottom.place(
+        ~bottom == ~insert,
+        +bottom == +insert,
+        +bottom == -insert)
+
+    front_riser = Box(
+        insert.size().x,
+        1.5,
+        front.max().z - bottom.max().z + extra_height)
+    front_riser.place(
+        ~front_riser == ~insert,
+        -front_riser == -bottom,
+        -front_riser == +bottom)
+
+    attachment = underside_magnetic_attachment(1.4)
+    attachment.place(
+        ~attachment == ~insert,
+        +attachment == -front_riser,
+        +attachment == +front_riser)
+
+    attachment_top_finder = attachment.bounding_box.make_box()
+    attachment_top_finder.place(
+        ~attachment_top_finder == ~attachment,
+        ~attachment_top_finder == ~attachment,
+        -attachment_top_finder == +attachment)
+    attachment_attachment = Extrude(
+        Hull(
+            Union(
+                attachment.find_faces(attachment_top_finder)[0].make_component(),
+                front_riser.top.make_component())),
+        -attachment.size().z)
+
+    return Difference(
+        Union(insert, bottom, front_riser, attachment, attachment_attachment),
+        *attachment.find_children("negatives"),
+        name=name)
 
 
 def center_key():
