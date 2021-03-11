@@ -288,6 +288,22 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
 
 
 def cluster_design():
+    """
+    The design for the individual finger clusters, including front and back extensions.
+    """
+
+    base_cluster = base_cluster_design()
+
+    base_cluster, front = cluster_front(base_cluster)
+    back = cluster_back(base_cluster)
+
+    return Union(base_cluster, front, back, name="cluster")
+
+
+def base_cluster_design():
+    """
+    The design of the main part of a cluster, not including the front or back extensions.
+    """
     key_base = vertical_key_base()
 
     key_base_upper = key_base.find_children("upper_base")[0]
@@ -698,9 +714,9 @@ def cluster_back(cluster: Component):
                    attachment.find_children("negatives")[0],
                    other_attachment.find_children("negatives")[0],
                    screw_hole,
-                   nut_cutout,
-                   name="cluster_back"),
-        nut_cutout_ceiling)
+                   nut_cutout),
+        nut_cutout_ceiling,
+        name="cluster_back")
 
 
 def base_cluster_mount_design():
@@ -1364,9 +1380,9 @@ def cluster_front_clip(cluster, front):
     modified_front_bottom = Union(thinner_back_part, front_part)
 
     sloped_front = Box(
-        cluster_design().size().y * 2,
-        cluster_design().size().y * 2,
-        cluster_design().size().y * 2)
+        base_cluster_design().size().y * 2,
+        base_cluster_design().size().y * 2,
+        base_cluster_design().size().y * 2)
     sloped_front.place(
         ~sloped_front == ~front,
         +sloped_front == -front,
@@ -1416,12 +1432,14 @@ def cluster_front_clip(cluster, front):
 
 
 def cluster_assembly():
-    cluster = cluster_design()
+    cluster = base_cluster_design()
     cluster, front = cluster_front(cluster)
     back = cluster_back(cluster)
     pcb, connector_legs_cutout = cluster_pcb(cluster, front, back)
 
-    return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb
+    front_clip = cluster_front_mount_clip(front)
+
+    return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip
 
 
 def male_thread_chamfer_tool(end_radius, angle):

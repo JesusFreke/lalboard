@@ -20,9 +20,9 @@ from lalboard import cluster_assembly
 
 
 def design():
-    cluster, cluster_pcb, _, _ = cluster_assembly()
+    _, cluster_pcb, _ = cluster_assembly()
     cluster_pcb.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    run_design(design)
