@@ -206,7 +206,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
     key_well = Box(
         post_hole_width + .525*2,
         4.75,
-        8.4 + extra_height, "key_well")
+        8.5 + extra_height, "key_well")
 
     pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
     led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
@@ -214,7 +214,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
     upper_base = Box(
         14.9,
         6.55,
-        led_cavity.find_children("body")[0].size().z + .3,
+        led_cavity.find_children("body")[0].size().z + .4,
         name="upper_base")
 
     upper_base.place(
@@ -224,7 +224,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
 
     pt_cavity.place(+pt_cavity == -key_well,
                     (-pt_cavity == -upper_base) + .525,
-                    (+pt_cavity == +upper_base) - .3)
+                    (+pt_cavity == +upper_base) - .4)
 
     led_cavity.rz(180)
     led_cavity.place(-led_cavity == +key_well,
@@ -277,7 +277,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
     magnet_cutout = horizontal_rotated_magnet_cutout()
     magnet_cutout.place(~magnet_cutout == ~key_well,
                         -magnet_cutout == +straight_key,
-                        (+magnet_cutout == +key_well) - .45)
+                        (+magnet_cutout == +key_well) - .4)
 
     extruded_led_cavity = ExtrudeTo(led_cavity.named_faces("lens_hole"), result.copy(False))
     extruded_pt_cavity = ExtrudeTo(pt_cavity.named_faces("lens_hole"), result.copy(False))
