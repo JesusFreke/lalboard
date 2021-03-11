@@ -16,12 +16,12 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import key_breakout_pcb
+import lalboard
 
 
 def design():
-    key_breakout_pcb().create_occurrence(scale=.1)
+    lalboard.key_breakout_pcb().create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    lalboard.run_design(design, message_box_on_error=False, document_name=__name__)

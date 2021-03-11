@@ -16,15 +16,15 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import full_thumb
+import lalboard
 
 
 def design():
     (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool) = full_thumb(left_hand=False)
+     insertion_tool) = lalboard.full_thumb(left_hand=False)
     insertion_tool.rx(180)
     insertion_tool.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    lalboard.run_design(design, message_box_on_error=False, document_name=__name__)

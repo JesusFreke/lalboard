@@ -20,6 +20,7 @@ by the various part scripts in the "parts" directory.
 import adsk.core
 import adsk.fusion
 import math
+import pathlib
 
 from fscad import *
 
@@ -1953,3 +1954,17 @@ def handrest(left_hand=False):
     if not left_hand:
         assembly.scale(-1, 1, 1)
     return assembly
+
+
+def run_design(design_func, message_box_on_error=False, print_runtime=True, document_name=None):
+    """
+    Exactly the same as the standard fscad.run_design, except message_box_on_error is False by default.
+    """
+    if not document_name:
+        frame = inspect.stack()[1]
+        module = inspect.getmodule(frame[0])
+        filename = module.__file__
+        document_name = pathlib.Path(filename).stem
+
+    import fscad
+    fscad.run_design(design_func, message_box_on_error, print_runtime, document_name)

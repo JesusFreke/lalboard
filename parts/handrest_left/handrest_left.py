@@ -16,12 +16,12 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import handrest
+import lalboard
 
 
 def design():
-    handrest(left_hand=True).create_occurrence(scale=.1)
+    lalboard.handrest(left_hand=True).create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    lalboard.run_design(design, message_box_on_error=False, document_name=__name__)

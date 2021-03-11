@@ -16,15 +16,15 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import full_thumb
+import lalboard
 
 
 def design():
-    result = full_thumb(left_hand=False)
+    result = lalboard.full_thumb(left_hand=False)
     thumb_base = result[0]
     thumb_base.rx(180)
     thumb_base.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name="thumb_cluster_right")
+    lalboard.run_design(design, message_box_on_error=False, document_name="thumb_cluster_right")

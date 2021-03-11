@@ -16,12 +16,12 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import thumb_mode_key
+import lalboard
 
 
 def design():
-    thumb_mode_key(name="thumb_mode_key_left").scale(-1, 1, 1).create_occurrence(scale=.1)
+    lalboard.thumb_mode_key(name="thumb_mode_key_left").scale(-1, 1, 1).create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    lalboard.run_design(design, message_box_on_error=False, document_name=__name__)

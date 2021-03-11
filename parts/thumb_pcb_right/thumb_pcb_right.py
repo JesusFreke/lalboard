@@ -16,14 +16,14 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import full_thumb
+import lalboard
 
 
 def design():
-    result = full_thumb(left_hand=False)
+    result = lalboard.full_thumb(left_hand=False)
     pcb = result[8]
     pcb.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design, message_box_on_error=False, document_name=__name__)
+    lalboard.run_design(design, message_box_on_error=False, document_name=__name__)

@@ -16,13 +16,13 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import cluster_assembly
+import lalboard
 
 
 def design():
-    _, cluster_pcb, _ = cluster_assembly()
+    _, cluster_pcb, _ = lalboard.cluster_assembly()
     cluster_pcb.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design)
+    lalboard.run_design(design)

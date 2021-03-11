@@ -16,14 +16,14 @@ import adsk.core
 
 from fscad import *
 relative_import("../../lalboard.py")
-from lalboard import support_base
+import lalboard
 
 
 def design():
-    base = support_base()
+    base = lalboard.support_base()
     base.rx(180, center=base.mid())
     base.create_occurrence(scale=.1)
 
 
 def run(_):
-    run_design(design)
+    lalboard.run_design(design)
