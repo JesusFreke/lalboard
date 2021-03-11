@@ -19,8 +19,10 @@ by the various part scripts in the "parts" directory.
 
 import adsk.core
 import adsk.fusion
+import inspect
 import math
 import pathlib
+import os
 
 from fscad import *
 
