@@ -200,7 +200,7 @@ def retaining_ridge_design(pressed_key_angle, length):
     return retaining_ridge
 
 
-def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
+def vertical_key_base(extra_height=0.0, pressed_key_angle=12.5, extra_optical_width=0.0, name=None):
     post_hole_width = post_width + .3
 
     key_well = Box(
@@ -222,12 +222,12 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
         -upper_base == -key_well,
         +upper_base == +key_well)
 
-    pt_cavity.place(+pt_cavity == -key_well,
+    pt_cavity.place((+pt_cavity == -key_well) - extra_optical_width/2,
                     (-pt_cavity == -upper_base) + .525,
                     (+pt_cavity == +upper_base) - .4)
 
     led_cavity.rz(180)
-    led_cavity.place(-led_cavity == +key_well,
+    led_cavity.place((-led_cavity == +key_well) + extra_optical_width/2,
                      (-led_cavity == -upper_base) + .525,
                      +led_cavity == +pt_cavity)
 
@@ -332,7 +332,11 @@ def base_cluster_design():
                    -key_base == -base,
                    +key_base == +base)
 
-    back_key_base = key_base.copy()
+    back_key_base = vertical_key_base(extra_optical_width=2.5)
+    back_key_base.place(
+        ~back_key_base == ~key_base,
+        ~back_key_base == ~key_base,
+        ~back_key_base == ~key_base)
     back_key_base = Fillet(
         back_key_base.shared_edges(
             back_key_base.find_faces(key_well.front),
