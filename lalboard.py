@@ -1180,9 +1180,9 @@ def screw_thread_profile(pitch=1.4, angle=37.5, flat_height=.2):
 
 
 def screw_design(screw_length, radius_adjustment=-.2, name="screw"):
-    nominal_screw_radius = 3.0
+    screw_nominal_radius, screw_radius_adjustment, _, _, _ = screw_base_parameters()
 
-    screw_radius = nominal_screw_radius + radius_adjustment
+    screw_radius = screw_nominal_radius + radius_adjustment
 
     ball = ball_magnet()
 
@@ -1214,13 +1214,16 @@ def screw_design(screw_length, radius_adjustment=-.2, name="screw"):
 
 
 def screw_base_flare(clearance=0.0):
-    flare_bottom_polygon = RegularPolygon(6, 5.5 + clearance, is_outer_radius=False, name="flare_bottom_polygon")
+    _, _, _, base_min_radius, _ = screw_base_parameters()
+
+    flare_bottom_polygon = RegularPolygon(
+        6, base_min_radius + .5 + clearance, is_outer_radius=False, name="flare_bottom_polygon")
 
     flare_mid_polygon = flare_bottom_polygon.copy()
     flare_mid_polygon.name = "flare_mid_polygon"
     flare_mid_polygon.tz(1)
 
-    flare_top_polygon = RegularPolygon(6, 5 + clearance, is_outer_radius=False, name="polygon")
+    flare_top_polygon = RegularPolygon(6, base_min_radius + clearance, is_outer_radius=False, name="polygon")
     flare_top_polygon.name = "flare_top_polygon"
     flare_top_polygon.place(
         z=(~flare_top_polygon == ~flare_mid_polygon) + 1)
@@ -1231,11 +1234,27 @@ def screw_base_flare(clearance=0.0):
         name="flare")
 
 
-def screw_base(screw_length, screw_hole_radius_adjustment=.1, flared_base=True, name=None):
-    base_polygon = RegularPolygon(6, 5, is_outer_radius=False, name="polygon")
+def screw_base_parameters():
+    screw_nominal_radius = 3.0
+    screw_radius_adjustment = -.2
+    screw_hole_radius_adjustment = .1
+
+    screw_hole = Cylinder(10, screw_nominal_radius + screw_hole_radius_adjustment)
+    temp_threads = Threads(screw_hole, *screw_thread_profile())
+    base_min_radius = temp_threads.size().x/2 + .8
+
+    base_clearance = .1
+
+    return screw_nominal_radius, screw_radius_adjustment, screw_hole_radius_adjustment, base_min_radius, base_clearance
+
+
+def screw_base(screw_length, flared_base=True, name=None):
+    screw_nominal_radius, _, screw_hole_radius_adjustment, base_min_radius, _ = screw_base_parameters()
+    screw_hole = Cylinder(screw_length, screw_nominal_radius + screw_hole_radius_adjustment)
+
+    base_polygon = RegularPolygon(6, base_min_radius, is_outer_radius=False, name="polygon")
     base = Extrude(base_polygon, screw_length)
 
-    screw_hole = Cylinder(screw_length, 3.0 + screw_hole_radius_adjustment)
     screw_hole.place(~screw_hole == ~base,
                      ~screw_hole == ~base,
                      -screw_hole == -base)
@@ -1246,15 +1265,16 @@ def screw_base(screw_length, screw_hole_radius_adjustment=.1, flared_base=True, 
     return Threads(
         Difference(base, screw_hole),
         *screw_thread_profile(),
-        reverse_axis=False,
         name=name or "screw_base")
 
 
 def support_base():
-    hole_body_polygon = RegularPolygon(6, 5 + .1, is_outer_radius=False)
+    _, _, _, base_min_radius, base_clearance = screw_base_parameters()
+
+    hole_body_polygon = RegularPolygon(6, base_min_radius + base_clearance, is_outer_radius=False)
     hole_body = Extrude(hole_body_polygon, 4)
     hole_body.rz(360/12)
-    flare = screw_base_flare(clearance=.1)
+    flare = screw_base_flare(clearance=base_clearance)
     flare.place(
         ~flare == ~hole_body,
         ~flare == ~hole_body,
