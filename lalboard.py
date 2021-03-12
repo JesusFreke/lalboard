@@ -1242,10 +1242,12 @@ def screw_base_parameters():
     screw_hole = Cylinder(10, screw_nominal_radius + screw_hole_radius_adjustment)
     temp_threads = Threads(screw_hole, *screw_thread_profile())
     base_min_radius = temp_threads.size().x/2 + .8
+    base_flare_size = .5
 
     base_clearance = .1
 
-    return screw_nominal_radius, screw_radius_adjustment, screw_hole_radius_adjustment, base_min_radius, base_clearance
+    return (screw_nominal_radius, screw_radius_adjustment, screw_hole_radius_adjustment, base_min_radius,
+            base_clearance)
 
 
 def screw_base(screw_length, flared_base=True, name=None):
@@ -1295,10 +1297,10 @@ def support_base():
         (+lower_magnet == -hole) - 1,
         -lower_magnet == -hole)
 
-    lower_body_polygon = RegularPolygon(6, 6.5, is_outer_radius=False)
+    lower_body_polygon = RegularPolygon(6, base_min_radius + base_clearance + .8, is_outer_radius=False)
     lower_body_polygon.rz(360/12)
 
-    upper_base = Circle((hole.size().x + 1) / 2)
+    upper_base = Circle(lower_body_polygon.size().x / 2)
     upper_base.place(
         ~upper_base == ~lower_body_polygon,
         (+upper_base == +upper_magnet) + 2,
@@ -1310,8 +1312,31 @@ def support_base():
         (-lower_base == -lower_magnet) - 2,
         -lower_base == -lower_body_polygon)
 
+    mid_side_cutout_bottom = Rect(
+        lower_body_polygon.size().x,
+        flare.size().x * math.tan(math.radians(360/12.0)))
+    mid_side_cutout_mid = mid_side_cutout_bottom.copy()
+    mid_side_cutout_mid.tz(1)
+    mid_side_cutout_top = Rect(
+        lower_body_polygon.size().x,
+        2 * (base_min_radius + base_clearance) * math.tan(math.radians(360/12.0)))
+    mid_side_cutout_top.place(
+        ~mid_side_cutout_top == ~mid_side_cutout_bottom,
+        ~mid_side_cutout_top == ~mid_side_cutout_bottom,
+        (~mid_side_cutout_top == ~mid_side_cutout_bottom) + flare.size().z)
+
+    mid_side_cutout = Union(
+        Loft(mid_side_cutout_bottom, mid_side_cutout_mid),
+        Loft(mid_side_cutout_mid, mid_side_cutout_top))
+
+    mid_side_cutout.place(
+        ~mid_side_cutout == ~lower_body_polygon,
+        ~mid_side_cutout == ~lower_body_polygon,
+        -mid_side_cutout == -lower_body_polygon)
+
     assembly = Difference(
         Extrude(Hull(Union(lower_body_polygon, upper_base, lower_base)), 4),
+        mid_side_cutout,
         hole,
         upper_magnet,
         lower_magnet, name="support_base")
