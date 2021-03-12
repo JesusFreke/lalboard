@@ -106,7 +106,7 @@ def make_bottom_entry_led_cavity(name="led_cavity"):
     lens_height = 4.5
     lens_radius = .75
 
-    body = Box(1.8, 5, 5.7, "body")
+    body = Box(1.8, 5, 5.8, "body")
 
     lens_hole = Circle(lens_radius, name="lens_hole")
     lens_hole.ry(90).place(-lens_hole == +body, ~lens_hole == ~body, ~lens_hole == lens_height)
@@ -206,7 +206,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
     key_well = Box(
         post_hole_width + .525*2,
         4.75,
-        8.5 + extra_height, "key_well")
+        8.0 + extra_height, "key_well")
 
     pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
     led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
@@ -234,7 +234,7 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
     key_pivot = Cylinder(post_hole_width, 1, name="key-pivot").ry(90)
     key_pivot.place(~key_pivot == ~key_well,
                     (+key_pivot == +upper_base) - 2.6,
-                    (~key_pivot == -key_well) + 2)
+                    (~key_pivot == -key_well) + 1.4)
 
     pivot_vee = Box(
         key_pivot.size().x,
@@ -246,6 +246,14 @@ def vertical_key_base(extra_height=0, pressed_key_angle=12.5, name=None):
         ~pivot_vee == ~key_pivot,
         ~pivot_vee == ~key_pivot,
         +pivot_vee == ~key_pivot)
+
+    pivot_vee_flat_bottom = pivot_vee.bounding_box.make_box()
+    pivot_vee_flat_bottom.place(
+        ~pivot_vee_flat_bottom == ~pivot_vee,
+        ~pivot_vee_flat_bottom == ~pivot_vee,
+        +pivot_vee_flat_bottom == -key_pivot)
+
+    pivot_vee = Difference(pivot_vee, pivot_vee_flat_bottom)
 
     straight_key = Box(post_hole_width, key_pivot.size().y, key_well.size().z * 2, "straight_key")
     straight_key.place(
@@ -360,7 +368,7 @@ def base_cluster_design():
                       ~center_hole == ~base,
                       -center_hole == -base)
 
-    center_nub_hole = Box(center_hole.size().x, 2.6, 4.5)
+    center_nub_hole = Box(center_hole.size().x, 2.6, 4.6)
     center_nub_hole.place(
         ~center_nub_hole == ~base,
         (-center_nub_hole == +center_hole) + .8,
