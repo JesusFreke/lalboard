@@ -308,7 +308,12 @@ def cluster_design():
     base_cluster, front = cluster_front(base_cluster)
     back = cluster_back(base_cluster)
 
-    return Union(base_cluster, front, back, name="cluster")
+    _, connector_legs_cutout = cluster_pcb(base_cluster, front, back)
+
+    return Difference(
+        Union(base_cluster, front, back),
+        connector_legs_cutout,
+        name="cluster")
 
 
 def base_cluster_design():
