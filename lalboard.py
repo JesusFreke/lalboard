@@ -446,16 +446,14 @@ def cluster_pcb(cluster, front, back):
         ~front_edge_finder == ~back,
         +front_edge_finder == -key_wells,
         +front_edge_finder == -front)
-    front_bottom_face = full_cluster.find_faces(front_edge_finder.top)[0]
 
     front_key_well_face = full_cluster.find_faces(front_edge_finder.back)[0]
-    front_cut_out = Extrude(front_key_well_face.make_component(), full_cluster.size().y)
-
-    front_trim_tool = full_cluster.bounding_box.make_box()
-    front_trim_tool.place(
-        ~front_trim_tool == ~full_cluster,
-        +front_trim_tool == -front_bottom_face,
-        ~front_trim_tool == ~pcb_silhouette)
+    front_cut_out = cluster.bounding_box.make_box()
+    front_cut_out.name = "front_cut_out"
+    front_cut_out.place(
+        ~front_cut_out == ~cluster,
+        +front_cut_out == ~front_key_well_face,
+        ~front_cut_out == ~pcb_silhouette)
 
     back_trim_tool = full_cluster.bounding_box.make_box()
     back_trim_tool.place(
@@ -472,7 +470,7 @@ def cluster_pcb(cluster, front, back):
         +pcb_back == +back)
 
     pcb_silhouette = Union(
-        Difference(pcb_silhouette, key_wells, front_trim_tool, front_cut_out, back_trim_tool),
+        Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool),
         pcb_back)
 
     for loop in pcb_silhouette.faces[0].loops:
