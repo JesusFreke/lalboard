@@ -468,13 +468,29 @@ def cluster_pcb(cluster, front, back):
         (-back_trim_tool == -back) + 4.8,
         ~back_trim_tool == ~pcb_silhouette)
 
-    pcb_back = Rect(
+    pcb_back_box = Box(
         8,
         back.max().y - back_trim_tool.min().y,
-        name="pcb_back")
-    pcb_back.place(
-        ~pcb_back == ~back,
-        +pcb_back == +back)
+        1,
+        name="pcb_back_box")
+    pcb_back_box.place(
+        ~pcb_back_box == ~back,
+        +pcb_back_box == +back,
+        -pcb_back_box == ~pcb_silhouette)
+    pcb_back_connection = full_cluster.bounding_box.make_box()
+    pcb_back_connection.place(
+        ~pcb_back_connection == ~full_cluster,
+        +pcb_back_connection == -pcb_back_box,
+        -pcb_back_connection == -pcb_back_box)
+    pcb_back_intermediate = Union(pcb_back_box, pcb_back_connection)
+    filleted_pcb_back = Fillet(
+        pcb_back_intermediate.shared_edges(
+            pcb_back_intermediate.find_faces([pcb_back_box.left, pcb_back_box.right]),
+            pcb_back_intermediate.find_faces(pcb_back_connection.back)),
+        .8)
+    pcb_back = Difference(
+        filleted_pcb_back.find_faces(pcb_back_box.bottom)[0].make_component(name="pcb_back"),
+        pcb_back_connection)
 
     pcb_silhouette = Union(
         Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool),
@@ -510,7 +526,14 @@ def cluster_pcb(cluster, front, back):
 
     pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs, screw_hole)
 
-    return Extrude(pcb_silhouette, -1.6, name="pcb"), connector_legs_cutout
+    extruded_pcb = Extrude(pcb_silhouette, -1.6, name="pcb")
+
+    extruded_pcb_back = Box(pcb_back.size().x, pcb_back.size().y, extruded_pcb.size().z)
+
+
+
+
+    return extruded_pcb, connector_legs_cutout
 
 
 def ball_magnet():
