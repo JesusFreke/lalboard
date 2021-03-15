@@ -376,6 +376,11 @@ def base_cluster_design():
     center_hole.place(~center_hole == ~base,
                       ~center_hole == ~base,
                       -center_hole == -base)
+    center_hole = Fillet(
+        center_hole.shared_edges(
+            [center_hole.left, center_hole.right],
+            [center_hole.front, center_hole.back],
+        ), .8)
 
     center_nub_hole = Box(center_hole.size().x, 2.6, 4.6)
     center_nub_hole.place(
@@ -813,6 +818,11 @@ def center_key():
     key_rim = Difference(key_rim, key_rim_hollow)
 
     center_post = Box(5 - .2, 5 - .1, post_length + key_rim_height, name="center_post")
+    center_post = Fillet(
+        center_post.shared_edges(
+            [center_post.front, center_post.back],
+            [center_post.right, center_post.left]),
+        .8)
 
     center_post.place(
         ~center_post == ~key,
