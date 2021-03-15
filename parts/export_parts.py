@@ -33,8 +33,13 @@ def run(_):
         file: os.DirEntry
         for file in os.scandir(os.path.dirname(__file__)):
             if file.is_dir():
-                if file.name.endswith("assembly") or file.name.endswith("sketch") or file.name == "__pycache__":
+                if (file.name.startswith("_") or file.name.endswith("assembly") or file.name == "__pycache__" or
+                        file.name == "scene"):
                     continue
+
+                export_sketch = False
+                if file.name.endswith("sketch"):
+                    export_sketch = True
 
                 path = pathlib.Path(file.path, file.name + ".py")
 
@@ -42,16 +47,21 @@ def run(_):
                 print("Running " + file.name)
                 module.run(None)
 
-                if len(root().occurrences) != 1:
-                    raise Exception("Unexpected number of components in design")
+                if export_sketch:
+                    if len(root().sketches) != 1:
+                        raise Exception("Unexpected number of sketches in design")
+                    sketch: adsk.fusion.Sketch = root().sketches[0]
+                    sketch.saveAsDXF(str(pathlib.Path(export_dir, file.name + ".dxf")))
+                else:
+                    if len(root().occurrences) != 1:
+                        raise Exception("Unexpected number of components in design")
+                    options = design().exportManager.createSTLExportOptions(
+                        root().occurrences[0],
+                        str(pathlib.Path(export_dir, file.name + ".stl")))
+                    options.meshRefinement = adsk.fusion.MeshRefinementSettings.MeshRefinementHigh
+                    options.sendToPrintUtility = False
 
-                options = design().exportManager.createSTLExportOptions(
-                    root().occurrences[0],
-                    str(pathlib.Path(export_dir, file.name + ".stl")))
-                options.meshRefinement = adsk.fusion.MeshRefinementSettings.MeshRefinementHigh
-                options.sendToPrintUtility = False
-
-                design().exportManager.execute(options)
+                    design().exportManager.execute(options)
 
                 app().activeDocument.close(saveChanges=False)
 
