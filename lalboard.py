@@ -429,6 +429,13 @@ def cluster_pcb(cluster, front, back):
         ~pcb_plane == ~cluster,
         +pcb_plane == -back)
 
+    center_hole: Box = cluster.find_children("center_hole")[0]
+    full_cluster = Fillet(
+        full_cluster.shared_edges(
+            full_cluster.find_faces([center_hole.left, center_hole.right]),
+            full_cluster.find_faces([center_hole.front, center_hole.back])),
+        .8)
+
     pcb_silhouette = Silhouette(full_cluster, pcb_plane.get_plane())
 
     bottom_finder = full_cluster.bounding_box.make_box()
@@ -475,10 +482,6 @@ def cluster_pcb(cluster, front, back):
 
     for loop in pcb_silhouette.faces[0].loops:
         offset_amount = -.2
-        if abs(loop.size().x - loop.size().y) < app().pointTolerance:
-            # for the square hole in the center, enlarge it enough to ensure the rounded corners don't interfere
-            # with the center key post
-            offset_amount = -.4
         pcb_silhouette = OffsetEdges(pcb_silhouette.faces[0],
                                      pcb_silhouette.find_edges(loop.edges),
                                      offset_amount)
