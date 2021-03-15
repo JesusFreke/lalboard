@@ -94,8 +94,8 @@ def vertical_large_thin_magnet_cutout(name="magnet_cutout", depth=1.8, taper=.15
 
 
 def vertical_large_thin_double_magnet_cutout(extra_depth=0.0, name="magnet_cutout"):
-    base = Box(3.0*2, 3.0, 1 + extra_depth, name=name + "_base")
-    taper = tapered_box(3.05*2, 3.0, 3.25*2, 3.2, .7, name=name + "_taper")
+    base = Box(3.1*2, 3.1, 1 + extra_depth, name=name + "_base")
+    taper = tapered_box(3.1*2, 3.1, 3.25*2, 3.2, .7, name=name + "_taper")
     taper.place(~taper == ~base,
                 ~taper == ~base,
                 -taper == +base)
@@ -1150,7 +1150,8 @@ def cluster_assembly():
 
     front_clip = cluster_front_mount_clip(front)
 
-    return Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster"), pcb, front_clip
+    cluster = Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster")
+    return cluster, pcb, front_clip
 
 
 def male_thread_chamfer_tool(end_radius, angle):
@@ -1290,6 +1291,7 @@ def support_base():
     hole = Union(hole_body, flare)
 
     upper_magnet = vertical_large_thin_double_magnet_cutout(extra_depth=.2)
+    upper_magnet.rx(180)
 
     upper_magnet.place(
         ~upper_magnet == ~hole,
