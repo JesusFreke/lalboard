@@ -344,7 +344,7 @@ def base_cluster_design():
         ~back_key_base == ~key_base)
     back_key_base = Fillet(
         back_key_base.shared_edges(
-            back_key_base.find_faces(key_well.front),
+            back_key_base.find_faces([key_well.front, key_well.back]),
             back_key_base.find_faces([key_well.left, key_well.right])),
         .8)
     back_key_base.scale(-1, 1, 1, center=key_base.mid()).rz(180, base.mid())
