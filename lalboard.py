@@ -465,7 +465,7 @@ def cluster_pcb(cluster, front, back):
     back_trim_tool = full_cluster.bounding_box.make_box()
     back_trim_tool.place(
         ~back_trim_tool == ~full_cluster,
-        (-back_trim_tool == -back) + 4.8,
+        (-back_trim_tool == -back) + 5,
         ~back_trim_tool == ~pcb_silhouette)
 
     pcb_back_box = Box(
@@ -504,7 +504,7 @@ def cluster_pcb(cluster, front, back):
 
     connector_holes = hole_array(hole_size, 1.5, 7)
     connector_holes.place((~connector_holes == ~pcb_silhouette),
-                          (~connector_holes == -back_trim_tool) - 2.2,
+                          (~connector_holes == -back_trim_tool) - 1.6,
                           ~connector_holes == ~pcb_silhouette)
 
     # A cutout behind the pcb in the cluster, for the soldered connector legs.
