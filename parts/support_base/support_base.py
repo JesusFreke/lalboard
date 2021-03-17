@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    base = lalboard.support_base()
+    base = lalboard.support_base_design()
     base.rx(180, center=base.mid())
     base.create_occurrence(scale=.1)
 

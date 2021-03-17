@@ -1205,10 +1205,10 @@ def male_thread_chamfer_tool(end_radius, angle):
 def screw_thread_profile(pitch=1.4, angle=37.5, flat_height=.2):
     sloped_side_height = (pitch - flat_height*2)/2
 
-    return (((0, flat_height/2),
-             (sloped_side_height / math.tan(math.radians(angle)), flat_height/2 + sloped_side_height),
-             (sloped_side_height / math.tan(math.radians(angle)), flat_height/2 + sloped_side_height + flat_height),
-             (0, pitch - flat_height/2)), pitch)
+    return (((0, flat_height / 2),
+             (sloped_side_height / math.tan(math.radians(angle)), flat_height / 2 + sloped_side_height),
+             (sloped_side_height / math.tan(math.radians(angle)), flat_height / 2 + sloped_side_height + flat_height),
+             (0, pitch - flat_height / 2)), pitch)
 
 
 def screw_design(screw_length, radius_adjustment=-.2, name="screw"):
@@ -1282,7 +1282,7 @@ def screw_base_parameters():
             base_clearance)
 
 
-def screw_base(screw_length, flared_base=True, name=None):
+def screw_base_design(screw_length, flared_base=True, name=None):
     screw_nominal_radius, _, screw_hole_radius_adjustment, base_min_radius, _ = screw_base_parameters()
     screw_hole = Cylinder(screw_length, screw_nominal_radius + screw_hole_radius_adjustment)
 
@@ -1296,17 +1296,22 @@ def screw_base(screw_length, flared_base=True, name=None):
     if flared_base:
         base = Union(base, screw_base_flare())
 
+    # Reverse the axis so the threads "start" on the top. The ensures the top is always at a consistent thread
+    # position, so that the nut will tighten down to a consistent rotation.
     return Threads(
         Difference(base, screw_hole),
         *screw_thread_profile(),
+        reverse_axis=True,
         name=name or "screw_base")
 
 
-def screw_nut(name="screw_nut"):
-    return screw_base(3, flared_base=False, name=name)
+def screw_nut_design(name="screw_nut"):
+    nut = screw_base_design(3, flared_base=False, name=name)
+    nut.rx(180, center=nut.mid())
+    return nut
 
 
-def support_base():
+def support_base_design(name="support_base"):
     _, _, _, base_min_radius, base_clearance = screw_base_parameters()
 
     hole_body_polygon = RegularPolygon(6, base_min_radius + base_clearance, is_outer_radius=False)
@@ -1376,8 +1381,47 @@ def support_base():
         mid_side_cutout,
         hole,
         upper_magnet,
-        lower_magnet, name="support_base")
+        lower_magnet, name=name)
     return assembly
+
+
+def screw_support_assembly(screw_length, base_length, screw_height):
+    screw = screw_design(screw_length)
+    screw.rz(360/12)
+
+    screw_base = screw_base_design(base_length)
+    screw_base.rz(360/12)
+
+    nut = screw_nut_design()
+    nut.rz(360/12)
+
+    support_base = support_base_design()
+
+    screw_base.place(
+        ~screw_base == ~support_base,
+        ~screw_base == ~support_base,
+        -screw_base == -support_base)
+
+    _, pitch = screw_thread_profile()
+
+    screw.place(
+        ~screw == ~screw_base,
+        ~screw == ~screw_base,
+        (-screw == -screw_base) + screw_height)
+    screw.rz(-360 * (screw_base.max().z - screw.min().z) / pitch)
+
+    nut.place(
+        ~nut == ~screw,
+        ~nut == ~screw,
+        -nut == +screw_base)
+
+    ball = screw.find_children("ball_magnet")[0]
+
+    return (screw,
+            screw_base,
+            nut,
+            support_base,
+            ball)
 
 
 def thumb_base(name=None):

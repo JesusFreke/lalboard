@@ -20,7 +20,8 @@ import lalboard
 
 
 def design():
-    lalboard.screw_base_design(8, name="screw_base_8").create_occurrence(scale=.1)
+    for component in lalboard.screw_support_assembly(7, 8, 4):
+        component.create_occurrence(scale=.1, create_children=True)
 
 
 def run(_):
