@@ -21,6 +21,7 @@ import lalboard
 
 def design():
     _, cluster_pcb, _ = lalboard.cluster_assembly()
+    cluster_pcb.rz(180, center=cluster_pcb.mid())
     cluster_pcb.create_occurrence(scale=.1)
 
 

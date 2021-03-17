@@ -22,6 +22,8 @@ import lalboard
 def design():
     _, pcb, _ = lalboard.cluster_assembly()
 
+    pcb.rz(180, center=pcb.mid())
+
     pcb_bottom_tool = pcb.bounding_box.make_box()
     pcb_bottom_tool.place(
         ~pcb_bottom_tool == ~pcb,
@@ -31,7 +33,9 @@ def design():
     pcb_bottom = pcb.find_faces(pcb_bottom_tool)[0]
 
     occurrence = pcb_bottom.make_component(name="pcb_bottom").create_occurrence(scale=.1, create_children=False)
-    sketch = root().sketches.add(occurrence.bRepBodies[0].faces[0])
+
+    sketch = root().sketches.add(root().xYConstructionPlane)
+    sketch.project(occurrence.bRepBodies[0].faces[0])
     sketch.name = "cluster_pcb_sketch"
     occurrence.deleteMe()
 
