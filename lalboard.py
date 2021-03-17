@@ -938,12 +938,12 @@ def side_key(key_height, key_angle, name):
         name=name)
 
 
-def short_side_key():
-    return side_key(5, 0, "short_side_key")
+def cluster_key_short():
+    return side_key(5, 0, "cluster_key_short")
 
 
-def long_side_key():
-    return side_key(11, 10, "long_side_key")
+def cluster_key_tall():
+    return side_key(11, 10, "cluster_key_tall")
 
 
 def thumb_side_key(key_width, key_height, groove_height, key_displacement: float=-3, name="thumb_side_key"):

@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    lalboard.long_side_key().create_occurrence(scale=.1)
+    lalboard.cluster_key_tall().create_occurrence(scale=.1)
 
 
 def run(_):
