@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    _, pcb, _ = lalboard.cluster_assembly()
+    _, pcb, _ = lalboard.cluster_body_assembly()
 
     pcb.rz(180, center=pcb.mid())
 

@@ -1171,7 +1171,7 @@ def thumb_down_key():
     return assembly
 
 
-def cluster_assembly():
+def cluster_body_assembly():
     cluster = base_cluster_design()
     cluster, front = cluster_front(cluster)
     back = cluster_back(cluster)
