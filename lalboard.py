@@ -1302,6 +1302,10 @@ def screw_base(screw_length, flared_base=True, name=None):
         name=name or "screw_base")
 
 
+def screw_nut(name="screw_nut"):
+    return screw_base(3, flared_base=False, name=name)
+
+
 def support_base():
     _, _, _, base_min_radius, base_clearance = screw_base_parameters()
 

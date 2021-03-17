@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    lalboard.screw_base(3, flared_base=False, name="screw_nut").create_occurrence(scale=.1)
+    lalboard.screw_nut().create_occurrence(scale=.1)
 
 
 def run(_):
