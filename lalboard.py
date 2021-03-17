@@ -361,14 +361,14 @@ def base_cluster_design():
         key_bases[2].find_children("negatives")[0],
         key_bases[3].find_children("negatives")[0])
 
-    front_base = key_bases[0]
-    right_base = key_bases[1]
-    back_base = key_bases[2]
-    left_base = key_bases[3]
-    front_base.name = "front_base"
-    right_base.name = "right_base"
-    back_base.name = "back_base"
-    left_base.name = "left_base"
+    south_base = key_bases[0]
+    east_base = key_bases[1]
+    north_base = key_bases[2]
+    west_base = key_bases[3]
+    south_base.name = "south_base"
+    east_base.name = "east_base"
+    north_base.name = "north_base"
+    west_base.name = "west_base"
 
     combined_cluster = Union(base, *key_bases, name="combined_cluster")
 
@@ -393,9 +393,6 @@ def base_cluster_design():
     right_cavity = key_base_negatives[1]
     right_led_cavity = right_cavity.find_children("led_cavity")[0]
 
-    right_base = key_bases[1]
-    left_base = key_bases[3]
-
     central_led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
     central_led_cavity.rz(180)
     central_led_cavity.place(+central_led_cavity == -right_led_cavity,
@@ -413,8 +410,8 @@ def base_cluster_design():
     result = Difference(combined_cluster, *key_base_negatives, center_hole, center_nub_hole, central_magnet_cutout,
                         extruded_led_cavity, extruded_pt_cavity)
 
-    result.add_named_point("lower_left_corner", [left_base.min().x, left_base.min().y, 0])
-    result.add_named_point("lower_right_corner", [right_base.max().x, right_base.min().y, 0])
+    result.add_named_point("lower_left_corner", [west_base.min().x, west_base.min().y, 0])
+    result.add_named_point("lower_right_corner", [east_base.max().x, east_base.min().y, 0])
     return result
 
 
@@ -641,7 +638,7 @@ def find_tangent_intersection_on_circle(circle: Circle, point: Point3D):
 
 
 def cluster_front(cluster: Component):
-    front_base = cluster.find_children("front_base")[0]
+    front_base = cluster.find_children("south_base")[0]
     upper_base = front_base.find_children("upper_base")[0]
     front_key_well = front_base.find_children("key_well")[0]
 
