@@ -1990,7 +1990,7 @@ def _align_side_key(key_base: Component, key: Component):
         -key_pivot == -base_pivot)
 
 
-def full_thumb(left_hand=False):
+def thumb_assembly(left_hand=False):
     suffix = "left" if left_hand else "right"
     base, down_key = thumb_base("thumb_cluster_" + suffix)
 

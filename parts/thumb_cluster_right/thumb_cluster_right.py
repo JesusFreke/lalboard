@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    result = lalboard.full_thumb(left_hand=False)
+    result = lalboard.thumb_assembly(left_hand=False)
     thumb_base = result[0]
     thumb_base.rx(180)
     thumb_base.create_occurrence(scale=.1)

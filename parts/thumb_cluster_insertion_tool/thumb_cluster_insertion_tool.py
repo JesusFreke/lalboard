@@ -21,7 +21,7 @@ import lalboard
 
 def design():
     (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool, clip, pcb) = lalboard.full_thumb(left_hand=False)
+     insertion_tool, clip, pcb) = lalboard.thumb_assembly(left_hand=False)
     insertion_tool.rx(180)
     insertion_tool.create_occurrence(scale=.1)
 

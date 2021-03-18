@@ -20,17 +20,8 @@ import lalboard
 
 
 def design():
-    (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool, clip, pcb) = lalboard.full_thumb(left_hand=True)
-    thumb_base.create_occurrence(scale=.1)
-    down_key.create_occurrence(scale=.1)
-    outer_lower_key.create_occurrence(scale=.1)
-    outer_upper_key.create_occurrence(scale=.1)
-    inner_key.create_occurrence(scale=.1)
-    mode_key.create_occurrence(scale=.1)
-    insertion_tool.create_occurrence(scale=.1)
-    clip.create_occurrence(scale=.1)
-    pcb.create_occurrence(scale=.1)
+    for component in lalboard.thumb_assembly(left_hand=True):
+        component.create_occurrence(scale=.1)
 
 
 def run(_):

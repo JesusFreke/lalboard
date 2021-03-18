@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    result = lalboard.full_thumb(left_hand=False)
+    result = lalboard.thumb_assembly(left_hand=False)
     pcb = result[8]
     pcb.create_occurrence(scale=.1)
 

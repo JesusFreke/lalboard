@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    result = lalboard.full_thumb(left_hand=False)
+    result = lalboard.thumb_assembly(left_hand=False)
     attachment = result[7]
     attachment.create_occurrence(scale=.1)
 
