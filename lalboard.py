@@ -231,7 +231,7 @@ def vertical_key_base(extra_height=0.0, pressed_key_angle=12.5, extra_optical_wi
                      (-led_cavity == -upper_base) + .525,
                      +led_cavity == +pt_cavity)
 
-    key_pivot = Cylinder(post_hole_width, 1, name="key-pivot").ry(90)
+    key_pivot = Cylinder(post_hole_width, 1, name="key_pivot").ry(90)
     key_pivot.place(~key_pivot == ~key_well,
                     (+key_pivot == +upper_base) - 2.6,
                     (~key_pivot == -key_well) + 1.4)
@@ -873,21 +873,26 @@ def center_key():
 
 
 def vertical_key_post(post_length, groove_height, magnet_height, groove_width=.6):
-    post = Box(post_width, post_length, key_thickness, name="post")
-    post = Fillet(post.shared_edges([post.front], [post.top, post.bottom]), post.size().z/2)
+    post = Box(post_width, post_length - key_thickness/2, key_thickness, name="post")
+    pivot = Cylinder(post_width, key_thickness/2, name="pivot")
+    pivot.ry(90)
+    pivot.place(
+        ~pivot == ~post,
+        ~pivot == -post,
+        ~pivot == ~post)
 
     magnet = vertical_rotated_magnet_cutout()
     magnet.place(~magnet == ~post,
-                 ~magnet == magnet_height + key_thickness/2,
+                 (~magnet == -pivot) + magnet_height + key_thickness/2,
                  +magnet == +post)
 
     groove_depth = .7
     groove = Box(post.size().x, groove_width, groove_depth, name="groove")
     groove.place(~groove == ~post,
-                 (-groove == -post) + groove_height + key_thickness/2,
+                 (-groove == -pivot) + groove_height + key_thickness/2,
                  -groove == -post)
 
-    return Difference(post, magnet, groove)
+    return Difference(Union(post, pivot), magnet, groove)
 
 
 def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, key_displacement, groove_height,
@@ -935,15 +940,15 @@ def side_key(key_height, key_angle, name):
         name=name)
 
 
-def cluster_key_short():
-    return side_key(5, 0, "cluster_key_short")
+def cluster_key_short(name="cluster_key_short"):
+    return side_key(5, 0, name)
 
 
-def cluster_key_tall():
-    return side_key(11, 10, "cluster_key_tall")
+def cluster_key_tall(name="cluster_key_tall"):
+    return side_key(11, 10, name)
 
 
-def thumb_side_key(key_width, key_height, groove_height, key_displacement: float=-3, name="thumb_side_key"):
+def thumb_side_key(key_width, key_height, groove_height, key_displacement: float = -3, name="thumb_side_key"):
     return vertical_key(
         post_length=11.5,
         key_width=key_width,
@@ -1178,6 +1183,194 @@ def cluster_body_assembly():
 
     cluster = Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster")
     return cluster, pcb, front_clip
+
+
+def cluster_assembly():
+    cluster, pcb, front_clip = cluster_body_assembly()
+
+    south_key = cluster_key_short(name="south_key")
+    south_key.rx(90).rz(180)
+    east_key = cluster_key_short(name="east_key")
+    east_key.rx(90).rz(270)
+    west_key = cluster_key_short(name="west_key")
+    west_key.rx(90).rz(90)
+    north_key = cluster_key_tall(name="north_key")
+    north_key.rx(90)
+    down_key = center_key()
+
+    _align_side_key(cluster.find_children("south_base")[0], south_key)
+    _align_side_key(cluster.find_children("east_base")[0], east_key)
+    _align_side_key(cluster.find_children("west_base")[0], west_key)
+    _align_side_key(cluster.find_children("north_base")[0], north_key)
+
+    center_key_magnet = down_key.find_children("magnet_cutout")[0]
+    center_cluster_magnet = cluster.find_children("central_magnet_cutout")[0]
+    down_key.rx(180).rz(180)
+    down_key.place(
+        ~center_key_magnet == ~center_cluster_magnet,
+        -center_key_magnet == +center_cluster_magnet,
+        ~center_key_magnet == ~center_cluster_magnet)
+
+    front_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="front_magnet")
+    back_left_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_left_magnet")
+    back_right_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_right_magnet")
+
+    front_clip_magnet_cutout = front_clip.find_children("magnet_cutout")[0]
+    front_magnet.place(
+        ~front_magnet == ~front_clip_magnet_cutout,
+        ~front_magnet == ~front_clip_magnet_cutout,
+        +front_magnet == +front_clip_magnet_cutout)
+
+    back_magnet_cutouts = cluster.find_children("cluster_back")[0].find_children("magnet_cutout")
+    if back_magnet_cutouts[0].mid().x < back_magnet_cutouts[1].mid().x:
+        back_left_magnet_cutout = back_magnet_cutouts[0]
+        back_right_magnet_cutout = back_magnet_cutouts[1]
+    else:
+        back_right_magnet_cutout = back_magnet_cutouts[0]
+        back_left_magnet_cutout = back_magnet_cutouts[1]
+
+    back_left_magnet.place(
+        ~back_left_magnet == ~back_left_magnet_cutout,
+        ~back_left_magnet == ~back_left_magnet_cutout,
+        +back_left_magnet == +back_left_magnet_cutout)
+
+    back_right_magnet.place(
+        ~back_right_magnet == ~back_right_magnet_cutout,
+        ~back_right_magnet == ~back_right_magnet_cutout,
+        +back_right_magnet == +back_right_magnet_cutout)
+
+    front_support = Group(screw_support_assembly(7, 4, 0), name="front_support")
+    front_ball_magnet = front_support.find_children("ball_magnet")[0]
+
+    back_left_support = Group(screw_support_assembly(13, 8, 0), name="back_left_support")
+    back_left_ball_magnet = back_left_support.find_children("ball_magnet")[0]
+
+    back_right_support = Group(screw_support_assembly(13, 8, 4), name="back_right_support")
+    back_right_ball_magnet = back_right_support.find_children("ball_magnet")[0]
+
+    cluster_group = Group((cluster,
+                           pcb,
+                           front_clip,
+                           south_key,
+                           east_key,
+                           west_key,
+                           north_key,
+                           down_key,
+                           front_magnet,
+                           back_left_magnet,
+                           back_right_magnet), name="cluster")
+
+    cluster_group.place(
+        ~front_magnet == ~front_support,
+        ~front_magnet == ~front_support,
+        -front_magnet == +front_support)
+
+    ball_magnet_radius = front_ball_magnet.size().z / 2
+    cluster_group.add_named_point("front_support_point",
+                                  Point3D.create(
+                                      front_magnet.mid().x,
+                                      front_magnet.mid().y,
+                                      front_magnet.min().z - ball_magnet_radius))
+    cluster_group.add_named_point("back_left_support_point",
+                                  Point3D.create(
+                                      back_left_magnet.mid().x,
+                                      back_left_magnet.mid().y,
+                                      back_left_magnet.min().z - ball_magnet_radius))
+    cluster_group.add_named_point("back_right_support_point",
+                                  Point3D.create(
+                                      back_right_magnet.mid().x,
+                                      back_right_magnet.mid().y,
+                                      back_right_magnet.min().z - ball_magnet_radius))
+
+    def rotate_to_height_matrix(axis_point: Point3D, axis_vector: Vector3D, target_point: Point3D, height: float):
+        """Rotate target point around the axis defined by axis_point and axis_vector, such that its final height is
+        the specific height.
+
+        There are 2 such rotations of course, so the smaller rotation is used.
+
+        This assumes that axis is not vertical, and that target_point is not on the axis.
+        """
+        matrix = Matrix3D.create()
+
+        axis = adsk.core.InfiniteLine3D.create(axis_point, axis_vector)
+        result = app().measureManager.measureMinimumDistance(target_point, axis)
+        distance = result.value
+        target_axis_projection = result.positionOne
+
+        circle = Circle(distance)
+
+        matrix.setToRotateTo(
+            circle.get_plane().normal,
+            axis_vector)
+
+        circle.transform(matrix)
+        circle.place(
+            ~circle == target_axis_projection,
+            ~circle == target_axis_projection,
+            ~circle == target_axis_projection)
+
+        # the edge of the circle now corresponds to the path the target point travels as it rotates around axis
+        height_plane = adsk.core.Plane.create(
+            Point3D.create(0, 0, height),
+            Vector3D.create(0, 0, 1))
+
+        intersections = height_plane.intersectWithCurve(circle.edges[0].brep.geometry)
+        assert len(intersections) == 2
+
+        first_angle_measurement = app().measureManager.measureAngle(target_point, target_axis_projection, intersections[0])
+        second_angle_measurement = app().measureManager.measureAngle(target_point, target_axis_projection, intersections[1])
+
+        # the returned angle seems to be in [0, 180], I think.
+        if first_angle_measurement.value < second_angle_measurement.value:
+            destination = intersections[0]
+        else:
+            destination = intersections[1]
+
+        rotation_matrix = Matrix3D.create()
+        rotation_matrix.setToRotateTo(
+            target_axis_projection.vectorTo(target_point),
+            target_axis_projection.vectorTo(destination))
+
+        translation_matrix = Matrix3D.create()
+        translation_matrix.translation = target_axis_projection.asVector()
+        translation_matrix.invert()
+
+        matrix = Matrix3D.create()
+        matrix.transformBy(translation_matrix)
+        matrix.transformBy(rotation_matrix)
+        translation_matrix.invert()
+        matrix.transformBy(translation_matrix)
+
+        return matrix
+
+    first_rotation = rotate_to_height_matrix(
+            front_ball_magnet.mid(),
+            Vector3D.create(1, 0, 0),
+            cluster_group.named_point("back_left_support_point").point,
+            back_left_ball_magnet.mid().z)
+    cluster_group.transform(first_rotation)
+
+    back_left_support.place(
+        ~back_left_ball_magnet == cluster_group.named_point("back_left_support_point"),
+        ~back_left_ball_magnet == cluster_group.named_point("back_left_support_point"),
+        ~back_left_ball_magnet == cluster_group.named_point("back_left_support_point"))
+
+    second_rotation = rotate_to_height_matrix(
+        front_ball_magnet.mid(),
+        front_ball_magnet.mid().vectorTo(back_left_ball_magnet.mid()),
+        cluster_group.named_point("back_right_support_point").point,
+        back_right_ball_magnet.mid().z)
+    cluster_group.transform(second_rotation)
+
+    back_right_support.place(
+        ~back_right_ball_magnet == cluster_group.named_point("back_right_support_point"),
+        ~back_right_ball_magnet == cluster_group.named_point("back_right_support_point"),
+        ~back_right_ball_magnet == cluster_group.named_point("back_right_support_point"))
+
+    return (cluster_group,
+            front_support,
+            back_left_support,
+            back_right_support)
 
 
 def male_thread_chamfer_tool(end_radius, angle):
@@ -1787,25 +1980,14 @@ def thumb_pcb(thumb_cluster: Component, thumb_clip: Component, name="thumb_pcb")
     return pcb, connector_cutout
 
 
-def _align_key(base_magnet_cutout: Component, key: Component):
-    key_magnet_cutout = key.find_children("magnet_cutout")[0]
+def _align_side_key(key_base: Component, key: Component):
+    base_pivot = key_base.find_children("key_pivot")[0]
+    key_pivot = key.find_children("pivot")[0]
 
-    vertical = Vector3D.create(0, 0, 1)
-    key_normal = key_magnet_cutout.named_faces("front")[0].get_plane().normal
-    key_other = key_normal.crossProduct(vertical)
-
-    base_reverse_normal = base_magnet_cutout.named_faces("front")[0].get_plane().normal
-    base_reverse_normal.scaleBy(-1)
-    base_other = base_reverse_normal.crossProduct(vertical)
-
-    matrix = Matrix3D.create()
-    matrix.setToAlignCoordinateSystems(
-        key_magnet_cutout.named_faces("front")[0].mid(),
-        key_normal, key_other, vertical,
-        base_magnet_cutout.named_faces("front")[0].mid(),
-        base_reverse_normal, base_other, vertical)
-
-    key.transform(matrix)
+    key.place(
+        ~key_pivot == ~base_pivot,
+        ~key_pivot == ~base_pivot,
+        -key_pivot == -base_pivot)
 
 
 def full_thumb(left_hand=False):
@@ -1814,19 +1996,19 @@ def full_thumb(left_hand=False):
 
     outer_lower_key = outer_lower_thumb_key()
     outer_lower_key.rx(90)
-    _align_key(base.find_children("lower_outer_base")[0].find_children("magnet_cutout")[0], outer_lower_key)
+    _align_side_key(base.find_children("lower_outer_base")[0], outer_lower_key)
 
     outer_upper_key = outer_upper_thumb_key()
     outer_upper_key.rx(90)
-    _align_key(base.find_children("upper_outer_base")[0].find_children("magnet_cutout")[0], outer_upper_key)
+    _align_side_key(base.find_children("upper_outer_base")[0], outer_upper_key)
 
     inner_key = inner_thumb_key()
     inner_key.rx(90)
-    _align_key(base.find_children("inner_key_base")[0].find_children("magnet_cutout")[0], inner_key)
+    _align_side_key(base.find_children("inner_key_base")[0], inner_key)
 
     mode_key = thumb_mode_key("thumb_mode_key_" + suffix)
     mode_key.rx(90)
-    _align_key(base.find_children("upper_key_base")[0].find_children("magnet_cutout")[0], mode_key)
+    _align_side_key(base.find_children("upper_key_base")[0], mode_key)
 
     insertion_tool = thumb_cluster_insertion_tool(base)
 
