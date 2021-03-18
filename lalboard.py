@@ -1981,8 +1981,16 @@ def thumb_pcb(thumb_cluster: Component, thumb_clip: Component, name="thumb_pcb")
 
 
 def _align_side_key(key_base: Component, key: Component):
-    base_pivot = key_base.find_children("key_pivot")[0]
-    key_pivot = key.find_children("pivot")[0]
+    base_pivot: Cylinder = key_base.find_children("key_pivot")[0]
+    key_pivot: Cylinder = key.find_children("pivot")[0]
+
+    base_pivot_axis = base_pivot.axis
+    base_pivot_axis.scaleBy(-1)
+    matrix = Matrix3D.create()
+    matrix.setToRotateTo(
+        key_pivot.axis,
+        base_pivot_axis)
+    key.transform(matrix)
 
     key.place(
         ~key_pivot == ~base_pivot,
