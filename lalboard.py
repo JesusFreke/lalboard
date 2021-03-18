@@ -1808,91 +1808,7 @@ def thumb_base(name=None):
     return assembly, down_key
 
 
-def thumb_clip(thumb_cluster: Component, name="thumb_clip"):
-    side_attachment = magnetic_attachment(
-        ball_depth=1.8, rectangular_depth=.6, radius=3.5, name="side_attachment")
-    side_attachment.place(
-        ~side_attachment == ~thumb_cluster.find_children("side_attachment")[0],
-        ~side_attachment == ~thumb_cluster.find_children("side_attachment")[0],
-        +side_attachment == -thumb_cluster.find_children("side_attachment")[0])
-    upper_attachment = magnetic_attachment(
-        ball_depth=1.8, rectangular_depth=.6, radius=3.5,
-        name="upper_attachment")
-    upper_attachment.place(
-        ~upper_attachment == ~thumb_cluster.find_children("upper_attachment")[0],
-        ~upper_attachment == ~thumb_cluster.find_children("upper_attachment")[0],
-        +upper_attachment == -thumb_cluster.find_children("upper_attachment")[0])
-    lower_attachment = magnetic_attachment(
-        ball_depth=1.8, rectangular_depth=.6, radius=3.5,
-        name="lower_attachment")
-    lower_attachment.place(
-        ~lower_attachment == ~thumb_cluster.find_children("lower_attachment")[0],
-        ~lower_attachment == ~thumb_cluster.find_children("lower_attachment")[0],
-        +lower_attachment == -thumb_cluster.find_children("lower_attachment")[0])
-
-    side_middle = Cylinder(side_attachment.size().z, side_attachment.size().x / 2)
-    side_middle.place(
-        ~side_middle == ~lower_attachment,
-        (~side_middle == ~side_attachment) - 5,
-        ~side_middle == ~side_attachment)
-
-    middle = Cylinder(side_attachment.size().z, (side_attachment.size().x / 2) * 1.5)
-    middle.place(
-        (~middle == ~upper_attachment),
-        ~middle == ~side_attachment,
-        ~middle == ~side_attachment)
-
-    bottoms_finder = thumb_cluster.bounding_box.make_box()
-    bottoms_finder.place(
-        ~bottoms_finder == ~thumb_cluster,
-        ~bottoms_finder == ~thumb_cluster,
-        +bottoms_finder == -side_middle)
-
-    upper_hull = Hull(Union(
-        upper_attachment.find_faces(bottoms_finder)[0].make_component(),
-        middle.find_faces(bottoms_finder)[0].make_component()))
-    side_hull = Hull(Union(
-        side_attachment.find_faces(bottoms_finder)[0].make_component(),
-        middle.find_faces(bottoms_finder)[0].make_component()))
-    lower_hull = Hull(Union(
-        lower_attachment.find_faces(bottoms_finder)[0].make_component(),
-        side_middle.find_faces(bottoms_finder)[0].make_component()))
-    middle_hull = Hull(Union(
-        middle.find_faces(bottoms_finder)[0].make_component(),
-        side_middle.find_faces(bottoms_finder)[0].make_component()))
-    attachments = Group([upper_attachment, side_attachment, lower_attachment])
-
-    # Add a hole for an fully inserted magnet, near where the magnet on the cluster will be. The magnet should be
-    # in the opposite orientation as the one on the cluster, and will provide a slight upwards force - enough to
-    # lightly hold the clip in place.
-    attachment_magnet = vertical_large_thin_magnet_cutout()
-    attachment_magnet.place(
-        ~attachment_magnet == ~lower_attachment,
-        (-attachment_magnet == +lower_attachment.find_children("magnet_cutout")[0]) + .8,
-        +attachment_magnet == +lower_attachment)
-
-    attachment_magnet_extension = Cylinder(lower_attachment.size().z, lower_attachment.size().x / 2)
-    attachment_magnet_extension.place(
-        ~attachment_magnet_extension == ~lower_attachment,
-        (~attachment_magnet_extension == ~attachment_magnet),
-        ~attachment_magnet_extension == ~lower_attachment)
-    attachment_magnet_hull = Hull(Union(
-        attachment_magnet_extension.find_faces(bottoms_finder)[0].make_component(),
-        lower_attachment.find_faces(bottoms_finder)[0].make_component()))
-    attachment_magnet_extension = Extrude(attachment_magnet_hull, -lower_attachment.size().z)
-
-    attachment_negatives = attachments.find_children("negatives")
-    result = Difference(
-        Union(attachments, attachment_magnet_extension,
-              Extrude(Union(upper_hull, side_hull, lower_hull, middle_hull), -(side_middle.size().z - 1.6))),
-        *attachment_negatives,
-        attachment_magnet,
-        name=name)
-
-    return result
-
-
-def thumb_pcb(thumb_cluster: Component, thumb_clip: Component, name="thumb_pcb"):
+def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
     hole_size = .35
 
     down_key_magnet_extension = thumb_cluster.find_children("down_key_magnet_extension")[0]
@@ -1902,28 +1818,35 @@ def thumb_pcb(thumb_cluster: Component, thumb_clip: Component, name="thumb_pcb")
 
     pcb_silhouette = Silhouette(pcb_silhouette.faces[0].outer_edges, pcb_silhouette.get_plane())
 
-    top_finder = thumb_cluster.bounding_box.make_box()
-    top_finder.place(
-        ~top_finder == ~thumb_cluster,
-        ~top_finder == ~thumb_cluster,
-        -top_finder == +thumb_clip)
-
-    clip_outlines = Union(*[Silhouette(face.outer_edges, pcb_silhouette.get_plane())
-                            for face in thumb_clip.find_faces(top_finder)])
-
-    side_attachment_face = clip_outlines.find_faces(thumb_clip.find_children("side_attachment"))[0]
-    upper_attachment_face = clip_outlines.find_faces(thumb_clip.find_children("upper_attachment"))[0]
-
     lower_cutout = thumb_cluster.bounding_box.make_box()
     lower_cutout.place(
         -lower_cutout == -down_key_magnet_extension,
         +lower_cutout == +down_key_magnet_extension,
         ~lower_cutout == ~pcb_silhouette)
 
+    side_attachment = thumb_cluster.find_children("side_attachment")[0]
+    upper_attachment = thumb_cluster.find_children("upper_attachment")[0]
+
+    side_attachment_cutout = Rect(
+        side_attachment.size().x,
+        side_attachment.size().y)
+    side_attachment_cutout.place(
+        ~side_attachment_cutout == ~side_attachment,
+        ~side_attachment_cutout == ~side_attachment,
+        ~side_attachment_cutout == ~pcb_silhouette)
+
+    upper_attachment_cutout = Rect(
+        upper_attachment.size().x,
+        upper_attachment.size().y)
+    upper_attachment_cutout.place(
+        ~upper_attachment_cutout == ~upper_attachment,
+        ~upper_attachment_cutout == ~upper_attachment,
+        ~upper_attachment_cutout == ~pcb_silhouette)
+
     pcb_silhouette = Difference(
         pcb_silhouette,
-        side_attachment_face.bounding_box.make_box(),
-        upper_attachment_face.bounding_box.make_box(),
+        side_attachment_cutout,
+        upper_attachment_cutout,
         lower_cutout,
         thumb_cluster.find_children("down_key_slot")[0])
 
@@ -1959,25 +1882,11 @@ def thumb_pcb(thumb_cluster: Component, thumb_clip: Component, name="thumb_pcb")
                           ~connector_holes == ~down_key_body_hole,
                           ~connector_holes == ~pcb_silhouette)
 
-    # A cutout in the clip for the connector
-
-    connector_cutout = Box(
-        5,
-        13,
-        thumb_clip.size().z,
-        name="connector_cutout")
-    connector_cutout.place(
-        ~connector_cutout == ~connector_holes,
-        ~connector_cutout == ~connector_holes,
-        -connector_cutout == -thumb_clip)
-
     pcb_silhouette = Difference(pcb_silhouette, legs, connector_holes)
 
     pcb = Extrude(pcb_silhouette, -1.6, name=name)
 
-    pcb = SplitFace(pcb, thumb_clip, name=pcb.name)
-
-    return pcb, connector_cutout
+    return pcb
 
 
 def _align_side_key(key_base: Component, key: Component):
@@ -2020,14 +1929,9 @@ def thumb_assembly(left_hand=False):
 
     insertion_tool = thumb_cluster_insertion_tool(base)
 
-    clip = thumb_clip(base, name="thumb_clip_" + suffix)
+    pcb = thumb_pcb(base, name="thumb_pcb_" + suffix)
 
-    pcb, connector_cutout = thumb_pcb(base, clip, name="thumb_pcb_" + suffix)
-
-    clip = Difference(
-        clip, connector_cutout, name=clip.name)
-
-    all_components = [base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool, clip, pcb]
+    all_components = [base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool, pcb]
 
     if left_hand:
         Group(all_components).scale(-1, 1, 1)
