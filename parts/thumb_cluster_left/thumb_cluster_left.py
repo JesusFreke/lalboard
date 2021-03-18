@@ -27,4 +27,4 @@ def design():
 
 
 def run(_):
-    lalboard.run_design(design, message_box_on_error=False, document_name="thumb_cluster_left")
+    lalboard.run_design(design)

@@ -34,4 +34,4 @@ def design():
 
 
 def run(_):
-    lalboard.run_design(design, message_box_on_error=False, document_name="thumb_cluster_right_assembly")
+    lalboard.run_design(design)
