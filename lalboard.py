@@ -1722,7 +1722,7 @@ def thumb_base(name=None):
     top_face_finder.place(z=-top_face_finder == +body_entities)
 
     body = Extrude(
-        Hull(Union(*[face.make_component() for face in body_entities.find_faces(top_face_finder)])),
+        Hull(Union(*[face.make_component().copy(copy_children=False) for face in body_entities.find_faces(top_face_finder)])),
         -key_base_upper.size().z,
         name="body")
 
@@ -1781,14 +1781,14 @@ def thumb_base(name=None):
         (-down_key_led_cavity == +down_key_body_hole) + .8,
         (~down_key_led_cavity == -down_key_body_hole) + 16,
         +down_key_led_cavity == +upper_outer_led_cavity)
-    down_key_led_cavity = ExtrudeTo(down_key_led_cavity.named_faces("lens_hole"), down_key_body_hole)
+    down_key_led_cavity = ExtrudeTo(down_key_led_cavity.named_faces("lens_hole"), down_key_body_hole.copy(False))
 
     down_key_pt_cavity = make_bottom_entry_led_cavity("down_key_pt_cavity")
     down_key_pt_cavity.place(
         (+down_key_pt_cavity == -down_key_body_hole) - .8,
         ~down_key_pt_cavity == ~down_key_led_cavity,
         +down_key_pt_cavity == +upper_outer_led_cavity)
-    down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole)
+    down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole.copy(False))
 
     assembly = Difference(
         Union(body, body_entities, down_key_magnet_extension),
@@ -1814,7 +1814,7 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
     down_key_magnet_extension = thumb_cluster.find_children("down_key_magnet_extension")[0]
 
     body_bottom_face = thumb_cluster.named_faces("body_bottom")[0]
-    pcb_silhouette = Silhouette(thumb_cluster, body_bottom_face.get_plane())
+    pcb_silhouette = Silhouette(thumb_cluster.copy(copy_children=False), body_bottom_face.get_plane())
 
     pcb_silhouette = Silhouette(pcb_silhouette.faces[0].outer_edges, pcb_silhouette.get_plane())
 
