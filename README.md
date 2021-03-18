@@ -4,6 +4,10 @@
 
 [More Images](https://github.com/JesusFreke/lalboard/wiki/Images)
 
+[120 WPM Typing Demo](https://www.youtube.com/watch?v=oMhOIgrdeE0)
+
+[V2 Project Logs (hackaday.io)](http://lalboard.com)
+
 I am a long-time user of a DataHand keyboard. With the scarcity and rising cost of second hand
 DataHands these days, I wanted to ensure that I always had access to a DataHand-like keyboard. And
 so this project was born.
