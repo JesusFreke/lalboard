@@ -34,10 +34,17 @@ def design():
 
     occurrence = pcb_bottom.make_component(name="pcb_bottom").create_occurrence(scale=.1, create_children=False)
 
+    # This serves as a virtual "locating pin" that helps position the outlines when updating the outline in an existing
+    # kicad pcb design.
+    origin_locator = Cylinder(1, 1).create_occurrence(scale=.1)
+
     sketch = root().sketches.add(root().xYConstructionPlane)
     sketch.project(occurrence.bRepBodies[0].faces[0])
+    sketch.project(origin_locator.bRepBodies[0])
     sketch.name = "cluster_pcb_sketch"
+
     occurrence.deleteMe()
+    origin_locator.deleteMe()
 
 
 def run(_):
