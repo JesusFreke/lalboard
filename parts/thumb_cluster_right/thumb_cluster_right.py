@@ -20,8 +20,7 @@ import lalboard
 
 
 def design():
-    result = lalboard.thumb_assembly(left_hand=False)
-    thumb_base = result[0]
+    thumb_base, _ = lalboard.thumb_base("thumb_cluster_right")
     thumb_base.rx(180)
     thumb_base.create_occurrence(scale=.1)
 

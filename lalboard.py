@@ -1700,7 +1700,7 @@ def thumb_base(name=None):
     upper_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="upper_attachment")
     upper_attachment.place(
         ~upper_attachment == ~down_key,
-        -upper_attachment == +down_key_body_hole,
+        (-upper_attachment == +down_key_body_hole) + 2,
         +upper_attachment == +upper_outer_base)
 
     side_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="side_attachment")
@@ -1709,22 +1709,30 @@ def thumb_base(name=None):
         ~side_attachment == (upper_outer_base.min().y + lower_outer_base.max().y)/2,
         +side_attachment == +upper_outer_base)
 
-    body_entities = Union(
+    body_entities = [
         upper_outer_base,
         lower_outer_base,
         inner_base,
         upper_base,
         lower_attachment,
         upper_attachment,
-        side_attachment)
+        side_attachment]
 
-    top_face_finder = body_entities.bounding_box.make_box()
-    top_face_finder.place(z=-top_face_finder == +body_entities)
+    # temporarily move it out a bit, to add some extra space on that side during the hull operation, to give a bit more
+    # room for the nut there
+    upper_outer_base.ty(1)
+
+    body_entities_group = Group(body_entities)
+    top_face_finder = body_entities_group.bounding_box.make_box()
+    top_face_finder.place(z=-top_face_finder == +body_entities_group)
 
     body = Extrude(
-        Hull(Union(*[face.make_component().copy(copy_children=False) for face in body_entities.find_faces(top_face_finder)])),
+        Hull(Union(*[face.make_component().copy(copy_children=False) for face in body_entities_group.find_faces(top_face_finder)])),
         -key_base_upper.size().z,
         name="body")
+
+    # and now move it back
+    upper_outer_base.ty(-1)
 
     down_key_slot = Box(
         down_key.find_children("post")[0].size().x + 1, 5, body.size().z * 2, name="down_key_slot")
@@ -1790,15 +1798,24 @@ def thumb_base(name=None):
         +down_key_pt_cavity == +upper_outer_led_cavity)
     down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole.copy(False))
 
-    assembly = Difference(
-        Union(body, body_entities, down_key_magnet_extension),
-        upper_outer_base_negatives, lower_outer_base_negatives,
-        inner_base_negatives, upper_base_negatives,
-        *lower_attachment.find_children("negatives"),
-        *upper_attachment.find_children("negatives"),
-        *side_attachment.find_children("negatives"),
-        down_key_slot, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
-        Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop, name="down_key_void"),
+    side_nut_negatives, side_nut_positives = _thumb_side_nut(body, upper_base, lower_attachment)
+
+    back_nut_negatives, back_nut_positives = _thumb_back_nut(body, upper_attachment)
+
+    assembly = Union(
+        Difference(
+            Union(body, *body_entities, down_key_magnet_extension),
+            upper_outer_base_negatives, lower_outer_base_negatives,
+            inner_base_negatives, upper_base_negatives,
+            *lower_attachment.find_children("negatives"),
+            *upper_attachment.find_children("negatives"),
+            *side_attachment.find_children("negatives"),
+            down_key_slot, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
+            Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop,  name="down_key_void"),
+            *side_nut_negatives,
+            *back_nut_negatives),
+        *side_nut_positives,
+        *back_nut_positives,
         name=name or "thumb_cluster")
 
     assembly.add_named_faces(
@@ -1806,6 +1823,112 @@ def thumb_base(name=None):
         *assembly.find_faces(body.end_faces))
 
     return assembly, down_key
+
+
+def _thumb_side_nut(thumb_body: Component, upper_base, lower_attachment):
+
+    angled_side_finder = Box(10,
+                             10,
+                             thumb_body.size().z / 2)
+    angled_side_finder.place(
+        ~angled_side_finder == ~Group([upper_base, lower_attachment]),
+        ~angled_side_finder == ~Group([upper_base, lower_attachment]),
+        ~angled_side_finder == ~thumb_body)
+
+    angled_side = thumb_body.find_faces(
+        Intersection(thumb_body, angled_side_finder))[0]
+
+    side_angle = math.degrees(angled_side.make_component().get_plane().normal.angleTo(Vector3D.create(1, 0, 0)))
+
+    thumb_body.rz(side_angle, center=(0, 0, 0))
+
+    nut_cutout = Box(
+        5.8,
+        5.8,
+        2.6,
+        name="nut_cutout")
+
+    nut_cutout.place(
+        +nut_cutout == +angled_side,
+        ~nut_cutout == ~angled_side,
+        ~nut_cutout == ~angled_side)
+
+    # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
+    # bridged over. This will fill in the screw hole, but a single layer can be cleaned out/pushed through easily.
+    nut_cutout_ceiling = Box(
+        nut_cutout.size().x,
+        nut_cutout.size().x,
+        .2,
+        name="nut_cutout_ceiling")
+    nut_cutout_ceiling.place(
+        ~nut_cutout_ceiling == ~nut_cutout,
+        -nut_cutout_ceiling == -nut_cutout,
+        +nut_cutout_ceiling == -nut_cutout)
+
+    thumb_body.rz(-side_angle, center=(0, 0, 0))
+    nut_cutout.rz(-side_angle, center=(0, 0, 0))
+    nut_cutout_ceiling.rz(-side_angle, center=(0, 0, 0))
+
+    screw_hole = Cylinder(thumb_body.size().z * 10, 3.1 / 2, name="side_screw_hole")
+    screw_hole.place(
+        ~screw_hole == ~nut_cutout,
+        ~screw_hole == ~nut_cutout,
+        +screw_hole == +nut_cutout)
+
+    return (nut_cutout, screw_hole), (nut_cutout_ceiling,)
+
+
+def _thumb_back_nut(thumb_body: Component, upper_attachment):
+    angled_side_finder = Box(
+        upper_attachment.size().x,
+        upper_attachment.size().y,
+        thumb_body.size().z / 2)
+    angled_side_finder.place(
+        +angled_side_finder == -upper_attachment,
+        ~angled_side_finder == ~upper_attachment,
+        ~angled_side_finder == ~thumb_body)
+
+    angled_side = thumb_body.find_faces(
+        Intersection(thumb_body, angled_side_finder))[0]
+
+    side_angle = math.degrees(angled_side.make_component().get_plane().normal.angleTo(Vector3D.create(0, 1, 0)))
+
+    thumb_body.rz(-side_angle, center=(0, 0, 0))
+
+    nut_cutout = Box(
+        5.8,
+        5.8,
+        2.6,
+        name="nut_cutout")
+
+    nut_cutout.place(
+        (~nut_cutout == ~angled_side) + 1,
+        +nut_cutout == +angled_side,
+        ~nut_cutout == ~angled_side)
+
+    # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
+    # bridged over. This will fill in the screw hole, but a single layer can be cleaned out/pushed through easily.
+    nut_cutout_ceiling = Box(
+        nut_cutout.size().x,
+        nut_cutout.size().x,
+        .2,
+        name="nut_cutout_ceiling")
+    nut_cutout_ceiling.place(
+        ~nut_cutout_ceiling == ~nut_cutout,
+        -nut_cutout_ceiling == -nut_cutout,
+        +nut_cutout_ceiling == -nut_cutout)
+
+    thumb_body.rz(side_angle, center=(0, 0, 0))
+    nut_cutout.rz(side_angle, center=(0, 0, 0))
+    nut_cutout_ceiling.rz(side_angle, center=(0, 0, 0))
+
+    screw_hole = Cylinder(thumb_body.size().z * 10, 3.1 / 2, name="back_screw_hole")
+    screw_hole.place(
+        ~screw_hole == ~nut_cutout,
+        ~screw_hole == ~nut_cutout,
+        +screw_hole == +nut_cutout)
+
+    return (nut_cutout, screw_hole), (nut_cutout_ceiling,)
 
 
 def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
