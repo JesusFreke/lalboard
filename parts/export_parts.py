@@ -21,6 +21,9 @@ import traceback
 
 from fscad import *
 
+# List of the names of the parts to export. An empty list will export all parts.
+parts_to_export = []
+
 
 def run(_):
     try:
@@ -43,6 +46,9 @@ def run(_):
                     export_sketch = True
                 if file.name.endswith("assembly"):
                     export_assembly = True
+
+                if parts_to_export and file.name not in parts_to_export:
+                    continue
 
                 path = pathlib.Path(file.path, file.name + ".py")
 
