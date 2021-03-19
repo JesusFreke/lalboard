@@ -2005,7 +2005,10 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
                           ~connector_holes == ~down_key_body_hole,
                           ~connector_holes == ~pcb_silhouette)
 
-    pcb_silhouette = Difference(pcb_silhouette, legs, connector_holes)
+    side_screw_hole = thumb_cluster.find_children("side_screw_hole")[0]
+    back_screw_hole = thumb_cluster.find_children("back_screw_hole")[0]
+
+    pcb_silhouette = Difference(pcb_silhouette, legs, connector_holes, side_screw_hole, back_screw_hole)
 
     pcb = Extrude(pcb_silhouette, -1.6, name=name)
 

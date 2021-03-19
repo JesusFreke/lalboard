@@ -20,8 +20,8 @@ import lalboard
 
 
 def design():
-    result = lalboard.thumb_assembly(left_hand=False)
-    pcb = result[7]
+    thumb_base, _ = lalboard.thumb_base("thumb_cluster_right")
+    pcb = lalboard.thumb_pcb(thumb_base, name="thumb_pcb_right")
     pcb.create_occurrence(scale=.1)
 
 
