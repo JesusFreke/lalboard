@@ -125,20 +125,20 @@ def export_to_fusion_cloud(file, f3d_file):
             raise Exception("Oops, couldn't save document")
         return
 
-    document = app().documents.open(data_file_for_export)
-    design: adsk.fusion.Design = document.products[0]
+    export_document = app().documents.open(data_file_for_export)
+    export_design: adsk.fusion.Design = export_document.products[0]
 
     occurrence: adsk.fusion.Occurrence
-    for occurrence in design.rootComponent.occurrences:
+    for occurrence in list(export_design.rootComponent.occurrences):
         occurrence.deleteMe()
 
     imported_occurrence: adsk.fusion.Occurrence = app().importManager.importToTarget2(
         app().importManager.createFusionArchiveImportOptions(f3d_file),
-        design.rootComponent)[0]
+        export_design.rootComponent)[0]
 
     for occurrence in imported_occurrence.component.occurrences:
-        occurrence.moveToComponent(design.rootComponent.allOccurrences[0])
+        export_design.rootComponent.occurrences.addExistingComponent(occurrence.component, occurrence.transform)
 
     imported_occurrence.deleteMe()
-    document.save("saved")
-    document.close(saveChanges=False)
+    export_document.save("saved")
+    export_document.close(saveChanges=False)
