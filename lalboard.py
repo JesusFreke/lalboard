@@ -1667,6 +1667,22 @@ def thumb_base(name=None):
         extra_height=4, pressed_key_angle=7, name="upper_key_base")
     upper_base_magnet_front = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_base_negatives = upper_base.find_children("negatives")[0]
+    key_base_upper = upper_base.find_children("upper_base")[0]
+
+    upper_base_lower_fillet = Cylinder(key_base_upper.size().z, 1)
+    upper_base_lower_fillet.place(
+        ~upper_base_lower_fillet == -upper_base,
+        -upper_base_lower_fillet == -upper_base,
+        ~upper_base_lower_fillet == ~key_base_upper)
+
+    upper_base_upper_fillet = Cylinder(key_base_upper.size().z, 1)
+    upper_base_upper_fillet.place(
+        ~upper_base_upper_fillet == +upper_base,
+        -upper_base_upper_fillet == -upper_base,
+        ~upper_base_upper_fillet == ~key_base_upper)
+
+    upper_base = Group([upper_base, upper_base_lower_fillet, upper_base_upper_fillet])
+
     upper_base.rz(90)
     # rotate inner_base back to an orthogonal rotation so we can easily place upper_base behind it
     inner_base.rz(-20, center=(0, 0, 0))
@@ -1688,8 +1704,6 @@ def thumb_base(name=None):
     # rotate both bases together back in place
     inner_base.rz(20, center=(0, 0, 0))
     upper_base.rz(20, center=(0, 0, 0))
-
-    key_base_upper = upper_outer_base.find_children("upper_base")[0]
 
     # Extend the lower part of the body on the "outer" side a bit, so there's more room to get a trace out of that
     # cramped area in the very bottom
@@ -1733,7 +1747,8 @@ def thumb_base(name=None):
         upper_attachment,
         side_attachment]
 
-    hull_entities = [*body_entities, lower_extension, upper_extension]
+    hull_entities = [
+        *body_entities, lower_extension, upper_extension, upper_base_upper_fillet, upper_base_lower_fillet]
 
     hull_entities_group = Group(hull_entities)
     top_face_finder = hull_entities_group.bounding_box.make_box()
