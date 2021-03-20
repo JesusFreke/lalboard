@@ -1968,17 +1968,30 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
     side_attachment = thumb_cluster.find_children("side_attachment")[0]
     upper_attachment = thumb_cluster.find_children("upper_attachment")[0]
 
-    side_attachment_cutout = Rect(
+    side_attachment_cutout = Box(
         side_attachment.size().x,
-        side_attachment.size().y)
+        side_attachment.size().y,
+        1)
+    side_attachment_cutout = Fillet(
+        side_attachment_cutout.shared_edges(
+            side_attachment_cutout.right,
+            [side_attachment_cutout.front,
+             side_attachment_cutout.back]), .8)
+
     side_attachment_cutout.place(
         ~side_attachment_cutout == ~side_attachment,
         ~side_attachment_cutout == ~side_attachment,
         ~side_attachment_cutout == ~pcb_silhouette)
 
-    upper_attachment_cutout = Rect(
+    upper_attachment_cutout = Box(
         upper_attachment.size().x,
-        upper_attachment.size().y)
+        upper_attachment.size().y,
+        1)
+    upper_attachment_cutout = Fillet(
+        upper_attachment_cutout.shared_edges(
+            upper_attachment_cutout.front,
+            [upper_attachment_cutout.left,
+             upper_attachment_cutout.right]), .8)
     upper_attachment_cutout.place(
         ~upper_attachment_cutout == ~upper_attachment,
         ~upper_attachment_cutout == ~upper_attachment,
