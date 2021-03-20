@@ -1793,6 +1793,11 @@ def thumb_base(name=None):
         ~down_key_magnet_extension == ~down_key,
         -down_key_magnet_extension == +down_key.find_children("magnet")[0],
         +down_key_magnet_extension == -body)
+    down_key_magnet_extension = Fillet(
+        down_key_magnet_extension.shared_edges(
+            down_key_magnet_extension.back,
+            [down_key_magnet_extension.left, down_key_magnet_extension.right]),
+        .8)
 
     down_key_magnet = horizontal_rotated_magnet_cutout(1.8)
     down_key_magnet.place(
@@ -1960,6 +1965,9 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
     pcb_silhouette = Silhouette(pcb_silhouette.faces[0].outer_edges, pcb_silhouette.get_plane())
 
     lower_cutout = thumb_cluster.bounding_box.make_box()
+    lower_cutout = Fillet(lower_cutout.shared_edges(
+        lower_cutout.back,
+        lower_cutout.left), .8)
     lower_cutout.place(
         -lower_cutout == -down_key_magnet_extension,
         +lower_cutout == +down_key_magnet_extension,
@@ -2001,8 +2009,7 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
         pcb_silhouette,
         side_attachment_cutout,
         upper_attachment_cutout,
-        lower_cutout,
-        thumb_cluster.find_children("down_key_slot")[0])
+        lower_cutout)
 
     pcb_silhouette.tz(-.01)
 
@@ -2016,8 +2023,7 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
         pcb_silhouette,
         ExtrudeTo(
             Union(*[face.make_component().copy(copy_children=False) for face in thumb_cluster.find_faces(bottom_finder)]),
-            body_bottom_face.make_component().copy(copy_children=False).faces[0]),
-        down_key_magnet_extension)
+            body_bottom_face.make_component().copy(copy_children=False).faces[0]))
 
     pcb_silhouette = OffsetEdges(
         pcb_silhouette.faces[0],
