@@ -200,13 +200,22 @@ def retaining_ridge_design(pressed_key_angle, length):
     return retaining_ridge
 
 
-def vertical_key_base(extra_height=0.0, pressed_key_angle=12.5, extra_optical_width=0.0, name=None):
+def vertical_key_base(extra_height=0.0, pressed_key_angle=12.5, extra_optical_width=0.0,
+                      fillet_back_keywell_corners=False, fillet_front_keywell_corners=False, name=None):
     post_hole_width = post_width + .3
 
     key_well = Box(
         post_hole_width + .525*2,
         4.75,
         8.0 + extra_height, "key_well")
+
+    filleted_edges = []
+    if fillet_back_keywell_corners:
+        filleted_edges.extend(key_well.shared_edges(key_well.back, [key_well.left, key_well.right]))
+    if fillet_front_keywell_corners:
+        filleted_edges.extend(key_well.shared_edges(key_well.front, [key_well.left, key_well.right]))
+    if filleted_edges:
+        key_well = Fillet(filleted_edges, .8)
 
     pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
     led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
@@ -320,55 +329,43 @@ def base_cluster_design():
     """
     The design of the main part of a cluster, not including the front or back extensions.
     """
-    key_base = vertical_key_base()
+    temp_key_base = vertical_key_base()
+    temp_key_base_upper = temp_key_base.find_children("upper_base")[0]
+    base = Box(24.9, 24.9, temp_key_base_upper.size().z, "base")
 
-    key_base_upper = key_base.find_children("upper_base")[0]
+    south_base = vertical_key_base(fillet_back_keywell_corners=True, name="south_base")
+    south_base.scale(-1, 1, 1)
+    south_base.place(~south_base == ~base,
+                     -south_base == -base,
+                     +south_base == +base)
 
-    base = Box(24.9, 24.9, key_base_upper.size().z, "base")
+    west_base = vertical_key_base(fillet_back_keywell_corners=True, name="west_base")
+    west_base.rz(-90)
+    west_base.place(-west_base == -base,
+                    ~west_base == ~base,
+                    +west_base == +base)
 
-    key_well: Box = key_base.find_children("key_well")[0]
-    key_base = Fillet(
-        key_base.shared_edges(
-            key_base.find_faces(key_well.back),
-            key_base.find_faces([key_well.left, key_well.right])),
-        .8)
+    north_base = vertical_key_base(
+        extra_optical_width=2.5, fillet_back_keywell_corners=True, fillet_front_keywell_corners=True,
+        name="north_base")
+    north_base.scale(-1, 1, 1).rz(180)
+    north_base.place(
+        ~north_base == ~base,
+        +north_base == +base,
+        +north_base == +base)
 
-    key_base.place(~key_base == ~base,
-                   -key_base == -base,
-                   +key_base == +base)
-
-    back_key_base = vertical_key_base(extra_optical_width=2.5)
-    back_key_base.place(
-        ~back_key_base == ~key_base,
-        ~back_key_base == ~key_base,
-        ~back_key_base == ~key_base)
-    back_key_base = Fillet(
-        back_key_base.shared_edges(
-            back_key_base.find_faces([key_well.front, key_well.back]),
-            back_key_base.find_faces([key_well.left, key_well.right])),
-        .8)
-    back_key_base.scale(-1, 1, 1, center=key_base.mid()).rz(180, base.mid())
+    east_base = vertical_key_base(fillet_back_keywell_corners=True, name="east_base")
+    east_base.rz(90)
+    east_base.place(+east_base == +base,
+                    ~east_base == ~base,
+                    +east_base == +base)
 
     key_bases = (
-        key_base.copy().scale(-1, 1, 1, center=key_base.mid()),
-        key_base.copy().rz(90, base.mid()),
-        back_key_base,
-        key_base.rz(270, base.mid())
-    )
-    key_base_negatives = (
-        key_bases[0].find_children("negatives")[0],
-        key_bases[1].find_children("negatives")[0],
-        key_bases[2].find_children("negatives")[0],
-        key_bases[3].find_children("negatives")[0])
-
-    south_base = key_bases[0]
-    east_base = key_bases[1]
-    north_base = key_bases[2]
-    west_base = key_bases[3]
-    south_base.name = "south_base"
-    east_base.name = "east_base"
-    north_base.name = "north_base"
-    west_base.name = "west_base"
+        south_base,
+        west_base,
+        north_base,
+        east_base)
+    key_base_negatives = (key_base.find_children("negatives")[0] for key_base in key_bases)
 
     combined_cluster = Union(base, *key_bases, name="combined_cluster")
 
@@ -388,21 +385,21 @@ def base_cluster_design():
                                 +central_magnet_cutout == -center_hole,
                                 (~central_magnet_cutout == +combined_cluster) - 3.5)
 
-    left_cavity = key_base_negatives[3]
-    left_pt_cavity = left_cavity.find_children("pt_cavity")[0]
-    right_cavity = key_base_negatives[1]
-    right_led_cavity = right_cavity.find_children("led_cavity")[0]
+    west_cavity = west_base.find_children("negatives")[0]
+    west_pt_cavity = west_cavity.find_children("pt_cavity")[0]
+    east_cavity = east_base.find_children("negatives")[0]
+    east_led_cavity = east_cavity.find_children("led_cavity")[0]
 
     central_led_cavity = make_bottom_entry_led_cavity(name="led_cavity")
     central_led_cavity.rz(180)
-    central_led_cavity.place(+central_led_cavity == -right_led_cavity,
-                             +central_led_cavity == +right_led_cavity,
-                             +central_led_cavity == +right_led_cavity)
+    central_led_cavity.place(+central_led_cavity == -east_led_cavity,
+                             +central_led_cavity == +east_led_cavity,
+                             +central_led_cavity == +east_led_cavity)
 
     central_pt_cavity = make_bottom_entry_led_cavity(name="pt_cavity")
-    central_pt_cavity.place(-central_pt_cavity == +left_pt_cavity,
-                            +central_pt_cavity == +left_pt_cavity,
-                            +central_pt_cavity == +left_pt_cavity)
+    central_pt_cavity.place(-central_pt_cavity == +west_pt_cavity,
+                            +central_pt_cavity == +west_pt_cavity,
+                            +central_pt_cavity == +west_pt_cavity)
 
     extruded_led_cavity = ExtrudeTo(central_led_cavity.named_faces("lens_hole"), central_pt_cavity.copy(False))
     extruded_pt_cavity = ExtrudeTo(central_pt_cavity.named_faces("lens_hole"), central_led_cavity.copy(False))
@@ -524,11 +521,6 @@ def cluster_pcb(cluster, front, back):
     pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs, screw_hole)
 
     extruded_pcb = Extrude(pcb_silhouette, -1.6, name="pcb")
-
-    extruded_pcb_back = Box(pcb_back.size().x, pcb_back.size().y, extruded_pcb.size().z)
-
-
-
 
     return extruded_pcb, connector_legs_cutout
 
