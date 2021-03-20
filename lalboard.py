@@ -1691,10 +1691,25 @@ def thumb_base(name=None):
 
     key_base_upper = upper_outer_base.find_children("upper_base")[0]
 
+    # Extend the lower part of the body on the "outer" side a bit, so there's more room to get a trace out of that
+    # cramped area in the very bottom
+    lower_extension = Cylinder(1, 1)
+    lower_extension.place(
+        -lower_extension == -lower_outer_base,
+        ~lower_extension == -lower_outer_base,
+        +lower_extension == +lower_outer_base)
+
+    # Extend the upper part on the "outer" side, to give more room to fit the hole for the nut
+    upper_extension = Cylinder(1, 1)
+    upper_extension.place(
+        -upper_extension == -upper_outer_base,
+        ~upper_extension == +upper_outer_base,
+        +upper_extension == +upper_outer_base)
+
     lower_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="lower_attachment")
     lower_attachment.place(
         +lower_attachment == -upper_base,
-        -lower_attachment == -lower_outer_base,
+        -lower_attachment == -lower_extension,
         +lower_attachment == +upper_outer_base)
 
     upper_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="upper_attachment")
@@ -1718,21 +1733,17 @@ def thumb_base(name=None):
         upper_attachment,
         side_attachment]
 
-    # temporarily move it out a bit, to add some extra space on that side during the hull operation, to give a bit more
-    # room for the nut there
-    upper_outer_base.ty(1)
+    hull_entities = [*body_entities, lower_extension, upper_extension]
 
-    body_entities_group = Group(body_entities)
-    top_face_finder = body_entities_group.bounding_box.make_box()
-    top_face_finder.place(z=-top_face_finder == +body_entities_group)
+    hull_entities_group = Group(hull_entities)
+    top_face_finder = hull_entities_group.bounding_box.make_box()
+    top_face_finder.place(z=-top_face_finder == +hull_entities_group)
 
     body = Extrude(
-        Hull(Union(*[face.make_component().copy(copy_children=False) for face in body_entities_group.find_faces(top_face_finder)])),
+        Hull(Union(*[face.make_component().copy(copy_children=False)
+                     for face in hull_entities_group.find_faces(top_face_finder)])),
         -key_base_upper.size().z,
         name="body")
-
-    # and now move it back
-    upper_outer_base.ty(-1)
 
     down_key_slot = Box(
         down_key.find_children("post")[0].size().x + 1, 5, body.size().z * 2, name="down_key_slot")
