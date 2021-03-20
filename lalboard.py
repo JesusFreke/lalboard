@@ -1614,7 +1614,7 @@ def thumb_base(name=None):
     down_key.ry(180)
 
     upper_outer_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, name="upper_outer_base")
+        extra_height=4, pressed_key_angle=7, fillet_back_keywell_corners=True, name="upper_outer_base")
 
     upper_outer_base_magnet_front = upper_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
@@ -1636,7 +1636,7 @@ def thumb_base(name=None):
         +down_key_body_hole == +upper_outer_base)
 
     lower_outer_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=4.2, name="lower_outer_base")
+        extra_height=4, pressed_key_angle=4.2, fillet_back_keywell_corners=True, name="lower_outer_base")
     lower_outer_base_magnet_front = lower_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
     lower_outer_base.rz(-90)
@@ -1646,7 +1646,7 @@ def thumb_base(name=None):
         +lower_outer_base == +upper_outer_base)
 
     inner_base = vertical_key_base(
-        extra_height=4, pressed_key_angle=7, name="inner_key_base")
+        extra_height=4, pressed_key_angle=7, fillet_back_keywell_corners=True, name="inner_key_base")
     inner_base_magnet_front = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0]
     inner_base_negatives = inner_base.find_children("negatives")[0]
     inner_base.rz(90 + 20)
