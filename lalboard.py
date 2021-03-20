@@ -2015,8 +2015,8 @@ def thumb_pcb(thumb_cluster: Component, name="thumb_pcb"):
     pcb_silhouette = Difference(
         pcb_silhouette,
         ExtrudeTo(
-            Union(*[face.make_component() for face in thumb_cluster.find_faces(bottom_finder)]),
-            body_bottom_face),
+            Union(*[face.make_component().copy(copy_children=False) for face in thumb_cluster.find_faces(bottom_finder)]),
+            body_bottom_face.make_component().copy(copy_children=False).faces[0]),
         down_key_magnet_extension)
 
     pcb_silhouette = OffsetEdges(
