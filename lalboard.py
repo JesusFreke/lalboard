@@ -2099,7 +2099,7 @@ def thumb_assembly(left_hand=False):
     all_components = [base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool, pcb]
 
     if left_hand:
-        Group(all_components).scale(-1, 1, 1)
+        Group([component.copy() for component in all_components]).scale(-1, 1, 1)
 
     return tuple(all_components)
 
