@@ -1709,7 +1709,7 @@ def thumb_base(name=None):
     upper_extension = Cylinder(1, 1)
     upper_extension.place(
         -upper_extension == -upper_outer_base,
-        ~upper_extension == +upper_outer_base,
+        (~upper_extension == +upper_outer_base) + 1,
         +upper_extension == +upper_outer_base)
 
     lower_attachment = underside_magnetic_attachment(key_base_upper.size().z, name="lower_attachment")
@@ -1866,7 +1866,7 @@ def _thumb_side_nut(thumb_body: Component, upper_base, lower_attachment):
     thumb_body.rz(side_angle, center=(0, 0, 0))
 
     nut_cutout = Box(
-        5.8,
+        6.1,
         5.8,
         2.6,
         name="nut_cutout")
@@ -1888,15 +1888,16 @@ def _thumb_side_nut(thumb_body: Component, upper_base, lower_attachment):
         -nut_cutout_ceiling == -nut_cutout,
         +nut_cutout_ceiling == -nut_cutout)
 
+    screw_hole = Cylinder(thumb_body.size().z * 10, 3.1 / 2, name="side_screw_hole")
+    screw_hole.place(
+        (~screw_hole == -nut_cutout) + nut_cutout.size().y / 2,
+        ~screw_hole == ~nut_cutout,
+        +screw_hole == +nut_cutout)
+
     thumb_body.rz(-side_angle, center=(0, 0, 0))
     nut_cutout.rz(-side_angle, center=(0, 0, 0))
     nut_cutout_ceiling.rz(-side_angle, center=(0, 0, 0))
-
-    screw_hole = Cylinder(thumb_body.size().z * 10, 3.1 / 2, name="side_screw_hole")
-    screw_hole.place(
-        ~screw_hole == ~nut_cutout,
-        ~screw_hole == ~nut_cutout,
-        +screw_hole == +nut_cutout)
+    screw_hole.rz(-side_angle, center=(0, 0, 0))
 
     return (nut_cutout, screw_hole), (nut_cutout_ceiling,)
 
@@ -1920,13 +1921,13 @@ def _thumb_back_nut(thumb_body: Component, upper_attachment):
 
     nut_cutout = Box(
         5.8,
-        5.8,
+        6.1,
         2.6,
         name="nut_cutout")
 
     nut_cutout.place(
         (~nut_cutout == ~angled_side) + 1,
-        +nut_cutout == +angled_side,
+        (+nut_cutout == +angled_side),
         ~nut_cutout == ~angled_side)
 
     # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
@@ -1941,15 +1942,16 @@ def _thumb_back_nut(thumb_body: Component, upper_attachment):
         -nut_cutout_ceiling == -nut_cutout,
         +nut_cutout_ceiling == -nut_cutout)
 
-    thumb_body.rz(side_angle, center=(0, 0, 0))
-    nut_cutout.rz(side_angle, center=(0, 0, 0))
-    nut_cutout_ceiling.rz(side_angle, center=(0, 0, 0))
-
     screw_hole = Cylinder(thumb_body.size().z * 10, 3.1 / 2, name="back_screw_hole")
     screw_hole.place(
         ~screw_hole == ~nut_cutout,
-        ~screw_hole == ~nut_cutout,
+        (~screw_hole == -nut_cutout) + nut_cutout.size().x / 2,
         +screw_hole == +nut_cutout)
+
+    thumb_body.rz(side_angle, center=(0, 0, 0))
+    nut_cutout.rz(side_angle, center=(0, 0, 0))
+    nut_cutout_ceiling.rz(side_angle, center=(0, 0, 0))
+    screw_hole.rz(side_angle, center=(0, 0, 0))
 
     return (nut_cutout, screw_hole), (nut_cutout_ceiling,)
 
