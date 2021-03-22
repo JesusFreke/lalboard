@@ -22,7 +22,6 @@ import lalboard
 def design():
     thumb_base, _ = lalboard.thumb_base("thumb_cluster_right")
     pcb = lalboard.thumb_pcb(thumb_base, name="thumb_pcb_right")
-    pcb.scale(-1, 1, 1)
 
     pcb_bottom_tool = pcb.bounding_box.make_box()
     pcb_bottom_tool.place(
