@@ -19,10 +19,6 @@ by the various part scripts in the "parts" directory.
 
 import adsk.core
 import adsk.fusion
-import inspect
-import math
-import pathlib
-import os
 
 from fscad import *
 
@@ -1274,67 +1270,6 @@ def cluster_assembly():
                                       back_right_magnet.mid().y,
                                       back_right_magnet.min().z - ball_magnet_radius))
 
-    def rotate_to_height_matrix(axis_point: Point3D, axis_vector: Vector3D, target_point: Point3D, height: float):
-        """Rotate target point around the axis defined by axis_point and axis_vector, such that its final height is
-        the specific height.
-
-        There are 2 such rotations of course, so the smaller rotation is used.
-
-        This assumes that axis is not vertical, and that target_point is not on the axis.
-        """
-        matrix = Matrix3D.create()
-
-        axis = adsk.core.InfiniteLine3D.create(axis_point, axis_vector)
-        result = app().measureManager.measureMinimumDistance(target_point, axis)
-        distance = result.value
-        target_axis_projection = result.positionOne
-
-        circle = Circle(distance)
-
-        matrix.setToRotateTo(
-            circle.get_plane().normal,
-            axis_vector)
-
-        circle.transform(matrix)
-        circle.place(
-            ~circle == target_axis_projection,
-            ~circle == target_axis_projection,
-            ~circle == target_axis_projection)
-
-        # the edge of the circle now corresponds to the path the target point travels as it rotates around axis
-        height_plane = adsk.core.Plane.create(
-            Point3D.create(0, 0, height),
-            Vector3D.create(0, 0, 1))
-
-        intersections = height_plane.intersectWithCurve(circle.edges[0].brep.geometry)
-        assert len(intersections) == 2
-
-        first_angle_measurement = app().measureManager.measureAngle(target_point, target_axis_projection, intersections[0])
-        second_angle_measurement = app().measureManager.measureAngle(target_point, target_axis_projection, intersections[1])
-
-        # the returned angle seems to be in [0, 180], I think.
-        if first_angle_measurement.value < second_angle_measurement.value:
-            destination = intersections[0]
-        else:
-            destination = intersections[1]
-
-        rotation_matrix = Matrix3D.create()
-        rotation_matrix.setToRotateTo(
-            target_axis_projection.vectorTo(target_point),
-            target_axis_projection.vectorTo(destination))
-
-        translation_matrix = Matrix3D.create()
-        translation_matrix.translation = target_axis_projection.asVector()
-        translation_matrix.invert()
-
-        matrix = Matrix3D.create()
-        matrix.transformBy(translation_matrix)
-        matrix.transformBy(rotation_matrix)
-        translation_matrix.invert()
-        matrix.transformBy(translation_matrix)
-
-        return matrix
-
     first_rotation = rotate_to_height_matrix(
             front_ball_magnet.mid(),
             Vector3D.create(1, 0, 0),
@@ -2096,12 +2031,102 @@ def thumb_assembly(left_hand=False):
 
     pcb = thumb_pcb(base, name="thumb_pcb_" + suffix)
 
-    all_components = [base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key, insertion_tool, pcb]
+    side_magnet_cutout = base.find_children("side_attachment")[0].find_children("magnet_cutout")[0]
+    upper_magnet_cutout = base.find_children("upper_attachment")[0].find_children("magnet_cutout")[0]
+    lower_magnet_cutout = base.find_children("lower_attachment")[0].find_children("magnet_cutout")[0]
+
+    side_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="side_magnet")
+    side_magnet.place(
+        ~side_magnet == ~side_magnet_cutout,
+        ~side_magnet == ~side_magnet_cutout,
+        +side_magnet == +side_magnet_cutout)
+
+    upper_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="upper_magnet")
+    upper_magnet.place(
+        ~upper_magnet == ~upper_magnet_cutout,
+        ~upper_magnet == ~upper_magnet_cutout,
+        +upper_magnet == +upper_magnet_cutout)
+
+    lower_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="lower_magnet")
+    lower_magnet.place(
+        ~lower_magnet == ~lower_magnet_cutout,
+        ~lower_magnet == ~lower_magnet_cutout,
+        +lower_magnet == +lower_magnet_cutout)
+
+    side_support = Group(screw_support_assembly(13, 8, 3), name="side_support")
+    side_ball_magnet = side_support.find_children("ball_magnet")[0]
+
+    upper_support = Group(screw_support_assembly(13, 8, 4), name="upper_support")
+    upper_ball_magnet = upper_support.find_children("ball_magnet")[0]
+
+    lower_support = Group(screw_support_assembly(13, 8, 0), name="lower_support")
+    lower_ball_magnet = lower_support.find_children("ball_magnet")[0]
+
+    cluster_group = Group([base,
+                           down_key,
+                           outer_lower_key,
+                           outer_upper_key,
+                           inner_key,
+                           mode_key,
+                           insertion_tool,
+                           pcb,
+                           side_magnet,
+                           upper_magnet,
+                           lower_magnet], name="thumb_cluster_" + suffix)
+
+    cluster_group.place(
+        ~lower_magnet == ~lower_support,
+        ~lower_magnet == ~lower_support,
+        -lower_magnet == +lower_support)
+
+    ball_magnet_radius = side_ball_magnet.size().z / 2
+    cluster_group.add_named_point("side_support_point",
+                                  Point3D.create(
+                                      side_magnet.mid().x,
+                                      side_magnet.mid().y,
+                                      side_magnet.min().z - ball_magnet_radius))
+    cluster_group.add_named_point("upper_support_point",
+                                  Point3D.create(
+                                      upper_magnet.mid().x,
+                                      upper_magnet.mid().y,
+                                      upper_magnet.min().z - ball_magnet_radius))
+    cluster_group.add_named_point("lower_support_point",
+                                  Point3D.create(
+                                      lower_magnet.mid().x,
+                                      lower_magnet.mid().y,
+                                      lower_magnet.min().z - ball_magnet_radius))
+
+    first_rotation = rotate_to_height_matrix(
+        lower_ball_magnet.mid(),
+        Vector3D.create(1, 0, 0),
+        cluster_group.named_point("side_support_point").point,
+        side_ball_magnet.mid().z)
+    cluster_group.transform(first_rotation)
+
+    side_support.place(
+        ~side_ball_magnet == cluster_group.named_point("side_support_point"),
+        ~side_ball_magnet == cluster_group.named_point("side_support_point"),
+        ~side_ball_magnet == cluster_group.named_point("side_support_point"))
+
+    second_rotation = rotate_to_height_matrix(
+        lower_ball_magnet.mid(),
+        lower_ball_magnet.mid().vectorTo(side_ball_magnet.mid()),
+        cluster_group.named_point("upper_support_point").point,
+        upper_ball_magnet.mid().z)
+    cluster_group.transform(second_rotation)
+
+    upper_support.place(
+        ~upper_ball_magnet == cluster_group.named_point("upper_support_point"),
+        ~upper_ball_magnet == cluster_group.named_point("upper_support_point"),
+        ~upper_ball_magnet == cluster_group.named_point("upper_support_point"))
 
     if left_hand:
-        Group([component.copy() for component in all_components]).scale(-1, 1, 1)
+        cluster_group.scale(-1, 1, 1, center=(0, 0, 0))
+        lower_support.scale(-1, 1, 1, center=(0, 0, 0))
+        side_support.scale(-1, 1, 1, center=(0, 0, 0))
+        upper_support.scale(-1, 1, 1, center=(0, 0, 0))
 
-    return tuple(all_components)
+    return cluster_group, lower_support, side_support, upper_support
 
 
 def place_header(header: Component, x: int, y: int):
@@ -2353,6 +2378,68 @@ def handrest(left_hand=False):
     if not left_hand:
         assembly.scale(-1, 1, 1)
     return assembly
+
+
+def rotate_to_height_matrix(axis_point: Point3D, axis_vector: Vector3D, target_point: Point3D, height: float):
+    """Rotate target point around the axis defined by axis_point and axis_vector, such that its final height is
+    the specific height.
+
+    There are 2 such rotations of course, so the smaller rotation is used.
+
+    This assumes that axis is not vertical, and that target_point is not on the axis.
+    """
+    matrix = Matrix3D.create()
+
+    axis = adsk.core.InfiniteLine3D.create(axis_point, axis_vector)
+    result = app().measureManager.measureMinimumDistance(target_point, axis)
+    distance = result.value
+    target_axis_projection = result.positionOne
+
+    circle = Circle(distance)
+
+    matrix.setToRotateTo(
+        circle.get_plane().normal,
+        axis_vector)
+
+    circle.transform(matrix)
+    circle.place(
+        ~circle == target_axis_projection,
+        ~circle == target_axis_projection,
+        ~circle == target_axis_projection)
+
+    # the edge of the circle now corresponds to the path the target point travels as it rotates around axis
+    height_plane = adsk.core.Plane.create(
+        Point3D.create(0, 0, height),
+        Vector3D.create(0, 0, 1))
+
+    intersections = height_plane.intersectWithCurve(circle.edges[0].brep.geometry)
+    assert len(intersections) == 2
+
+    first_angle_measurement = app().measureManager.measureAngle(target_point, target_axis_projection, intersections[0])
+    second_angle_measurement = app().measureManager.measureAngle(target_point, target_axis_projection, intersections[1])
+
+    # the returned angle seems to be in [0, 180], I think.
+    if first_angle_measurement.value < second_angle_measurement.value:
+        destination = intersections[0]
+    else:
+        destination = intersections[1]
+
+    rotation_matrix = Matrix3D.create()
+    rotation_matrix.setToRotateTo(
+        target_axis_projection.vectorTo(target_point),
+        target_axis_projection.vectorTo(destination))
+
+    translation_matrix = Matrix3D.create()
+    translation_matrix.translation = target_axis_projection.asVector()
+    translation_matrix.invert()
+
+    matrix = Matrix3D.create()
+    matrix.transformBy(translation_matrix)
+    matrix.transformBy(rotation_matrix)
+    translation_matrix.invert()
+    matrix.transformBy(translation_matrix)
+
+    return matrix
 
 
 def run_design(design_func, message_box_on_error=False, print_runtime=True, document_name=None):

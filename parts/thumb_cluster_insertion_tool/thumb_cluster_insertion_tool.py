@@ -20,8 +20,8 @@ import lalboard
 
 
 def design():
-    (thumb_base, down_key, outer_lower_key, outer_upper_key, inner_key, mode_key,
-     insertion_tool, pcb) = lalboard.thumb_assembly(left_hand=False)
+    base, _ = lalboard.thumb_base("thumb_cluster_right")
+    insertion_tool = lalboard.thumb_cluster_insertion_tool(base)
     insertion_tool.rx(180)
     insertion_tool.create_occurrence(scale=.1)
 
