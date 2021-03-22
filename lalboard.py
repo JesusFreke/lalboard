@@ -1827,7 +1827,7 @@ def _thumb_side_nut(thumb_body: Component, upper_base, lower_attachment):
     screw_hole.place(
         (~screw_hole == -nut_cutout) + nut_cutout.size().y / 2,
         ~screw_hole == ~nut_cutout,
-        +screw_hole == +nut_cutout)
+        (+screw_hole == +thumb_body) - .4)
 
     thumb_body.rz(-side_angle, center=(0, 0, 0))
     nut_cutout.rz(-side_angle, center=(0, 0, 0))
@@ -1881,7 +1881,7 @@ def _thumb_back_nut(thumb_body: Component, upper_attachment):
     screw_hole.place(
         ~screw_hole == ~nut_cutout,
         (~screw_hole == -nut_cutout) + nut_cutout.size().x / 2,
-        +screw_hole == +nut_cutout)
+        (+screw_hole == +thumb_body) - .4)
 
     thumb_body.rz(side_angle, center=(0, 0, 0))
     nut_cutout.rz(side_angle, center=(0, 0, 0))
