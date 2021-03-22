@@ -2,12 +2,19 @@
 
 <img src="https://jesusfreke.github.io/lalboard/lalboard.jpg" alt="drawing" width="595"/>
 
+## Links
 [More Images](https://github.com/JesusFreke/lalboard/wiki/Images)
 
 [120 WPM Typing Demo](https://www.youtube.com/watch?v=oMhOIgrdeE0)
 
 [V2 Project Logs (hackaday.io)](http://lalboard.com)
 
+Online viewer for cluster assemblies:
+- [finger](https://a360.co/3vxlLLL)
+- [left thumb](https://a360.co/3c63TzE)
+- [right thumb](https://a360.co/3c6tvws)
+
+## Project Details
 I am a long-time user of a DataHand keyboard. With the scarcity and rising cost of second hand
 DataHands these days, I wanted to ensure that I always had access to a DataHand-like keyboard. And
 so this project was born.
