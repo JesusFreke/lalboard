@@ -19,6 +19,10 @@ by the various part scripts in the "parts" directory.
 
 import adsk.core
 import adsk.fusion
+import inspect
+import math
+import pathlib
+import os
 
 from fscad import *
 
@@ -860,8 +864,9 @@ def center_key():
     return result
 
 
-def vertical_key_post(post_length, groove_height, magnet_height, groove_width=.6):
+def vertical_key_post(post_length, groove_height, groove_width, magnet_height):
     post = Box(post_width, post_length - key_thickness/2, key_thickness, name="post")
+
     pivot = Cylinder(post_width, key_thickness/2, name="pivot")
     pivot.ry(90)
     pivot.place(
@@ -880,12 +885,28 @@ def vertical_key_post(post_length, groove_height, magnet_height, groove_width=.6
                  (-groove == -pivot) + groove_height + key_thickness/2,
                  -groove == -post)
 
-    return Difference(Union(post, pivot), magnet, groove)
+    end_fillet_tool_negative = Union(post.copy(), pivot.copy()).bounding_box.make_box()
+    end_fillet_tool_negative = Fillet(
+        end_fillet_tool_negative.shared_edges(
+            end_fillet_tool_negative.front,
+            [end_fillet_tool_negative.left, end_fillet_tool_negative.right]),
+        1.5)
+
+    end_fillet_tool_positive = Union(post.copy(), pivot.copy()).bounding_box.make_box()
+    end_fillet_tool = Difference(end_fillet_tool_positive, end_fillet_tool_negative)
+
+    assembly = Difference(Union(post, pivot), magnet, groove, end_fillet_tool)
+
+    assembly = Fillet(assembly.shared_edges(
+        post.top,
+        [post.left, post.right]), .5)
+
+    return assembly
 
 
 def vertical_key(post_length, key_width, key_height, key_angle, key_protrusion, key_displacement, groove_height,
-                 magnet_height, name):
-    post = vertical_key_post(post_length, groove_height, magnet_height)
+                 groove_width, magnet_height, name):
+    post = vertical_key_post(post_length, groove_height, groove_width, magnet_height)
 
     key_base = Box(13, key_height, 10, name="key_base")
     key_base.place(~key_base == ~post,
@@ -923,7 +944,8 @@ def side_key(key_height, key_angle, name):
         key_angle=key_angle,
         key_protrusion=False,
         key_displacement=False,
-        groove_height=1.503,
+        groove_height=1.353,
+        groove_width=.75,
         magnet_height=5.4,
         name=name)
 
@@ -945,6 +967,7 @@ def thumb_side_key(key_width, key_height, groove_height, key_displacement: float
         key_protrusion=6.5,
         key_displacement=key_displacement,
         groove_height=groove_height,
+        groove_width=.6,
         magnet_height=8.748,
         name=name)
 
@@ -958,6 +981,7 @@ def inner_thumb_key():
         key_protrusion=2.5,
         key_displacement=0,
         groove_height=2.68,
+        groove_width=.6,
         magnet_height=8.748,
         name="inner_thumb_key")
 
@@ -971,6 +995,7 @@ def outer_upper_thumb_key():
         key_protrusion=4.5,
         key_displacement=0,
         groove_height=2.68,
+        groove_width=.6,
         magnet_height=8.748,
         name="outer_upper_thumb_key")
 
@@ -984,12 +1009,13 @@ def outer_lower_thumb_key():
         key_protrusion=4.5,
         key_displacement=0,
         groove_height=4.546,
+        groove_width=.6,
         magnet_height=8.748,
         name="outer_lower_thumb_key")
 
 
 def thumb_mode_key(name=None):
-    key_post = vertical_key_post(18, 2.68, 9.05, groove_width=1)
+    key_post = vertical_key_post(18, 2.68, 1, 9.05)
 
     face_finder = Box(1, 1, 1)
     face_finder.place(~face_finder == ~key_post,
@@ -1000,9 +1026,21 @@ def thumb_mode_key(name=None):
 
     end_face = BRepComponent(end_face.brep)
 
-    mid_section_end = end_face.copy()
-    mid_section_end.translate(5.5, 14, 3.5)
-    mid_section = Loft(end_face, mid_section_end)
+    mid_section_mid = Rect(end_face.size().x, end_face.size().z)
+    mid_section_mid.rx(90)
+    mid_section_mid.place(
+        (~mid_section_mid == ~end_face) + 5.5/2,
+        (~mid_section_mid == ~end_face) + 14/2,
+        (~mid_section_mid == ~end_face) + 3.5/2)
+
+    mid_section_end = Rect(end_face.size().x, end_face.size().z)
+    mid_section_end.rx(90)
+    mid_section_end.place(
+        (~mid_section_end == ~end_face) + 5.5,
+        (~mid_section_end == ~end_face) + 14,
+        (~mid_section_end == ~end_face) + 3.5)
+
+    mid_section = Loft(end_face, mid_section_mid, mid_section_end)
 
     horizontal_section = Box(key_post.size().x, key_post.size().z * .25, 4.3)
     horizontal_section.place(
@@ -1018,7 +1056,8 @@ def thumb_mode_key(name=None):
 
     end_section_end_face = end_section.back
 
-    filleted_end_section = Fillet(end_section_end_face.edges, key_thickness/2, False)
+    filleted_end_section = Fillet(
+        end_section.find_edges(end_section_end_face.edges), key_thickness/2, False)
 
     result = Union(key_post, mid_section, horizontal_section, filleted_end_section)
 
