@@ -2177,50 +2177,21 @@ def place_header(header: Component, x: int, y: int):
 
 
 def central_pcb():
-    base = Box(42, 50, 1.2)
+    base = Box(42, 50, 1.6)
 
-    teensy_left = hole_array(.4, 2.54, 12).rz(90)
-    place_header(teensy_left, 0, 0)
+    upper_left_screw_hole = Cylinder(base.size().z, 3.1/2, name="screw_hole")
+    upper_left_screw_hole.place(
+        (-upper_left_screw_hole == -base) + 2,
+        (+upper_left_screw_hole == +base) - 2,
+        ~upper_left_screw_hole == ~base)
 
-    teensy_back = hole_array(.4, 2.54, 5)
-    place_header(teensy_back, 1, 11)
+    lower_right_screw_hole = Cylinder(base.size().z, 3.1/2, name="screw_hole")
+    lower_right_screw_hole.place(
+        (+lower_right_screw_hole == +base) - 2,
+        (-lower_right_screw_hole == -base) + 2,
+        ~lower_right_screw_hole == ~base)
 
-    teensy_right = hole_array(.4, 2.54, 12).rz(90)
-    place_header(teensy_right, 6, 0)
-
-    driver_right = hole_array(.4, 2.54, 10).rz(90)
-    place_header(driver_right, -1, 0)
-
-    driver_left = driver_right.copy()
-    place_header(driver_left, -4, 0)
-
-    conn1 = hole_array(.35, 1.5, 7)
-    conn1.place((+conn1 == -driver_left) - 2.54,
-                (-conn1 == -driver_left) + 2.54,
-                ~conn1 == ~driver_left)
-    conns = [conn1]
-    prev = conn1
-    for i in range(0, 4):
-        conn = prev.copy()
-        conn.place(~conn == ~prev,
-                   (~conn == ~prev) + 2.54 * 2,
-                   ~conn == ~prev)
-        conns.append(conn)
-        prev = conn
-
-    i2c_conn = hole_array(.35, 1.5, 7).rz(90)
-    place_header(i2c_conn, 3, 3)
-
-    all_holes = Union(
-        teensy_left, teensy_back, teensy_right, driver_right, driver_left, *conns, i2c_conn)
-
-    all_holes.place(~all_holes == ~base,
-                    (-all_holes == -base) + 2.54*3,
-                    ~all_holes == +base)
-
-    result = Difference(base, ExtrudeTo(all_holes, base), name="central_pcb")
-    result.add_named_faces("bottom", *result.find_faces(base.bottom))
-    return result
+    return Difference(base, upper_left_screw_hole, lower_right_screw_hole, name="central_pcb")
 
 
 def central_pcb_sketch():
