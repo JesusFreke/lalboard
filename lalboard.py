@@ -723,11 +723,11 @@ def cluster_back(cluster: Component):
     nut_cutout = Box(
         5.8,
         cluster.size().y * 10,
-        2.6)
+        2.8)
     nut_cutout.place(
         ~nut_cutout == ~screw_hole,
         (-nut_cutout == ~screw_hole) - nut_cutout.size().x / 2,
-        (+nut_cutout == +screw_hole) - 1.5)
+        (+nut_cutout == +base) - 1.8)
 
     # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
     # bridged over. This will fill in the screw hole, but a single layer can be cleaned out/pushed through easily.
@@ -1842,13 +1842,13 @@ def _thumb_side_nut(thumb_body: Component, upper_base, lower_attachment):
     nut_cutout = Box(
         6.1,
         5.8,
-        2.6,
+        2.8,
         name="nut_cutout")
 
     nut_cutout.place(
         +nut_cutout == +angled_side,
         ~nut_cutout == ~angled_side,
-        ~nut_cutout == ~angled_side)
+        (+nut_cutout == +angled_side) - 1.8)
 
     # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
     # bridged over. This will fill in the screw hole, but a single layer can be cleaned out/pushed through easily.
@@ -1896,13 +1896,13 @@ def _thumb_back_nut(thumb_body: Component, upper_attachment):
     nut_cutout = Box(
         5.8,
         6.1,
-        2.6,
+        2.8,
         name="nut_cutout")
 
     nut_cutout.place(
         (~nut_cutout == ~angled_side) + 1,
         (+nut_cutout == +angled_side),
-        ~nut_cutout == ~angled_side)
+        (+nut_cutout == +angled_side) - 1.8)
 
     # This will give a single .2 layer on "top" (when printed upside down) of the nut cavity, so that it can be
     # bridged over. This will fill in the screw hole, but a single layer can be cleaned out/pushed through easily.
