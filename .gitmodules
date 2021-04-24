@@ -1,0 +1,3 @@
+[submodule "stls"]
+	path = stls
+	url = ../lalboard_stls
