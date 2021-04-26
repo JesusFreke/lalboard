@@ -436,4 +436,48 @@ Wire Notes Line
 	4100 6000 4100 7200
 Wire Notes Line
 	3050 6000 3050 7200
+$Comp
+L power:GND #PWR0113
+U 1 1 60895A5C
+P 1500 7350
+F 0 "#PWR0113" H 1500 7100 50  0001 C CNN
+F 1 "GND" H 1505 7177 50  0000 C CNN
+F 2 "" H 1500 7350 50  0001 C CNN
+F 3 "" H 1500 7350 50  0001 C CNN
+	1    1500 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0114
+U 1 1 60895A62
+P 1300 7350
+F 0 "#PWR0114" H 1300 7100 50  0001 C CNN
+F 1 "GND" H 1305 7177 50  0000 C CNN
+F 2 "" H 1300 7350 50  0001 C CNN
+F 3 "" H 1300 7350 50  0001 C CNN
+	1    1300 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H2
+U 1 1 60895A68
+P 1500 7250
+F 0 "H2" H 1600 7299 50  0000 L CNN
+F 1 "MountingHole_Pad" H 1600 7208 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1500 7250 50  0001 C CNN
+F 3 "~" H 1500 7250 50  0001 C CNN
+	1    1500 7250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 60895A6E
+P 1300 7250
+F 0 "H1" H 1200 7300 50  0000 R CNN
+F 1 "MountingHole_Pad" H 1200 7200 50  0000 R CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1300 7250 50  0001 C CNN
+F 3 "~" H 1300 7250 50  0001 C CNN
+	1    1300 7250
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
