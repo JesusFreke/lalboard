@@ -2177,7 +2177,7 @@ def place_header(header: Component, x: int, y: int):
 
 
 def central_pcb():
-    base = Box(42, 50, 1.6)
+    base = Box(42, 67, 1.6)
 
     upper_left_screw_hole = Cylinder(base.size().z, 3.1/2, name="screw_hole")
     upper_left_screw_hole.place(
@@ -2340,7 +2340,7 @@ def handrest(left_hand=False):
 
     tray_slot = Box(pcb_tray.bounding_box.size().x + .2,
                     pcb_tray.bounding_box.size().y * 10,
-                    24)
+                    20)
     tray_slot.place(~tray_slot == ~handrest_model,
                     (+tray_slot == -handrest_model) + pcb_tray.bounding_box.size().y + 15,
                     -tray_slot == -handrest_model)
