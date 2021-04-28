@@ -16,6 +16,8 @@ import adsk.core
 import adsk.fusion
 import os
 import pathlib
+import shutil
+import tempfile
 import time
 import traceback
 
@@ -23,6 +25,9 @@ from fscad import *
 
 # List of the names of the parts to export. An empty list will export all parts.
 parts_to_export = []
+
+
+export_assembly_f3ds = False
 
 
 def run(_):
@@ -37,7 +42,7 @@ def run(_):
         for file in os.scandir(os.path.dirname(__file__)):
             if file.is_dir():
                 if (file.name.startswith("_") or file.name == "__pycache__" or
-                        file.name == "scene"):
+                        file.name == "scene" or file.name.endswith("pcb")):
                     continue
 
                 export_sketch = False
@@ -62,9 +67,12 @@ def run(_):
                     sketch: adsk.fusion.Sketch = root().sketches[0]
                     sketch.saveAsDXF(str(pathlib.Path(export_dir, file.name + ".dxf")))
                 elif export_assembly:
-                    export_stl(export_dir, file)
-                    f3d_file =export_f3d(export_dir, file)
-                    export_to_fusion_cloud(file, f3d_file)
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        f3d_file = export_f3d(temp_dir, file)
+                        export_to_fusion_cloud(file, f3d_file)
+                        if export_assembly_f3ds:
+                            shutil.copyfile(f3d_file,
+                                            str(pathlib.Path(export_dir, file.name + ".f3d")))
                 else:
                     export_stl(export_dir, file)
 
