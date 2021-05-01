@@ -110,7 +110,7 @@ def make_bottom_entry_led_cavity(name="led_cavity"):
 
     lens_hole = Circle(lens_radius, name="lens_hole")
     lens_hole.ry(90).place(-lens_hole == +body, ~lens_hole == ~body, ~lens_hole == lens_height)
-    lens_slot = Box(lens_radius + .05, lens_radius * 2 + .1, lens_hole.max().z - body.min().z, "lens_slot")
+    lens_slot = Box(lens_radius + .05 - .275, lens_radius * 2 + .1, lens_hole.max().z - body.min().z, "lens_slot")
     lens_slot.place(-lens_slot == +body, ~lens_slot == ~body, +lens_slot == +lens_hole)
     lens_hole.place(~lens_hole == +lens_slot)
 
@@ -200,7 +200,7 @@ def retaining_ridge_design(pressed_key_angle, length):
     return retaining_ridge
 
 
-def vertical_key_base(extra_height=0.0, pressed_key_angle=12.5, extra_optical_width=0.0,
+def vertical_key_base(extra_height=0.0, pressed_key_angle=12.5, extra_optical_width=0.55,
                       fillet_back_keywell_corners=False, fillet_front_keywell_corners=False, name=None):
     post_hole_width = post_width + .3
 
