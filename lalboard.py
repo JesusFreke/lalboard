@@ -1040,6 +1040,25 @@ def thumb_mode_key(name=None):
         (~mid_section_end == ~end_face) + 14,
         (~mid_section_end == ~end_face) + 3.5)
 
+    lower_extension_length = 2
+    lower_extension_mid_face = end_face.copy(copy_children=False)
+    lower_extension_mid_face.ty(lower_extension_length)
+    lower_extension_mid_face.tx(
+        -lower_extension_length *
+            (end_face.mid().x - mid_section_end.mid().x) / (mid_section_end.mid().y - end_face.mid().y))
+
+    lower_extension_end_face = end_face.copy(copy_children=False)
+    lower_extension_end_face.ty(lower_extension_length + 1)
+    lower_extension_end_face = Scale(lower_extension_end_face, 1, 1, .5, center=lower_extension_end_face.min())
+    lower_extension_end_face.tx(
+        -(lower_extension_length + 1) *
+        (end_face.mid().x - mid_section_end.mid().x) / (mid_section_end.mid().y - end_face.mid().y))
+    lower_extension_end_face.tz(1)
+
+    lower_extension = Union(
+        Loft(end_face, lower_extension_mid_face),
+        Loft(lower_extension_mid_face, lower_extension_end_face))
+
     mid_section = Loft(end_face, mid_section_mid, mid_section_end)
 
     horizontal_section = Box(key_post.size().x, key_post.size().z * .25, 4.3)
@@ -1059,7 +1078,7 @@ def thumb_mode_key(name=None):
     filleted_end_section = Fillet(
         end_section.find_edges(end_section_end_face.edges), key_thickness/2, False)
 
-    result = Union(key_post, mid_section, horizontal_section, filleted_end_section)
+    result = Union(key_post, mid_section, horizontal_section, filleted_end_section, lower_extension)
 
     result = Fillet(result.shared_edges(
         [horizontal_section.front, horizontal_section.back],
