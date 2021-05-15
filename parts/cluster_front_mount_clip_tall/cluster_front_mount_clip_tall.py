@@ -21,8 +21,7 @@ import lalboard
 
 def design():
     cluster = lalboard.cluster_design()
-    clip = lalboard.cluster_front_mount_clip(
-        cluster.find_children("cluster_front")[0], extra_height=2.6, name="cluster_front_mount_clip_tall")
+    clip = lalboard.cluster_front_mount_clip_tall(cluster.find_children("cluster_front")[0])
     clip.create_occurrence(scale=.1, create_children=True)
 
 

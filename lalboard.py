@@ -752,7 +752,7 @@ def cluster_back(cluster: Component):
         name="cluster_back")
 
 
-def cluster_front_mount_clip(front, extra_height=0, name="cluster_front_mount_clip"):
+def cluster_front_mount_clip(front, extra_height=0.0, name="cluster_front_mount_clip"):
     cutout = front.find_children("front_cutout")[0]
     notch = front.find_children("front_notch")[0]
 
@@ -805,6 +805,10 @@ def cluster_front_mount_clip(front, extra_height=0, name="cluster_front_mount_cl
         Union(insert, bottom, front_riser, attachment, attachment_attachment),
         *attachment.find_children("negatives"),
         name=name)
+
+
+def cluster_front_mount_clip_tall(front, name="cluster_front_mount_clip_tall"):
+    return cluster_front_mount_clip(front, extra_height=2.6, name=name)
 
 
 def center_key():
