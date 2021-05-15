@@ -2348,7 +2348,7 @@ def handrest(left_hand=False):
     script_dir = os.path.dirname(script_path)
 
     handrest_model = import_fusion_archive(
-        os.path.join(script_dir, "left_handrest_scan_reduced_brep.f3d"), name="handrest")
+        os.path.join(script_dir, "left_handrest.f3d"), name="handrest")
     handrest_model.scale(10, 10, 10)
     handrest_model.rz(-90)
     handrest_model.place(~handrest_model == 0,
