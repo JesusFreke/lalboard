@@ -2413,6 +2413,68 @@ def handrest(left_hand=False):
     return assembly
 
 
+def steel_sheet_design(left_hand=True):
+    cluster_area = Rect(50, 90)
+    cluster_area.place(
+        ~cluster_area == 0,
+        ~cluster_area == 0,
+        ~cluster_area == 0)
+
+    def radial_translate(component, theta, r):
+        x = r * math.sin(math.radians(theta))
+        y = r * math.cos(math.radians(theta))
+        component.tx(x)
+        component.ty(y)
+
+    cluster_1_area = cluster_area.copy(name="cluster_1_area")
+    radial_translate(cluster_1_area, 0, 100)
+
+    cluster_2_area = cluster_area.copy(name="cluster_2_area")
+    radial_translate(cluster_2_area, -15, 110)
+    cluster_2_area.rz(15, center=cluster_2_area.mid())
+
+    cluster_3_area = cluster_area.copy(name="cluster_3_area")
+    radial_translate(cluster_3_area, -30, 110)
+    cluster_3_area.rz(30, center=cluster_3_area.mid())
+
+    cluster_4_area = cluster_area.copy(name="cluster_4_area")
+    radial_translate(cluster_4_area, -45, 95)
+    cluster_4_area.rz(45, center=cluster_4_area.mid())
+
+    thumb_cluster_area = Rect(60, 85, name="thumb_cluster_area")
+    thumb_cluster_area.place(
+        ~thumb_cluster_area == 0,
+        ~thumb_cluster_area == 0,
+        ~thumb_cluster_area == 0)
+
+    thumb_cluster_trim_tool = Rect(100, 100)
+    thumb_cluster_trim_tool.place(
+        -thumb_cluster_trim_tool == +thumb_cluster_area,
+        -thumb_cluster_trim_tool == -thumb_cluster_area)
+    thumb_cluster_trim_tool.rz(-50, center=thumb_cluster_trim_tool.min())
+    thumb_cluster_trim_tool.tx(-40)
+
+    thumb_cluster_area = Difference(thumb_cluster_area, thumb_cluster_trim_tool, name=thumb_cluster_area.name)
+
+    radial_translate(thumb_cluster_area, 45, 75)
+    thumb_cluster_area.rz(15, center=thumb_cluster_area.mid())
+
+    group = Group(
+        [cluster_1_area, cluster_2_area, cluster_3_area, cluster_4_area, thumb_cluster_area], name="metal_base")
+
+    # Now position everything so that it's in the correct position relative to the handrest in it's default
+    # "as-imported" position
+    group.tx(9.3)
+    group.ty(18.3)
+
+    if not left_hand:
+        group.scale(-1, 1, 1, center=(0, 0, 0))
+
+    hull = Hull(group, name="exposed_steel")
+
+    return OffsetEdges(hull.faces[0], hull.faces[0].edges, 5, name="sheet_sheet")
+
+
 def rotate_to_height_matrix(axis_point: Point3D, axis_vector: Vector3D, target_point: Point3D, height: float):
     """Rotate target point around the axis defined by axis_point and axis_vector, such that its final height is
     the specific height.
