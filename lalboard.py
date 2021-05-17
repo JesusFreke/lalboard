@@ -2214,7 +2214,13 @@ def central_pcb():
         (-lower_right_screw_hole == -base) + 2,
         ~lower_right_screw_hole == ~base)
 
-    return Difference(base, upper_left_screw_hole, lower_right_screw_hole, name="central_pcb")
+    antenna_extension = Box(18, 10, .8, name="antenna")
+    antenna_extension.place(
+        (-antenna_extension == -base) + 4.7,
+        (-antenna_extension == -base) - 6.5,
+        -antenna_extension == +base)
+
+    return Difference(Union(base, antenna_extension), upper_left_screw_hole, lower_right_screw_hole, name="central_pcb")
 
 
 def central_pcb_sketch():
@@ -2347,69 +2353,82 @@ def key_breakout_pcb_sketch():
     return sketch
 
 
-def handrest(left_hand=False):
+def handrest_design(left_hand=False):
     script_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
     script_dir = os.path.dirname(script_path)
 
     handrest_model = import_fusion_archive(
         os.path.join(script_dir, "left_handrest.f3d"), name="handrest")
     handrest_model.scale(10, 10, 10)
-    handrest_model.rz(-90)
     handrest_model.place(~handrest_model == 0,
                          ~handrest_model == 0,
                          -handrest_model == 0)
 
-    pcb_tray = central_pcb_tray()
+    pcb = central_pcb()
 
-    tray_slot = Box(pcb_tray.bounding_box.size().x + .2,
-                    pcb_tray.bounding_box.size().y * 10,
-                    20)
-    tray_slot.place(~tray_slot == ~handrest_model,
-                    (+tray_slot == -handrest_model) + pcb_tray.bounding_box.size().y + 15,
-                    -tray_slot == -handrest_model)
+    pcb_slot = Box(pcb.bounding_box.size().x + 2,
+                   pcb.bounding_box.size().y * 10,
+                   20)
+    # temporary placement, in order to find the cut face of the handrest, which is needed to place the pcb
+    pcb_slot.place(~pcb_slot == ~handrest_model,
+                   ~pcb_slot == ~handrest_model,
+                   -pcb_slot == -handrest_model)
 
-    back_magnet = Box(3.9, 3.9, 1.8).rx(90)
-    back_magnet.place(~back_magnet == ~tray_slot,
-                      -back_magnet == +tray_slot,
-                      (+back_magnet == -handrest_model) + 9.2)
+    pcb_slot_front_cut_face_tool = Scale(pcb_slot.copy(), .5, 1, .5, center=pcb_slot.mid())
+    pcb_slot_front_cut_face_tool.place(y=-pcb_slot_front_cut_face_tool == ~handrest_model)
+    # this is the front face of the handrest that will be cut out by the slot
+    pcb_slot_front_cut_face = Intersection(handrest_model, pcb_slot).find_faces(
+        Intersection(handrest_model, pcb_slot_front_cut_face_tool))[0]
 
-    left_magnet = back_magnet.copy()
-    left_magnet.rz(90)
-    left_magnet.place(+left_magnet == -tray_slot,
-                      (+left_magnet == +tray_slot) - 46.2,
-                      +left_magnet == +back_magnet)
+    pcb.place(
+        ~pcb == ~pcb_slot,
+        (+pcb == -pcb_slot_front_cut_face) - 5,
+        (-pcb == -handrest_model) + 1.5)
 
-    right_magnet = back_magnet.copy()
-    right_magnet.rz(-90)
-    right_magnet.place(-right_magnet == +tray_slot,
-                       +right_magnet == +left_magnet,
-                       +right_magnet == +left_magnet)
+    pcb_slot.place(
+        y=(-pcb_slot == -pcb) + 20)
 
-    front_left_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    # make the back of the slot a bit shorter, to leave plenty of plastic between the top of the slot and the
+    # top of the handrest
+    shorter_pcb_slot = Box(pcb_slot.size().x, pcb_slot.size().y, pcb_slot.size().z * .75)
+    shorter_pcb_slot.place(
+        ~shorter_pcb_slot == ~pcb_slot,
+        (-shorter_pcb_slot == -pcb) - 2,
+        -shorter_pcb_slot == -handrest_model)
+
+    front_left_bottom_magnet = vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+    front_left_bottom_magnet.rx(180)
     front_left_bottom_magnet.place((~front_left_bottom_magnet == ~handrest_model) + 27.778,
-                                   (~front_left_bottom_magnet == ~handrest_model) - 17.2784,
+                                   (~front_left_bottom_magnet == ~handrest_model) + 13.2784,
                                    -front_left_bottom_magnet == -handrest_model)
 
-    front_right_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    front_right_bottom_magnet = vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+    front_right_bottom_magnet.rx(180)
     front_right_bottom_magnet.place((~front_right_bottom_magnet == ~handrest_model) - 29.829,
-                                    (~front_right_bottom_magnet == ~handrest_model) - 17.2782,
+                                    (~front_right_bottom_magnet == ~handrest_model) + 13.2782,
                                     -front_right_bottom_magnet == -handrest_model)
 
-    back_right_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    back_right_bottom_magnet = vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+    back_right_bottom_magnet.rx(180)
     back_right_bottom_magnet.place((~back_right_bottom_magnet == ~handrest_model) - 29.829,
-                                   (~back_right_bottom_magnet == ~handrest_model) + 37.7218,
+                                   (~back_right_bottom_magnet == ~handrest_model) - 37.7218,
                                    -back_right_bottom_magnet == -handrest_model)
 
-    back_left_bottom_magnet = Box(3.6, 6.8, 1.8, name="bottom_magnet")
+    back_left_bottom_magnet = vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+    back_left_bottom_magnet.rx(180)
     back_left_bottom_magnet.place((~back_left_bottom_magnet == ~handrest_model) + 27.778,
-                                  (~back_left_bottom_magnet == ~handrest_model) + 37.7218,
+                                  (~back_left_bottom_magnet == ~handrest_model) - 37.7218,
                                   -back_left_bottom_magnet == -handrest_model)
 
-    assembly = Difference(handrest_model, tray_slot, back_magnet, left_magnet, right_magnet, front_left_bottom_magnet,
+    handrest = Difference(handrest_model, pcb_slot,shorter_pcb_slot, front_left_bottom_magnet,
                           front_right_bottom_magnet, back_right_bottom_magnet, back_left_bottom_magnet,
                           name="left_handrest" if left_hand else "right_handrest")
+
     if not left_hand:
-        assembly.scale(-1, 1, 1)
+        handrest.scale(-1, 1, 1, center=handrest.mid())
+
+    assembly = Group([handrest], [pcb], name=handrest.name)
+
     return assembly
 
 

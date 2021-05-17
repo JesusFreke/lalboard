@@ -20,7 +20,7 @@ import lalboard
 
 
 def design():
-    lalboard.handrest(left_hand=True).create_occurrence(scale=.1)
+    lalboard.handrest_design(left_hand=True).create_occurrence(scale=.1)
 
 
 def run(_):
