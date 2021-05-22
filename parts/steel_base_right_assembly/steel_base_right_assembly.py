@@ -18,9 +18,12 @@ from fscad import *
 relative_import("../../lalboard.py")
 import lalboard
 
+# Don't export, this is for development purposes only
+EXPORT = False
 
 def design():
-    lalboard.central_pcb_tray().create_occurrence(scale=.1)
+    base = lalboard.steel_base(left_hand=False)
+    base.create_occurrence(scale=.1)
 
 
 def run(_):

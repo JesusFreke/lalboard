@@ -2492,8 +2492,235 @@ def steel_sheet_design(left_hand=True):
         group.scale(-1, 1, 1, center=(0, 0, 0))
 
     hull = Hull(group, name="exposed_steel")
-
     return OffsetEdges(hull.faces[0], hull.faces[0].edges, 5, name="sheet_sheet")
+
+
+def central_pcb_spacer(central_pcb: Component, thickness):
+    bottom_face = central_pcb.named_faces("bottom")[0]
+    spacer = Extrude(bottom_face.make_component(), thickness)
+
+    connector_cutout = Box(
+        13,
+        23,
+        spacer.size().z)
+    connector_cutout.place(
+        +connector_cutout == +spacer,
+        (+connector_cutout == +spacer) - 19,
+        -connector_cutout == -spacer)
+
+    usb_port_cutout = Box(
+        spacer.size().x - 7.5 - 3,
+        10,
+        spacer.size().z)
+
+    usb_port_cutout.place(
+        (+usb_port_cutout == +spacer) - 3,
+        +usb_port_cutout == +spacer,
+        -usb_port_cutout == -spacer)
+
+    buttons_cutout = Box(
+        10,
+        21,
+        spacer.size().z)
+    buttons_cutout.place(
+        -buttons_cutout == -spacer,
+        (+buttons_cutout == +spacer) - 16.5,
+        -buttons_cutout == -spacer)
+
+    esp_cutout = Box(
+        6,
+        6,
+        spacer.size().z)
+    esp_cutout.place(
+        (~esp_cutout == -spacer) + 15,
+        (~esp_cutout == -spacer) + 9.5,
+        -esp_cutout == -spacer)
+
+    spacer = Difference(spacer, connector_cutout, usb_port_cutout, buttons_cutout, esp_cutout, name="pcb_spacer")
+    return spacer
+
+
+def steel_base(left_hand=True):
+    total_thickness = 6
+    steel_thickness = .6
+    bottom_thickness = 2
+    upper_thickness = 2
+
+    sheet = steel_sheet_design(left_hand=left_hand)
+    extruded_sheet = Extrude(sheet.copy(), -steel_thickness, name="steel_sheet")
+
+    # Used to add some tolerance between the steel sheet and the lower part of the base..
+    # and also between the part of the upper base that fits into the lower base.
+    embiggened_sheet = OffsetEdges(sheet.faces[0], sheet.faces[0].edges, .2)
+
+    handrest = handrest_design(left_hand=left_hand)
+
+    # get the handrest without the magnet holes or inner void
+    full_handrest = handrest.find_children("handrest")[0]
+
+    pcb = handrest.find_children("central_pcb")[0].copy()
+
+    extruded_sheet.place(
+        z=(-extruded_sheet == -handrest) - total_thickness + bottom_thickness)
+
+    handrest_bottom_finder = Rect(handrest.size().x, handrest.size().y)
+    handrest_bottom_finder.place(
+        ~handrest_bottom_finder == ~handrest,
+        ~handrest_bottom_finder == ~handrest,
+        ~handrest_bottom_finder == -handrest)
+
+    handrest_bottom = full_handrest.find_faces(handrest_bottom_finder)[0]
+
+    front_half_tool = handrest_bottom.bounding_box.make_box()
+    front_half_tool.place(
+        ~front_half_tool == ~handrest_bottom,
+        -front_half_tool == ~handrest_bottom,
+        ~front_half_tool == ~handrest_bottom)
+
+    handrest_bottom_front_half = Intersection(handrest_bottom.make_component(), front_half_tool)
+
+    base_outline = Union(
+        Hull(Group([
+            handrest_bottom_front_half.scale(1, 1, -1),
+            OffsetEdges(sheet.faces[0], sheet.faces[0].edges, 2)])),
+        handrest_bottom.make_component())
+
+    base_bottom = Extrude(base_outline.copy(), bottom_thickness)
+    base_bottom.place(
+        z=+base_bottom == -extruded_sheet)
+
+    bottom_raised_edges = Extrude(
+        Difference(base_outline.copy(), embiggened_sheet.copy()),
+        total_thickness - bottom_thickness - upper_thickness)
+    bottom_raised_edges.place(
+        z=-bottom_raised_edges == +base_bottom)
+
+    lower_base = Union(base_bottom, bottom_raised_edges, name="lower_base")
+
+    exposed_steel = sheet.find_children("exposed_steel")[0].copy()
+
+    upper_base = Extrude(
+        Difference(base_outline.copy(), exposed_steel.copy()), upper_thickness, name="upper_base")
+    upper_base.place(
+        z=+upper_base == -handrest)
+
+    upper_base_lower_trim = Extrude(
+        Union(
+            Difference(sheet.copy(), exposed_steel.copy()),
+            Intersection(handrest_bottom.make_component(), sheet.copy())),
+        (upper_base.max().z - extruded_sheet.max().z) - .2)
+
+    upper_base_lower_trim.place(
+        z=+upper_base_lower_trim == +upper_base)
+
+    upper_base = Union(upper_base, upper_base_lower_trim, name=upper_base.name)
+
+    def screw_and_nut():
+        nut = Box(6, 6, 5, name="nut")
+        shaft = Cylinder(5.8, 3.1/2, name="shaft")
+        # the shaft is slightly disconnected form the nut, so that there will be a single sacrifical solid layer above
+        # the nut to avoid having to use supports for the underside-hole for the nut.
+        shaft.place(
+            ~shaft == ~nut,
+            ~shaft == ~nut,
+            (-shaft == +nut) + .2)
+        return Union(nut, shaft, name="screw")
+
+    pcb_screw_holes = pcb.find_children("screw_hole")
+    screws = []
+    for screw_hole in pcb_screw_holes:
+        screw = screw_and_nut()
+        screw.place(
+            ~screw == ~screw_hole,
+            ~screw == ~screw_hole,
+            +screw.find_children("nut")[0] == -extruded_sheet)
+        screws.append(screw)
+
+    pcb = handrest.find_children("central_pcb")[0]
+    pcb_spacer = central_pcb_spacer(pcb, 10 - (upper_base.max().z - lower_base.min().z) - 1.6)
+    pcb_spacer.place(
+        ~pcb_spacer == ~pcb,
+        +pcb_spacer == +pcb,
+        -pcb_spacer == +upper_base)
+
+    magnet_risers = []
+    magnet_riser_cutouts = []
+    handrest_magnet_cutouts = []
+    for magnet in handrest.find_children("bottom_magnet"):
+        magnet_cutout = vertical_large_thin_magnet_cutout(depth=2.3, taper=0)
+        magnet_cutout.place(
+            ~magnet_cutout == ~magnet,
+            ~magnet_cutout == ~magnet,
+            +magnet_cutout == -magnet)
+        handrest_magnet_cutouts.append(magnet_cutout)
+
+        magnet_riser = Box(magnet_cutout.size().x + 4, magnet_cutout.size().x + 4, upper_thickness)
+        magnet_riser.place(
+            ~magnet_riser == ~magnet_cutout,
+            ~magnet_riser == ~magnet_cutout,
+            -magnet_riser == +lower_base)
+        magnet_risers.append(magnet_riser)
+
+        # The cutout for the magnet risers in the upper base
+        magnet_riser_cutout = Box(
+            magnet_riser.size().x + .6,
+            magnet_riser.size().x + .6,
+            magnet_riser.size().z)
+        magnet_riser_cutout.place(
+            ~magnet_riser_cutout == ~magnet_riser,
+            ~magnet_riser_cutout == ~magnet_riser,
+            ~magnet_riser_cutout == ~magnet_riser)
+        magnet_riser_cutouts.append(magnet_riser_cutout)
+
+    trim_magnets = []
+
+    def find_vertex(brep, comparison):
+        target_vertex = None
+        for vertex in brep.vertices:
+            if target_vertex is None or comparison(vertex, target_vertex):
+                target_vertex = vertex
+        return target_vertex
+
+    def place_trim_magnet(vertex):
+        vertex_vector = Vector3D.create(vertex.geometry.x, vertex.geometry.y, 0)
+        # add 2.5mm to the length, in the same direction from the origin to the vertex
+        vertex_vector.scaleBy((vertex_vector.length + 2.5)/vertex_vector.length)
+        trim_magnet = vertical_magnet_cutout()
+        trim_magnet.place(
+            ~trim_magnet == vertex_vector.x,
+            ~trim_magnet == vertex_vector.y,
+            -trim_magnet == -upper_base_lower_trim)
+        return trim_magnet
+
+    # This finds the vertex of the "cluster rectangle" that was used to build the shape of the steel plate
+    # and then uses that to place a magnet a bit further, into the upper base trim.
+    if left_hand:
+        vertex = find_vertex(sheet.find_children("cluster_3_area")[0].bodies[0].brep,
+                             lambda v1, v2: v1.geometry.x < v2.geometry.x)
+    else:
+        vertex = find_vertex(sheet.find_children("cluster_3_area")[0].bodies[0].brep,
+                             lambda v1, v2: v1.geometry.x > v2.geometry.x)
+    trim_magnets.append(place_trim_magnet(vertex))
+
+    vertex = find_vertex(sheet.find_children("cluster_2_area")[0].bodies[0].brep,
+                         lambda v1, v2: v1.geometry.y > v2.geometry.y)
+    trim_magnets.append(place_trim_magnet(vertex))
+
+    vertex = find_vertex(sheet.find_children("thumb_cluster_area")[0].bodies[0].brep,
+                         lambda v1, v2: v1.geometry.y > v2.geometry.y)
+    trim_magnets.append(place_trim_magnet(vertex))
+
+    lower_base = Difference(
+        Union(lower_base, *magnet_risers), *screws, *handrest_magnet_cutouts, name=lower_base.name)
+    upper_base = Difference(upper_base, *screws, *magnet_riser_cutouts, *trim_magnets, name=upper_base.name)
+
+    return Group([
+        extruded_sheet,
+        handrest,
+        lower_base,
+        upper_base,
+        pcb_spacer],
+        name="steel_base")
 
 
 def rotate_to_height_matrix(axis_point: Point3D, axis_vector: Vector3D, target_point: Point3D, height: float):

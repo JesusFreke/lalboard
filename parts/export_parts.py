@@ -58,6 +58,11 @@ def run(_):
                 path = pathlib.Path(file.path, file.name + ".py")
 
                 module = relative_import(str(path))
+
+                if hasattr(module, "EXPORT") and not module.EXPORT:
+                    print("Skipping %s due to EXPORT=false" % file.name)
+                    continue
+
                 print("Running " + file.name)
                 module.run(None)
 
