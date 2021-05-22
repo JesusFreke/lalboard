@@ -2220,7 +2220,9 @@ def central_pcb():
         (-antenna_extension == -base) - 6.5,
         -antenna_extension == +base)
 
-    return Difference(Union(base, antenna_extension), upper_left_screw_hole, lower_right_screw_hole, name="central_pcb")
+    pcb = Difference(Union(base, antenna_extension), upper_left_screw_hole, lower_right_screw_hole, name="central_pcb")
+    pcb.add_named_faces("bottom", *pcb.find_faces(base.bottom))
+    return pcb
 
 
 def central_pcb_sketch():

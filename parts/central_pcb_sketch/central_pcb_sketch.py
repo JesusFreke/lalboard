@@ -21,14 +21,7 @@ import lalboard
 
 def design():
     pcb = lalboard.central_pcb()
-
-    pcb_bottom_tool = pcb.bounding_box.make_box()
-    pcb_bottom_tool.place(
-        ~pcb_bottom_tool == ~pcb,
-        ~pcb_bottom_tool == ~pcb,
-        +pcb_bottom_tool == -pcb)
-
-    pcb_bottom = pcb.find_faces(pcb_bottom_tool)[0]
+    pcb_bottom = pcb.named_faces("bottom")[0]
 
     occurrence = pcb_bottom.make_component(name="pcb_bottom").create_occurrence(scale=.1, create_children=False)
 
