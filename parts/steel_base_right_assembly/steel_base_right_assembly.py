@@ -21,10 +21,11 @@ import lalboard
 # Don't export, this is for development purposes only
 EXPORT = False
 
-def design():
-    base = lalboard.steel_base(left_hand=False)
+
+def design(context: lalboard.Lalboard):
+    base = context.steel_base(left_hand=False)
     base.create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

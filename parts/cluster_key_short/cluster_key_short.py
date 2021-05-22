@@ -19,9 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    lalboard.cluster_key_short().create_occurrence(scale=.1)
+def design(context: lalboard.Lalboard):
+    context.cluster_key_short().create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

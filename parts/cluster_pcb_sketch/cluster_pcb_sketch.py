@@ -19,8 +19,8 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    _, pcb, _ = lalboard.cluster_body_assembly()
+def design(context: lalboard.Lalboard):
+    _, pcb, _ = context.cluster_body_assembly()
 
     pcb.rz(180, center=pcb.mid())
 
@@ -47,5 +47,5 @@ def design():
     origin_locator.deleteMe()
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

@@ -19,11 +19,11 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    cluster = lalboard.cluster_design()
-    clip = lalboard.cluster_front_mount_clip_tall(cluster.find_children("cluster_front")[0])
+def design(context: lalboard.Lalboard):
+    cluster = context.cluster_design()
+    clip = context.cluster_front_mount_clip_tall(cluster.find_children("cluster_front")[0])
     clip.create_occurrence(scale=.1, create_children=True)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

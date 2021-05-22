@@ -19,10 +19,10 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    for part in lalboard.cluster_assembly():
+def design(context: lalboard.Lalboard):
+    for part in context.cluster_assembly():
         part.create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

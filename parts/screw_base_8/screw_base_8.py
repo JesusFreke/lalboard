@@ -19,9 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    lalboard.screw_base_design(8, name="screw_base_8").create_occurrence(scale=.1)
+def design(context: lalboard.Lalboard):
+    context.screw_base_design(8, name="screw_base_8").create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

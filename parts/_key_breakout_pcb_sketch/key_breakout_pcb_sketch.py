@@ -19,9 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    lalboard.key_breakout_pcb_sketch()
+def design(context: lalboard.Lalboard):
+    context.key_breakout_pcb_sketch()
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

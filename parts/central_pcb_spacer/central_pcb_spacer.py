@@ -19,11 +19,11 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    base = lalboard.steel_base(left_hand=True)
+def design(context: lalboard.Lalboard):
+    base = context.steel_base(left_hand=True)
     spacer = base.find_children("pcb_spacer")[0]
     spacer.create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

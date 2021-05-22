@@ -19,12 +19,12 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    cluster, pcb, front_clip = lalboard.cluster_body_assembly()
+def design(context: lalboard.Lalboard):
+    cluster, pcb, front_clip = context.cluster_body_assembly()
     cluster.create_occurrence(scale=.1)
     pcb.create_occurrence(scale=.1)
     front_clip.create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

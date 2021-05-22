@@ -19,9 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    lalboard.handrest_design(left_hand=True).create_occurrence(scale=.1)
+def design(context: lalboard.Lalboard):
+    context.handrest_design(left_hand=True).create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

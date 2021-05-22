@@ -19,12 +19,12 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    base = lalboard.steel_base(left_hand=False)
+def design(context: lalboard.Lalboard):
+    base = context.steel_base(left_hand=False)
     upper_base = base.find_children("upper_base")[0]
     upper_base.ry(180)
     upper_base.create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

@@ -19,12 +19,12 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    base, _ = lalboard.thumb_base("thumb_cluster_right")
-    insertion_tool = lalboard.thumb_cluster_insertion_tool(base)
+def design(context: lalboard.Lalboard):
+    base, _ = context.thumb_base("thumb_cluster_right")
+    insertion_tool = context.thumb_cluster_insertion_tool(base)
     insertion_tool.rx(180)
     insertion_tool.create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

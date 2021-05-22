@@ -19,8 +19,8 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    pcb = lalboard.central_pcb()
+def design(context: lalboard.Lalboard):
+    pcb = context.central_pcb()
     pcb_bottom = pcb.named_faces("bottom")[0]
 
     occurrence = pcb_bottom.make_component(name="pcb_bottom").create_occurrence(scale=.1, create_children=False)
@@ -32,5 +32,5 @@ def design():
     occurrence.deleteMe()
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

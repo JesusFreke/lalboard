@@ -19,9 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    thumb_base, _ = lalboard.thumb_base("thumb_cluster_left")
-    pcb = lalboard.thumb_pcb(thumb_base, name="thumb_pcb_left")
+def design(context: lalboard.Lalboard):
+    thumb_base, _ = context.thumb_base("thumb_cluster_left")
+    pcb = context.thumb_pcb(thumb_base, name="thumb_pcb_left")
     pcb.scale(-1, 1, 1)
 
     pcb_bottom_tool = pcb.bounding_box.make_box()
@@ -47,5 +47,5 @@ def design():
     origin_locator.deleteMe()
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

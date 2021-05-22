@@ -19,8 +19,8 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    sheet = lalboard.steel_sheet_design(left_hand=True)
+def design(context: lalboard.Lalboard):
+    sheet = context.steel_sheet_design(left_hand=True)
 
     occurrence = sheet.create_occurrence(scale=.1)
 
@@ -29,5 +29,5 @@ def design():
     sketch.name = "cluster_pcb_sketch"
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

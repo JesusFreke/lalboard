@@ -19,10 +19,10 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    for component in lalboard.screw_support_assembly(7, 8, 4):
+def design(context: lalboard.Lalboard):
+    for component in context.screw_support_assembly(7, 8, 4):
         component.create_occurrence(scale=.1, create_children=True)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)

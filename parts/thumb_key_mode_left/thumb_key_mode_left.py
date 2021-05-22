@@ -19,9 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
-def design():
-    lalboard.thumb_mode_key(name="thumb_mode_key_left").scale(-1, 1, 1).create_occurrence(scale=.1)
+def design(context: lalboard.Lalboard):
+    context.thumb_mode_key(name="thumb_mode_key_left").scale(-1, 1, 1).create_occurrence(scale=.1)
 
 
-def run(_):
-    lalboard.run_design(design)
+def run(context):
+    lalboard.run_design(design, context=context)
