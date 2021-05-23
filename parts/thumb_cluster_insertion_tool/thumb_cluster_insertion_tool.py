@@ -20,7 +20,7 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    base, _ = context.thumb_base("thumb_cluster_right")
+    base = context.thumb_base("thumb_cluster_right")
     insertion_tool = context.thumb_cluster_insertion_tool(base)
     insertion_tool.rx(180)
     insertion_tool.create_occurrence(scale=.1)

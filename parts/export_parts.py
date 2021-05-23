@@ -22,6 +22,8 @@ import time
 import traceback
 
 from fscad import *
+relative_import("../lalboard.py")
+import lalboard
 
 # List of the names of the parts to export. An empty list will export all parts.
 parts_to_export = []
@@ -34,12 +36,14 @@ def run(_):
     try:
         start = time.time()
 
+        context = lalboard.Lalboard()
+
         export_dir = pathlib.Path(
             pathlib.Path(os.path.dirname(__file__)).parent,
             "stls")
 
         file: os.DirEntry
-        for file in os.scandir(os.path.dirname(__file__)):
+        for file in sorted(os.scandir(os.path.dirname(__file__)), key=lambda entry: entry.name):
             if file.is_dir():
                 if (file.name.startswith("_") or file.name == "__pycache__" or
                         file.name == "scene" or file.name.endswith("pcb")):
@@ -64,7 +68,7 @@ def run(_):
                     continue
 
                 print("Running " + file.name)
-                module.run(None)
+                module.run(context)
 
                 if export_sketch:
                     if len(root().sketches) != 1:

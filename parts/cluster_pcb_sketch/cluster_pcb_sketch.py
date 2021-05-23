@@ -20,8 +20,8 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    _, pcb, _ = context.cluster_body_assembly()
-
+    assembly = context.cluster_body_assembly()
+    pcb = assembly.find_children("pcb", recursive=False)[0]
     pcb.rz(180, center=pcb.mid())
 
     pcb_bottom_tool = pcb.bounding_box.make_box()

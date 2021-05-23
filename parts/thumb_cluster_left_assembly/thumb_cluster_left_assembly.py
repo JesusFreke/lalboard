@@ -20,8 +20,8 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    for component in context.thumb_assembly(left_hand=True):
-        component.create_occurrence(scale=.1)
+    assembly = context.thumb_assembly(left_hand=True)
+    assembly.create_occurrence(scale=.1)
 
 
 def run(context):

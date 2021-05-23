@@ -189,6 +189,7 @@ class Lalboard(MemoizableDesign):
 
         return retaining_ridge
 
+    @MemoizableDesign.MemoizeComponent
     def vertical_key_base(self, extra_height=0.0, pressed_key_angle=12.5, extra_optical_width=0.55,
                           fillet_back_keywell_corners=False, fillet_front_keywell_corners=False, name=None):
         post_hole_width = post_width + .3
@@ -295,6 +296,7 @@ class Lalboard(MemoizableDesign):
 
         return result
 
+    @MemoizableDesign.MemoizeComponent
     def cluster_design(self):
         """
         The design for the individual finger clusters, including front and back extensions.
@@ -788,6 +790,7 @@ class Lalboard(MemoizableDesign):
     def cluster_front_mount_clip_tall(self, front, name="cluster_front_mount_clip_tall"):
         return self.cluster_front_mount_clip(front, extra_height=2.6, name=name)
 
+    @MemoizableDesign.MemoizeComponent
     def center_key(self):
         key_radius = 7.5
         key_rim_height = .5
@@ -927,12 +930,15 @@ class Lalboard(MemoizableDesign):
             magnet_height=5.4,
             name=name)
 
+    @MemoizableDesign.MemoizeComponent
     def cluster_key_short(self, name="cluster_key_short"):
         return self.side_key(5, 0, name)
 
+    @MemoizableDesign.MemoizeComponent
     def cluster_key_tall(self, name="cluster_key_tall"):
         return self.side_key(11, 10, name)
 
+    @MemoizableDesign.MemoizeComponent
     def thumb_side_key(self, key_width, key_height, groove_height, key_displacement: float = -3, name="thumb_side_key"):
         return self.vertical_key(
             post_length=11.5,
@@ -946,6 +952,7 @@ class Lalboard(MemoizableDesign):
             magnet_height=8.748,
             name=name)
 
+    @MemoizableDesign.MemoizeComponent
     def inner_thumb_key(self):
         return self.vertical_key(
             post_length=12,
@@ -959,6 +966,7 @@ class Lalboard(MemoizableDesign):
             magnet_height=8.748,
             name="inner_thumb_key")
 
+    @MemoizableDesign.MemoizeComponent
     def outer_upper_thumb_key(self):
         return self.vertical_key(
             post_length=12,
@@ -972,6 +980,7 @@ class Lalboard(MemoizableDesign):
             magnet_height=8.748,
             name="outer_upper_thumb_key")
 
+    @MemoizableDesign.MemoizeComponent
     def outer_lower_thumb_key(self):
         return self.vertical_key(
             post_length=12,
@@ -985,6 +994,7 @@ class Lalboard(MemoizableDesign):
             magnet_height=8.748,
             name="outer_lower_thumb_key")
 
+    @MemoizableDesign.MemoizeComponent
     def thumb_mode_key(self, name=None):
         key_post = self.vertical_key_post(18, 2.68, 1, 9.05)
 
@@ -1058,6 +1068,7 @@ class Lalboard(MemoizableDesign):
 
         return result
 
+    @MemoizableDesign.MemoizeComponent
     def thumb_cluster_insertion_tool(self, cluster):
         upper_base = cluster.find_children("upper_key_base")[0]
         upper_base_upper_base = upper_base.find_children("upper_base")[0]
@@ -1120,6 +1131,7 @@ class Lalboard(MemoizableDesign):
 
         return result
 
+    @MemoizableDesign.MemoizeComponent
     def thumb_down_key(self):
         key_base = Box(14.5, 29, 2.5)
 
@@ -1186,6 +1198,7 @@ class Lalboard(MemoizableDesign):
 
         return assembly
 
+    @MemoizableDesign.MemoizeComponent
     def cluster_body_assembly(self):
         cluster = self.base_cluster_design()
         cluster, front = self.cluster_front(cluster)
@@ -1195,10 +1208,14 @@ class Lalboard(MemoizableDesign):
         front_clip = self.cluster_front_mount_clip(front)
 
         cluster = Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster")
-        return cluster, pcb, front_clip
+        return Group([cluster, pcb, front_clip], name="cluster_body_assembly")
 
+    @MemoizableDesign.MemoizeComponent
     def cluster_assembly(self):
-        cluster, pcb, front_clip = self.cluster_body_assembly()
+        body_assembly = self.cluster_body_assembly()
+        cluster = body_assembly.find_children("cluster", recursive=False)[0]
+        pcb = body_assembly.find_children("pcb", recursive=False)[0]
+        front_clip = body_assembly.find_children("cluster_front_mount_clip", recursive=False)[0]
 
         south_key = self.cluster_key_short(name="south_key")
         south_key.rx(90).rz(180)
@@ -1251,13 +1268,13 @@ class Lalboard(MemoizableDesign):
             ~back_right_magnet == ~back_right_magnet_cutout,
             +back_right_magnet == +back_right_magnet_cutout)
 
-        front_support = Group(self.screw_support_assembly(7, 4, 0), name="front_support")
+        front_support = self.screw_support_assembly(7, 4, 0, name="front_support")
         front_ball_magnet = front_support.find_children("ball_magnet")[0]
 
-        back_left_support = Group(self.screw_support_assembly(13, 8, 0), name="back_left_support")
+        back_left_support = self.screw_support_assembly(13, 8, 0, name="back_left_support")
         back_left_ball_magnet = back_left_support.find_children("ball_magnet")[0]
 
-        back_right_support = Group(self.screw_support_assembly(13, 8, 4), name="back_right_support")
+        back_right_support = self.screw_support_assembly(13, 8, 4, name="back_right_support")
         back_right_ball_magnet = back_right_support.find_children("ball_magnet")[0]
 
         cluster_group = Group((cluster,
@@ -1318,10 +1335,11 @@ class Lalboard(MemoizableDesign):
             ~back_right_ball_magnet == cluster_group.named_point("back_right_support_point"),
             ~back_right_ball_magnet == cluster_group.named_point("back_right_support_point"))
 
-        return (cluster_group,
-                front_support,
-                back_left_support,
-                back_right_support)
+        return Group([
+            cluster_group,
+            front_support,
+            back_left_support,
+            back_right_support], name="cluster_assembly")
 
     def male_thread_chamfer_tool(self, end_radius, angle):
         negative = Cylinder(
@@ -1352,6 +1370,7 @@ class Lalboard(MemoizableDesign):
                  (sloped_side_height / math.tan(math.radians(angle)), flat_height / 2 + sloped_side_height + flat_height),
                  (0, pitch - flat_height / 2)), pitch)
 
+    @MemoizableDesign.MemoizeComponent
     def screw_design(self, screw_length, radius_adjustment=-.2, name="screw"):
         screw_nominal_radius, screw_radius_adjustment, _, _, _ = self.screw_base_parameters()
 
@@ -1419,6 +1438,7 @@ class Lalboard(MemoizableDesign):
         return (screw_nominal_radius, screw_radius_adjustment, screw_hole_radius_adjustment, base_min_radius,
                 base_clearance)
 
+    @MemoizableDesign.MemoizeComponent
     def screw_base_design(self, screw_length, flared_base=True, name=None):
         screw_nominal_radius, _, screw_hole_radius_adjustment, base_min_radius, _ = self.screw_base_parameters()
         screw_hole = Cylinder(screw_length, screw_nominal_radius + screw_hole_radius_adjustment)
@@ -1441,11 +1461,13 @@ class Lalboard(MemoizableDesign):
             reverse_axis=True,
             name=name or "screw_base")
 
+    @MemoizableDesign.MemoizeComponent
     def screw_nut_design(self, name="screw_nut"):
         nut = self.screw_base_design(3, flared_base=False, name=name)
         nut.rx(180, center=nut.mid())
         return nut
 
+    @MemoizableDesign.MemoizeComponent
     def support_base_design(self, name="support_base"):
         _, _, _, base_min_radius, base_clearance = self.screw_base_parameters()
 
@@ -1519,7 +1541,8 @@ class Lalboard(MemoizableDesign):
             lower_magnet, name=name)
         return assembly
 
-    def screw_support_assembly(self, screw_length, base_length, screw_height):
+    @MemoizableDesign.MemoizeComponent
+    def screw_support_assembly(self, screw_length, base_length, screw_height, name=None):
         screw = self.screw_design(screw_length)
         screw.rz(360/12)
 
@@ -1551,12 +1574,14 @@ class Lalboard(MemoizableDesign):
 
         ball = screw.find_children("ball_magnet")[0]
 
-        return (screw,
-                screw_base,
-                nut,
-                support_base,
-                ball)
+        return Group([
+            screw,
+            screw_base,
+            nut,
+            support_base,
+            ball], name=name)
 
+    @MemoizableDesign.MemoizeComponent
     def thumb_base(self, name=None):
         down_key = self.thumb_down_key()
         down_key.ry(180)
@@ -1789,11 +1814,13 @@ class Lalboard(MemoizableDesign):
             *back_nut_positives,
             name=name or "thumb_cluster")
 
+        assembly = Group([assembly], [down_key], name=assembly.name)
+
         assembly.add_named_faces(
             "body_bottom",
             *assembly.find_faces(body.end_faces))
 
-        return assembly, down_key
+        return assembly
 
     def _thumb_side_nut(self, thumb_body: Component, upper_base, lower_attachment):
 
@@ -2016,9 +2043,11 @@ class Lalboard(MemoizableDesign):
             ~key_pivot == ~base_pivot,
             -key_pivot == -base_pivot)
 
+    @MemoizableDesign.MemoizeComponent
     def thumb_assembly(self, left_hand=False):
         suffix = "left" if left_hand else "right"
-        base, down_key = self.thumb_base("thumb_cluster_" + suffix)
+        base = self.thumb_base("thumb_cluster_" + suffix)
+        down_key = base.find_children("thumb_down_key", recursive=False)[0]
 
         outer_lower_key = self.outer_lower_thumb_key()
         outer_lower_key.rx(90)
@@ -2062,13 +2091,13 @@ class Lalboard(MemoizableDesign):
             ~lower_magnet == ~lower_magnet_cutout,
             +lower_magnet == +lower_magnet_cutout)
 
-        side_support = Group(self.screw_support_assembly(13, 8, 3), name="side_support")
+        side_support = self.screw_support_assembly(13, 8, 3, name="side_support")
         side_ball_magnet = side_support.find_children("ball_magnet")[0]
 
-        upper_support = Group(self.screw_support_assembly(13, 8, 4), name="upper_support")
+        upper_support = self.screw_support_assembly(13, 8, 4, name="upper_support")
         upper_ball_magnet = upper_support.find_children("ball_magnet")[0]
 
-        lower_support = Group(self.screw_support_assembly(13, 8, 0), name="lower_support")
+        lower_support = self.screw_support_assembly(13, 8, 0, name="lower_support")
         lower_ball_magnet = lower_support.find_children("ball_magnet")[0]
 
         cluster_group = Group([base,
@@ -2135,7 +2164,7 @@ class Lalboard(MemoizableDesign):
             side_support.scale(-1, 1, 1, center=(0, 0, 0))
             upper_support.scale(-1, 1, 1, center=(0, 0, 0))
 
-        return cluster_group, lower_support, side_support, upper_support
+        return Group([cluster_group, lower_support, side_support, upper_support], name="thumb_assembly_" + suffix)
 
     def place_header(self, header: Component, x: int, y: int):
         pin_size = min(header.size().x, header.size().y)
@@ -2144,6 +2173,7 @@ class Lalboard(MemoizableDesign):
                      (-header == y * 2.54) + pin_size / 2,
                      ~header == 0)
 
+    @MemoizableDesign.MemoizeComponent
     def central_pcb(self):
         base = Box(42, 67, 1.6)
 
@@ -2170,6 +2200,7 @@ class Lalboard(MemoizableDesign):
         pcb.add_named_faces("bottom", *pcb.find_faces(base.bottom))
         return pcb
 
+    @MemoizableDesign.MemoizeComponent
     def central_pcb_sketch(self):
         pcb = self.central_pcb()
 
@@ -2245,6 +2276,7 @@ class Lalboard(MemoizableDesign):
 
         return Difference(base, back_magnet, left_magnet, right_magnet, hollow, front_opening, name="central_pcb_tray")
 
+    @MemoizableDesign.MemoizeComponent
     def key_breakout_pcb(self):
         base = Box(20, 13, 1.2)
 
@@ -2268,6 +2300,7 @@ class Lalboard(MemoizableDesign):
         result.add_named_faces("bottom", *result.find_faces(base.bottom))
         return result
 
+    @MemoizableDesign.MemoizeComponent
     def key_breakout_pcb_sketch(self):
         pcb = self.key_breakout_pcb()
 
@@ -2296,6 +2329,7 @@ class Lalboard(MemoizableDesign):
 
         return sketch
 
+    @MemoizableDesign.MemoizeComponent
     def handrest_design(self, left_hand=False):
         script_path = os.path.abspath(inspect.getfile(inspect.currentframe()))
         script_dir = os.path.dirname(script_path)
@@ -2374,6 +2408,7 @@ class Lalboard(MemoizableDesign):
 
         return assembly
 
+    @MemoizableDesign.MemoizeComponent
     def steel_sheet_design(self, left_hand=True):
         cluster_area = Rect(50, 90)
         cluster_area.place(
@@ -2478,6 +2513,7 @@ class Lalboard(MemoizableDesign):
         spacer = Difference(spacer, connector_cutout, usb_port_cutout, buttons_cutout, esp_cutout, name="pcb_spacer")
         return spacer
 
+    @MemoizableDesign.MemoizeComponent
     def steel_base(self, left_hand=True):
         total_thickness = 6
         steel_thickness = .6
@@ -2737,3 +2773,6 @@ def run_design(design_func, message_box_on_error=False, print_runtime=True, docu
         fscad.run_design(design_func, message_box_on_error, print_runtime, document_name, design_args=[context])
     else:
         fscad.run_design(design_func, message_box_on_error, print_runtime, document_name, design_args=[Lalboard()])
+
+
+

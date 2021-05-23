@@ -20,10 +20,10 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    thumb_base, _ = context.thumb_base("thumb_cluster_left")
+    thumb_base = context.thumb_base("thumb_cluster_left")
     thumb_base.rx(180).scale(-1, 1, 1)
     thumb_base.create_occurrence(scale=.1)
 
 
 def run(context):
-    lalboard.run_design(design, context)
+    lalboard.run_design(design, context=context)

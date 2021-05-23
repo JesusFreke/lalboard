@@ -20,7 +20,7 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    thumb_base, _ = context.thumb_base("thumb_cluster_left")
+    thumb_base = context.thumb_base("thumb_cluster_left")
     pcb = context.thumb_pcb(thumb_base, name="thumb_pcb_left")
     pcb.scale(-1, 1, 1)
     pcb.create_occurrence(scale=.1)

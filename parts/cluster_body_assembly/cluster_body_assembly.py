@@ -20,10 +20,8 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    cluster, pcb, front_clip = context.cluster_body_assembly()
-    cluster.create_occurrence(scale=.1)
-    pcb.create_occurrence(scale=.1)
-    front_clip.create_occurrence(scale=.1)
+    assembly = context.cluster_body_assembly()
+    assembly.create_occurrence(scale=.1)
 
 
 def run(context):
