@@ -1196,19 +1196,211 @@ class Lalboard(MemoizableDesign):
         assembly.add_named_faces("pivot_back_face", assembly.find_faces(
             angled_back_back_tool.front)[0])
 
+        # the key is upside down, so we actually want the bottom face
+        assembly.add_named_faces("top", assembly.find_faces(
+            key_base.bottom)[0])
+
         return assembly
 
     @MemoizableDesign.MemoizeComponent
-    def cluster_body_assembly(self):
+    def cluster_body_assembly(self, tall_clip=False):
         cluster = self.base_cluster_design()
         cluster, front = self.cluster_front(cluster)
         back = self.cluster_back(cluster)
         pcb, connector_legs_cutout = self.cluster_pcb(cluster, front, back)
 
-        front_clip = self.cluster_front_mount_clip(front)
+        if tall_clip:
+            front_clip = self.cluster_front_mount_clip_tall(front)
+        else:
+            front_clip = self.cluster_front_mount_clip(front)
 
         cluster = Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster")
         return Group([cluster, pcb, front_clip], name="cluster_body_assembly")
+
+    def standoff_by_ball_center(self, point, name="standoff"):
+        """Generate a standoff sub-assembly with the center of the ball magnet at the specified point."""
+        screw_lengths = [11, 7]
+        standoff_heights = [4, 6, 8, 14, 20]
+
+        screws = [self.screw_design(length) for length in screw_lengths]
+
+        # Find the tallest screw shorter than what's needed for the given point
+        selected_screw = None
+        ball = None
+        for screw in screws:
+            ball = screw.find_children("ball_magnet")[0]
+            if ball.mid().z < point.z:
+                selected_screw = screw
+                break
+        if not selected_screw:
+            selected_screw = screws[-1]
+
+        selected_screw.place(
+            ~ball == point,
+            ~ball == point,
+            ~ball == point)
+
+        minimum_standoff_height = selected_screw.min().z + 1
+        selected_standoff_height = None
+        for standoff_height in standoff_heights:
+            if standoff_height > minimum_standoff_height:
+                selected_standoff_height = standoff_height
+                break
+        if not selected_standoff_height:
+            selected_standoff_height = standoff_heights[-1]
+
+        standoff = self.screw_base_design(selected_standoff_height)
+        standoff.rz(360/12)
+        standoff.place(
+            ~standoff == ~selected_screw,
+            ~standoff == ~selected_screw)
+
+        nut = self.screw_nut_design()
+        nut.place(
+            ~nut == ~standoff,
+            ~nut == ~standoff,
+            -nut == +standoff)
+        support_base = self.support_base_design()
+
+        support_base.place(
+            ~support_base == ~standoff,
+            ~support_base == ~standoff)
+
+        return Group([
+            support_base, standoff, nut, selected_screw, selected_screw.find_children("ball_magnet")[0]], name=name)
+
+    def positioned_cluster_assembly(
+            self, down_key_top_center: Point3D, rx: float, ry: float, rz: float, tall_clip=False):
+        body_assembly = self.cluster_body_assembly(tall_clip=tall_clip)
+        cluster = body_assembly.find_children("cluster", recursive=False)[0]
+        pcb = body_assembly.find_children("pcb", recursive=False)[0]
+        front_clip_list = body_assembly.find_children("cluster_front_mount_clip", recursive=False)
+        if not front_clip_list:
+            front_clip_list = body_assembly.find_children("cluster_front_mount_clip_tall", recursive=False)
+        front_clip = front_clip_list[0]
+
+        south_key = self.cluster_key_short(name="south_key")
+        south_key.rx(90).rz(180)
+        east_key = self.cluster_key_short(name="east_key")
+        east_key.rx(90).rz(270)
+        west_key = self.cluster_key_short(name="west_key")
+        west_key.rx(90).rz(90)
+        north_key = self.cluster_key_tall(name="north_key")
+        north_key.rx(90)
+        down_key = self.center_key()
+
+        self._align_side_key(cluster.find_children("south_base")[0], south_key)
+        self._align_side_key(cluster.find_children("east_base")[0], east_key)
+        self._align_side_key(cluster.find_children("west_base")[0], west_key)
+        self._align_side_key(cluster.find_children("north_base")[0], north_key)
+
+        center_key_magnet = down_key.find_children("magnet_cutout")[0]
+        center_cluster_magnet = cluster.find_children("central_magnet_cutout")[0]
+        down_key.rx(180).rz(180)
+        down_key.place(
+            ~center_key_magnet == ~center_cluster_magnet,
+            -center_key_magnet == +center_cluster_magnet,
+            ~center_key_magnet == ~center_cluster_magnet)
+
+        down_key_top_finder = down_key.bounding_box.make_box()
+        down_key_top_finder.place(
+            ~down_key_top_finder == ~down_key,
+            ~down_key_top_finder == ~down_key,
+            -down_key_top_finder == +down_key)
+        down_key_top = down_key.find_faces(down_key_top_finder)[0]
+
+        front_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="front_magnet")
+        back_left_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_left_magnet")
+        back_right_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_right_magnet")
+
+        front_clip_magnet_cutout = front_clip.find_children("magnet_cutout")[0]
+        front_magnet.place(
+            ~front_magnet == ~front_clip_magnet_cutout,
+            ~front_magnet == ~front_clip_magnet_cutout,
+            +front_magnet == +front_clip_magnet_cutout)
+        front_magnet.add_named_point("center_bottom",
+                                     Point3D.create(
+                                         front_magnet.mid().x,
+                                         front_magnet.mid().y,
+                                         front_magnet.min().z))
+
+        back_magnet_cutouts = cluster.find_children("cluster_back")[0].find_children("magnet_cutout")
+        if back_magnet_cutouts[0].mid().x < back_magnet_cutouts[1].mid().x:
+            back_left_magnet_cutout = back_magnet_cutouts[0]
+            back_right_magnet_cutout = back_magnet_cutouts[1]
+        else:
+            back_right_magnet_cutout = back_magnet_cutouts[0]
+            back_left_magnet_cutout = back_magnet_cutouts[1]
+
+        back_left_magnet.place(
+            ~back_left_magnet == ~back_left_magnet_cutout,
+            ~back_left_magnet == ~back_left_magnet_cutout,
+            +back_left_magnet == +back_left_magnet_cutout)
+        back_left_magnet.add_named_point("center_bottom",
+                                         Point3D.create(
+                                             back_left_magnet.mid().x,
+                                             back_left_magnet.mid().y,
+                                             back_left_magnet.min().z))
+
+        back_right_magnet.place(
+            ~back_right_magnet == ~back_right_magnet_cutout,
+            ~back_right_magnet == ~back_right_magnet_cutout,
+            +back_right_magnet == +back_right_magnet_cutout)
+        back_right_magnet.add_named_point("center_bottom",
+                                          Point3D.create(
+                                              back_right_magnet.mid().x,
+                                              back_right_magnet.mid().y,
+                                              back_right_magnet.min().z))
+
+        ball_magnet_radius = self.ball_magnet().size().x / 2
+
+        cluster_group = Group((cluster,
+                               pcb,
+                               front_clip,
+                               south_key,
+                               east_key,
+                               west_key,
+                               north_key,
+                               down_key,
+                               front_magnet,
+                               back_left_magnet,
+                               back_right_magnet), name="cluster")
+
+        cluster_group.rx(rx).ry(ry).rz(rz)
+
+        cluster_group.place(
+            ~down_key_top == down_key_top_center,
+            ~down_key_top == down_key_top_center,
+            ~down_key_top == down_key_top_center)
+
+        normal = down_key_top.get_plane().normal
+
+        ball_magnet_center_vector = normal.copy()
+        ball_magnet_center_vector.scaleBy(-ball_magnet_radius)
+
+        front_point = front_magnet.named_point("center_bottom").point
+        front_point.translateBy(ball_magnet_center_vector)
+        front_standoff = self.standoff_by_ball_center(front_point, name="front_standoff")
+        front_standoff.rz(rz, center=front_standoff.mid())
+
+        back_left_point = back_left_magnet.named_point("center_bottom").point
+        back_left_point.translateBy(ball_magnet_center_vector)
+        back_left_standoff = self.standoff_by_ball_center(back_left_point, name="back_left_standoff")
+        back_left_standoff.rz(rz, center=back_left_standoff.mid())
+
+        back_right_point = back_right_magnet.named_point("center_bottom").point
+        back_right_point.translateBy(ball_magnet_center_vector)
+        back_right_standoff = self.standoff_by_ball_center(back_right_point, name="back_right_standoff")
+        back_right_standoff.rz(rz, center=back_right_standoff.mid())
+
+        cluster_group = Group(
+            [*cluster_group.children(),
+             front_standoff,
+             back_left_standoff,
+             back_right_standoff],
+            name="cluster_assembly")
+
+        return cluster_group
 
     @MemoizableDesign.MemoizeComponent
     def cluster_assembly(self):
@@ -2042,6 +2234,132 @@ class Lalboard(MemoizableDesign):
             ~key_pivot == ~base_pivot,
             ~key_pivot == ~base_pivot,
             -key_pivot == -base_pivot)
+
+    def positioned_thumb_assembly(self, front_mid_point: Point3D, rx: float, ry: float, rz: float, left_hand=False):
+        suffix = "left" if left_hand else "right"
+        base = self.thumb_base("thumb_cluster_" + suffix)
+
+        down_key = base.find_children("thumb_down_key", recursive=False)[0]
+        down_key_top = down_key.named_faces("top")[0]
+        down_key.add_named_point("front_upper_mid", (
+            down_key.mid().x,
+            down_key.max().y,
+            down_key.max().z))
+        if left_hand:
+            base = base.scale(-1, 1, 1, center=base.mid())
+
+        outer_lower_key = self.outer_lower_thumb_key()
+        outer_lower_key.rx(90)
+        self._align_side_key(base.find_children("lower_outer_base")[0], outer_lower_key)
+
+        outer_upper_key = self.outer_upper_thumb_key()
+        outer_upper_key.rx(90)
+        self._align_side_key(base.find_children("upper_outer_base")[0], outer_upper_key)
+
+        inner_key = self.inner_thumb_key()
+        inner_key.rx(90)
+        self._align_side_key(base.find_children("inner_key_base")[0], inner_key)
+
+        mode_key = self.thumb_mode_key("thumb_mode_key_" + suffix)
+        mode_key.rx(90)
+        self._align_side_key(base.find_children("upper_key_base")[0], mode_key)
+
+        insertion_tool = self.thumb_cluster_insertion_tool(base)
+
+        pcb = self.thumb_pcb(base, name="thumb_pcb_" + suffix)
+
+        side_magnet_cutout = base.find_children("side_attachment")[0].find_children("magnet_cutout")[0]
+        upper_magnet_cutout = base.find_children("upper_attachment")[0].find_children("magnet_cutout")[0]
+        lower_magnet_cutout = base.find_children("lower_attachment")[0].find_children("magnet_cutout")[0]
+
+        side_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="side_magnet")
+        side_magnet.place(
+            ~side_magnet == ~side_magnet_cutout,
+            ~side_magnet == ~side_magnet_cutout,
+            +side_magnet == +side_magnet_cutout)
+        side_magnet.add_named_point("center_bottom",
+                                    Point3D.create(
+                                        side_magnet.mid().x,
+                                        side_magnet.mid().y,
+                                        side_magnet.min().z))
+
+        upper_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="upper_magnet")
+        upper_magnet.place(
+            ~upper_magnet == ~upper_magnet_cutout,
+            ~upper_magnet == ~upper_magnet_cutout,
+            +upper_magnet == +upper_magnet_cutout)
+        upper_magnet.add_named_point("center_bottom",
+                                     Point3D.create(
+                                         upper_magnet.mid().x,
+                                         upper_magnet.mid().y,
+                                         upper_magnet.min().z))
+
+        lower_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="lower_magnet")
+        lower_magnet.place(
+            ~lower_magnet == ~lower_magnet_cutout,
+            ~lower_magnet == ~lower_magnet_cutout,
+            +lower_magnet == +lower_magnet_cutout)
+        lower_magnet.add_named_point("center_bottom",
+                                     Point3D.create(
+                                         lower_magnet.mid().x,
+                                         lower_magnet.mid().y,
+                                         lower_magnet.min().z))
+
+        cluster_group = Group([base,
+                               down_key,
+                               outer_lower_key,
+                               outer_upper_key,
+                               inner_key,
+                               mode_key,
+                               insertion_tool,
+                               pcb,
+                               side_magnet,
+                               upper_magnet,
+                               lower_magnet], name="thumb_cluster_" + suffix)
+
+        # down_key was already part of another component, so cluster_group has a new copy of it.
+        # we need to get a reference of this new copy instead
+        down_key = cluster_group.find_children(down_key.name, recursive=False)[0]
+        cluster_group.rx(rx).ry(ry).rz(rz)
+
+        front_upper_mid = down_key.named_point("front_upper_mid")
+        cluster_group.place(
+            ~front_upper_mid == front_mid_point,
+            ~front_upper_mid == front_mid_point,
+            ~front_upper_mid == front_mid_point)
+
+        normal = down_key_top.get_plane().normal
+        normal.scaleBy(-1)
+
+        ball_magnet_radius = self.ball_magnet().size().z / 2
+
+        ball_magnet_center_vector = normal.copy()
+        ball_magnet_center_vector.scaleBy(-ball_magnet_radius)
+
+        side_point = side_magnet.named_point("center_bottom").point
+        side_point.translateBy(ball_magnet_center_vector)
+        side_standoff = self.standoff_by_ball_center(side_point, name="side_standoff")
+        side_standoff.rz(rz, center=side_standoff.mid())
+        side_standoff.rz(90, center=side_standoff.mid())
+
+        upper_point = upper_magnet.named_point("center_bottom").point
+        upper_point.translateBy(ball_magnet_center_vector)
+        upper_standoff = self.standoff_by_ball_center(upper_point, name="upper_standoff")
+        upper_standoff.rz(rz, center=upper_standoff.mid())
+
+        lower_point = lower_magnet.named_point("center_bottom").point
+        lower_point.translateBy(ball_magnet_center_vector)
+        lower_standoff = self.standoff_by_ball_center(lower_point, name="lower_standoff")
+        lower_standoff.rz(rz, center=lower_standoff.mid())
+
+        cluster_group = Group(
+            [*cluster_group.children(),
+             side_standoff,
+             upper_standoff,
+             lower_standoff],
+            name="thumb_cluster_assembly")
+
+        return cluster_group
 
     @MemoizableDesign.MemoizeComponent
     def thumb_assembly(self, left_hand=False):
