@@ -1674,34 +1674,34 @@ class Lalboard(MemoizableDesign):
         flare.rz(360/12)
         hole = Union(hole_body, flare)
 
-        upper_magnet = self.vertical_large_thin_double_magnet_cutout(extra_depth=.2)
-        upper_magnet.rx(180)
+        back_magnet = self.vertical_large_thin_double_magnet_cutout(extra_depth=.2)
+        back_magnet.rx(180)
 
-        upper_magnet.place(
-            ~upper_magnet == ~hole,
-            (-upper_magnet == +hole) + 1,
-            -upper_magnet == -hole)
+        back_magnet.place(
+            ~back_magnet == ~hole,
+            (-back_magnet == +hole) + 1,
+            -back_magnet == -hole)
 
-        lower_magnet = upper_magnet.copy()
-        lower_magnet.place(
-            ~lower_magnet == ~hole,
-            (+lower_magnet == -hole) - 1,
-            -lower_magnet == -hole)
+        front_magnet = back_magnet.copy()
+        front_magnet.place(
+            ~front_magnet == ~hole,
+            (+front_magnet == -hole) - 1,
+            -front_magnet == -hole)
 
         lower_body_polygon = RegularPolygon(6, base_min_radius + base_clearance + .8, is_outer_radius=False)
         lower_body_polygon.rz(360/12)
 
-        upper_base = Circle(lower_body_polygon.size().x / 2)
-        upper_base.place(
-            ~upper_base == ~lower_body_polygon,
-            (+upper_base == +upper_magnet) + 2,
-            -upper_base == -lower_body_polygon)
+        back_base = Circle(lower_body_polygon.size().x / 2)
+        back_base.place(
+            ~back_base == ~lower_body_polygon,
+            (+back_base == +back_magnet) + 2,
+            -back_base == -lower_body_polygon)
 
-        lower_base = upper_base.copy()
-        lower_base.place(
-            ~lower_base == ~lower_body_polygon,
-            (-lower_base == -lower_magnet) - 2,
-            -lower_base == -lower_body_polygon)
+        front_base = back_base.copy()
+        front_base.place(
+            ~front_base == ~lower_body_polygon,
+            (-front_base == -front_magnet) - 2,
+            -front_base == -lower_body_polygon)
 
         mid_side_cutout_bottom = Rect(
             lower_body_polygon.size().x,
@@ -1726,11 +1726,11 @@ class Lalboard(MemoizableDesign):
             -mid_side_cutout == -lower_body_polygon)
 
         assembly = Difference(
-            Extrude(Hull(Union(lower_body_polygon, upper_base, lower_base)), 4),
+            Extrude(Hull(Union(lower_body_polygon, back_base, front_base)), 4),
             mid_side_cutout,
             hole,
-            upper_magnet,
-            lower_magnet, name=name)
+            back_magnet,
+            front_magnet, name=name)
         return assembly
 
     @MemoizableDesign.MemoizeComponent
@@ -1870,24 +1870,24 @@ class Lalboard(MemoizableDesign):
             ~lower_extension == -lower_outer_base,
             +lower_extension == +lower_outer_base)
 
-        # Extend the upper part on the "outer" side, to give more room to fit the hole for the nut
-        upper_extension = Cylinder(1, 1)
-        upper_extension.place(
-            -upper_extension == -upper_outer_base,
-            (~upper_extension == +upper_outer_base) + 1,
-            +upper_extension == +upper_outer_base)
+        # Extend the back part on the "outer" side, to give more room to fit the hole for the nut
+        back_extension = Cylinder(1, 1)
+        back_extension.place(
+            -back_extension == -upper_outer_base,
+            (~back_extension == +upper_outer_base) + 1,
+            +back_extension == +upper_outer_base)
 
-        lower_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="lower_attachment")
-        lower_attachment.place(
-            +lower_attachment == -upper_base,
-            -lower_attachment == -lower_extension,
-            +lower_attachment == +upper_outer_base)
+        front_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="front_attachment")
+        front_attachment.place(
+            +front_attachment == -upper_base,
+            -front_attachment == -lower_extension,
+            +front_attachment == +upper_outer_base)
 
-        upper_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="upper_attachment")
-        upper_attachment.place(
-            ~upper_attachment == ~down_key,
-            (-upper_attachment == +down_key_body_hole) + 2,
-            +upper_attachment == +upper_outer_base)
+        back_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="back_attachment")
+        back_attachment.place(
+            ~back_attachment == ~down_key,
+            (-back_attachment == +down_key_body_hole) + 2,
+            +back_attachment == +upper_outer_base)
 
         side_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="side_attachment")
         side_attachment.place(
@@ -1900,12 +1900,12 @@ class Lalboard(MemoizableDesign):
             lower_outer_base,
             inner_base,
             upper_base,
-            lower_attachment,
-            upper_attachment,
+            front_attachment,
+            back_attachment,
             side_attachment]
 
         hull_entities = [
-            *body_entities, lower_extension, upper_extension, upper_base_upper_fillet, upper_base_lower_fillet]
+            *body_entities, lower_extension, back_extension, upper_base_upper_fillet, upper_base_lower_fillet]
 
         hull_entities_group = Group(hull_entities)
         top_face_finder = hull_entities_group.bounding_box.make_box()
@@ -1986,17 +1986,17 @@ class Lalboard(MemoizableDesign):
             +down_key_pt_cavity == +upper_outer_led_cavity)
         down_key_pt_cavity = ExtrudeTo(down_key_pt_cavity.named_faces("lens_hole"), down_key_body_hole.copy(False))
 
-        side_nut_negatives, side_nut_positives = self._thumb_side_nut(body, upper_base, lower_attachment)
+        side_nut_negatives, side_nut_positives = self._thumb_side_nut(body, upper_base, front_attachment)
 
-        back_nut_negatives, back_nut_positives = self._thumb_back_nut(body, upper_attachment)
+        back_nut_negatives, back_nut_positives = self._thumb_back_nut(body, back_attachment)
 
         assembly = Union(
             Difference(
                 Union(body, *body_entities, down_key_magnet_extension),
                 upper_outer_base_negatives, lower_outer_base_negatives,
                 inner_base_negatives, upper_base_negatives,
-                *lower_attachment.find_children("negatives"),
-                *upper_attachment.find_children("negatives"),
+                *front_attachment.find_children("negatives"),
+                *back_attachment.find_children("negatives"),
                 *side_attachment.find_children("negatives"),
                 down_key_slot, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
                 Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop,  name="down_key_void"),
@@ -2014,14 +2014,14 @@ class Lalboard(MemoizableDesign):
 
         return assembly
 
-    def _thumb_side_nut(self, thumb_body: Component, upper_base, lower_attachment):
+    def _thumb_side_nut(self, thumb_body: Component, upper_base, front_attachment):
 
         angled_side_finder = Box(10,
                                  10,
                                  thumb_body.size().z / 2)
         angled_side_finder.place(
-            ~angled_side_finder == ~Group([upper_base, lower_attachment]),
-            ~angled_side_finder == ~Group([upper_base, lower_attachment]),
+            ~angled_side_finder == ~Group([upper_base, front_attachment]),
+            ~angled_side_finder == ~Group([upper_base, front_attachment]),
             ~angled_side_finder == ~thumb_body)
 
         angled_side = thumb_body.find_faces(
@@ -2067,14 +2067,14 @@ class Lalboard(MemoizableDesign):
 
         return (nut_cutout, screw_hole), (nut_cutout_ceiling,)
 
-    def _thumb_back_nut(self, thumb_body: Component, upper_attachment):
+    def _thumb_back_nut(self, thumb_body: Component, back_attachment):
         angled_side_finder = Box(
-            upper_attachment.size().x,
-            upper_attachment.size().y,
+            back_attachment.size().x,
+            back_attachment.size().y,
             thumb_body.size().z / 2)
         angled_side_finder.place(
-            +angled_side_finder == -upper_attachment,
-            ~angled_side_finder == ~upper_attachment,
+            +angled_side_finder == -back_attachment,
+            ~angled_side_finder == ~back_attachment,
             ~angled_side_finder == ~thumb_body)
 
         angled_side = thumb_body.find_faces(
@@ -2140,7 +2140,7 @@ class Lalboard(MemoizableDesign):
             ~lower_cutout == ~pcb_silhouette)
 
         side_attachment = thumb_cluster.find_children("side_attachment")[0]
-        upper_attachment = thumb_cluster.find_children("upper_attachment")[0]
+        back_attachment = thumb_cluster.find_children("back_attachment")[0]
 
         side_attachment_cutout = Box(
             side_attachment.size().x,
@@ -2157,24 +2157,24 @@ class Lalboard(MemoizableDesign):
             ~side_attachment_cutout == ~side_attachment,
             ~side_attachment_cutout == ~pcb_silhouette)
 
-        upper_attachment_cutout = Box(
-            upper_attachment.size().x,
-            upper_attachment.size().y,
+        back_attachment_cutout = Box(
+            back_attachment.size().x,
+            back_attachment.size().y,
             1)
-        upper_attachment_cutout = Fillet(
-            upper_attachment_cutout.shared_edges(
-                upper_attachment_cutout.front,
-                [upper_attachment_cutout.left,
-                 upper_attachment_cutout.right]), .8)
-        upper_attachment_cutout.place(
-            ~upper_attachment_cutout == ~upper_attachment,
-            ~upper_attachment_cutout == ~upper_attachment,
-            ~upper_attachment_cutout == ~pcb_silhouette)
+        back_attachment_cutout = Fillet(
+            back_attachment_cutout.shared_edges(
+                back_attachment_cutout.front,
+                [back_attachment_cutout.left,
+                 back_attachment_cutout.right]), .8)
+        back_attachment_cutout.place(
+            ~back_attachment_cutout == ~back_attachment,
+            ~back_attachment_cutout == ~back_attachment,
+            ~back_attachment_cutout == ~pcb_silhouette)
 
         pcb_silhouette = Difference(
             pcb_silhouette,
             side_attachment_cutout,
-            upper_attachment_cutout,
+            back_attachment_cutout,
             lower_cutout)
 
         pcb_silhouette.tz(-.01)
@@ -2269,8 +2269,8 @@ class Lalboard(MemoizableDesign):
         pcb = self.thumb_pcb(base, name="thumb_pcb_" + suffix)
 
         side_magnet_cutout = base.find_children("side_attachment")[0].find_children("magnet_cutout")[0]
-        upper_magnet_cutout = base.find_children("upper_attachment")[0].find_children("magnet_cutout")[0]
-        lower_magnet_cutout = base.find_children("lower_attachment")[0].find_children("magnet_cutout")[0]
+        back_magnet_cutout = base.find_children("back_attachment")[0].find_children("magnet_cutout")[0]
+        front_magnet_cutout = base.find_children("front_attachment")[0].find_children("magnet_cutout")[0]
 
         side_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="side_magnet")
         side_magnet.place(
@@ -2283,27 +2283,27 @@ class Lalboard(MemoizableDesign):
                                         side_magnet.mid().y,
                                         side_magnet.min().z))
 
-        upper_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="upper_magnet")
-        upper_magnet.place(
-            ~upper_magnet == ~upper_magnet_cutout,
-            ~upper_magnet == ~upper_magnet_cutout,
-            +upper_magnet == +upper_magnet_cutout)
-        upper_magnet.add_named_point("center_bottom",
+        back_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_magnet")
+        back_magnet.place(
+            ~back_magnet == ~back_magnet_cutout,
+            ~back_magnet == ~back_magnet_cutout,
+            +back_magnet == +back_magnet_cutout)
+        back_magnet.add_named_point("center_bottom",
                                      Point3D.create(
-                                         upper_magnet.mid().x,
-                                         upper_magnet.mid().y,
-                                         upper_magnet.min().z))
+                                         back_magnet.mid().x,
+                                         back_magnet.mid().y,
+                                         back_magnet.min().z))
 
-        lower_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="lower_magnet")
-        lower_magnet.place(
-            ~lower_magnet == ~lower_magnet_cutout,
-            ~lower_magnet == ~lower_magnet_cutout,
-            +lower_magnet == +lower_magnet_cutout)
-        lower_magnet.add_named_point("center_bottom",
+        front_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="front_magnet")
+        front_magnet.place(
+            ~front_magnet == ~front_magnet_cutout,
+            ~front_magnet == ~front_magnet_cutout,
+            +front_magnet == +front_magnet_cutout)
+        front_magnet.add_named_point("center_bottom",
                                      Point3D.create(
-                                         lower_magnet.mid().x,
-                                         lower_magnet.mid().y,
-                                         lower_magnet.min().z))
+                                         front_magnet.mid().x,
+                                         front_magnet.mid().y,
+                                         front_magnet.min().z))
 
         cluster_group = Group([base,
                                down_key,
@@ -2314,8 +2314,8 @@ class Lalboard(MemoizableDesign):
                                insertion_tool,
                                pcb,
                                side_magnet,
-                               upper_magnet,
-                               lower_magnet], name="thumb_cluster_" + suffix)
+                               back_magnet,
+                               front_magnet], name="thumb_cluster_" + suffix)
 
         # down_key was already part of another component, so cluster_group has a new copy of it.
         # we need to get a reference of this new copy instead
@@ -2342,21 +2342,21 @@ class Lalboard(MemoizableDesign):
         side_standoff.rz(rz, center=side_standoff.mid())
         side_standoff.rz(90, center=side_standoff.mid())
 
-        upper_point = upper_magnet.named_point("center_bottom").point
-        upper_point.translateBy(ball_magnet_center_vector)
-        upper_standoff = self.standoff_by_ball_center(upper_point, name="upper_standoff")
-        upper_standoff.rz(rz, center=upper_standoff.mid())
+        back_point = back_magnet.named_point("center_bottom").point
+        back_point.translateBy(ball_magnet_center_vector)
+        back_standoff = self.standoff_by_ball_center(back_point, name="back_standoff")
+        back_standoff.rz(rz, center=back_standoff.mid())
 
-        lower_point = lower_magnet.named_point("center_bottom").point
-        lower_point.translateBy(ball_magnet_center_vector)
-        lower_standoff = self.standoff_by_ball_center(lower_point, name="lower_standoff")
-        lower_standoff.rz(rz, center=lower_standoff.mid())
+        front_point = front_magnet.named_point("center_bottom").point
+        front_point.translateBy(ball_magnet_center_vector)
+        front_standoff = self.standoff_by_ball_center(front_point, name="front_standoff")
+        front_standoff.rz(rz, center=front_standoff.mid())
 
         cluster_group = Group(
             [*cluster_group.children(),
              side_standoff,
-             upper_standoff,
-             lower_standoff],
+             back_standoff,
+             front_standoff],
             name="thumb_cluster_assembly")
 
         return cluster_group
@@ -2388,8 +2388,8 @@ class Lalboard(MemoizableDesign):
         pcb = self.thumb_pcb(base, name="thumb_pcb_" + suffix)
 
         side_magnet_cutout = base.find_children("side_attachment")[0].find_children("magnet_cutout")[0]
-        upper_magnet_cutout = base.find_children("upper_attachment")[0].find_children("magnet_cutout")[0]
-        lower_magnet_cutout = base.find_children("lower_attachment")[0].find_children("magnet_cutout")[0]
+        back_magnet_cutout = base.find_children("back_attachment")[0].find_children("magnet_cutout")[0]
+        front_magnet_cutout = base.find_children("front_attachment")[0].find_children("magnet_cutout")[0]
 
         side_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="side_magnet")
         side_magnet.place(
@@ -2397,26 +2397,26 @@ class Lalboard(MemoizableDesign):
             ~side_magnet == ~side_magnet_cutout,
             +side_magnet == +side_magnet_cutout)
 
-        upper_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="upper_magnet")
-        upper_magnet.place(
-            ~upper_magnet == ~upper_magnet_cutout,
-            ~upper_magnet == ~upper_magnet_cutout,
-            +upper_magnet == +upper_magnet_cutout)
+        back_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_magnet")
+        back_magnet.place(
+            ~back_magnet == ~back_magnet_cutout,
+            ~back_magnet == ~back_magnet_cutout,
+            +back_magnet == +back_magnet_cutout)
 
-        lower_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="lower_magnet")
-        lower_magnet.place(
-            ~lower_magnet == ~lower_magnet_cutout,
-            ~lower_magnet == ~lower_magnet_cutout,
-            +lower_magnet == +lower_magnet_cutout)
+        front_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="front_magnet")
+        front_magnet.place(
+            ~front_magnet == ~front_magnet_cutout,
+            ~front_magnet == ~front_magnet_cutout,
+            +front_magnet == +front_magnet_cutout)
 
         side_support = self.screw_support_assembly(13, 8, 3, name="side_support")
         side_ball_magnet = side_support.find_children("ball_magnet")[0]
 
-        upper_support = self.screw_support_assembly(13, 8, 4, name="upper_support")
-        upper_ball_magnet = upper_support.find_children("ball_magnet")[0]
+        back_support = self.screw_support_assembly(13, 8, 4, name="back_support")
+        back_ball_magnet = back_support.find_children("ball_magnet")[0]
 
-        lower_support = self.screw_support_assembly(13, 8, 0, name="lower_support")
-        lower_ball_magnet = lower_support.find_children("ball_magnet")[0]
+        front_support = self.screw_support_assembly(13, 8, 0, name="front_support")
+        front_ball_magnet = front_support.find_children("ball_magnet")[0]
 
         cluster_group = Group([base,
                                down_key,
@@ -2427,13 +2427,13 @@ class Lalboard(MemoizableDesign):
                                insertion_tool,
                                pcb,
                                side_magnet,
-                               upper_magnet,
-                               lower_magnet], name="thumb_cluster_" + suffix)
+                               back_magnet,
+                               front_magnet], name="thumb_cluster_" + suffix)
 
         cluster_group.place(
-            ~lower_magnet == ~lower_support,
-            ~lower_magnet == ~lower_support,
-            -lower_magnet == +lower_support)
+            ~front_magnet == ~front_support,
+            ~front_magnet == ~front_support,
+            -front_magnet == +front_support)
 
         ball_magnet_radius = side_ball_magnet.size().z / 2
         cluster_group.add_named_point("side_support_point",
@@ -2441,19 +2441,19 @@ class Lalboard(MemoizableDesign):
                                           side_magnet.mid().x,
                                           side_magnet.mid().y,
                                           side_magnet.min().z - ball_magnet_radius))
-        cluster_group.add_named_point("upper_support_point",
+        cluster_group.add_named_point("back_support_point",
                                       Point3D.create(
-                                          upper_magnet.mid().x,
-                                          upper_magnet.mid().y,
-                                          upper_magnet.min().z - ball_magnet_radius))
-        cluster_group.add_named_point("lower_support_point",
+                                          back_magnet.mid().x,
+                                          back_magnet.mid().y,
+                                          back_magnet.min().z - ball_magnet_radius))
+        cluster_group.add_named_point("front_support_point",
                                       Point3D.create(
-                                          lower_magnet.mid().x,
-                                          lower_magnet.mid().y,
-                                          lower_magnet.min().z - ball_magnet_radius))
+                                          front_magnet.mid().x,
+                                          front_magnet.mid().y,
+                                          front_magnet.min().z - ball_magnet_radius))
 
         first_rotation = self.rotate_to_height_matrix(
-            lower_ball_magnet.mid(),
+            front_ball_magnet.mid(),
             Vector3D.create(1, 0, 0),
             cluster_group.named_point("side_support_point").point,
             side_ball_magnet.mid().z)
@@ -2465,24 +2465,24 @@ class Lalboard(MemoizableDesign):
             ~side_ball_magnet == cluster_group.named_point("side_support_point"))
 
         second_rotation = self.rotate_to_height_matrix(
-            lower_ball_magnet.mid(),
-            lower_ball_magnet.mid().vectorTo(side_ball_magnet.mid()),
-            cluster_group.named_point("upper_support_point").point,
-            upper_ball_magnet.mid().z)
+            front_ball_magnet.mid(),
+            front_ball_magnet.mid().vectorTo(side_ball_magnet.mid()),
+            cluster_group.named_point("back_support_point").point,
+            back_ball_magnet.mid().z)
         cluster_group.transform(second_rotation)
 
-        upper_support.place(
-            ~upper_ball_magnet == cluster_group.named_point("upper_support_point"),
-            ~upper_ball_magnet == cluster_group.named_point("upper_support_point"),
-            ~upper_ball_magnet == cluster_group.named_point("upper_support_point"))
+        back_support.place(
+            ~back_ball_magnet == cluster_group.named_point("back_support_point"),
+            ~back_ball_magnet == cluster_group.named_point("back_support_point"),
+            ~back_ball_magnet == cluster_group.named_point("back_support_point"))
 
         if left_hand:
             cluster_group.scale(-1, 1, 1, center=(0, 0, 0))
-            lower_support.scale(-1, 1, 1, center=(0, 0, 0))
+            front_support.scale(-1, 1, 1, center=(0, 0, 0))
             side_support.scale(-1, 1, 1, center=(0, 0, 0))
-            upper_support.scale(-1, 1, 1, center=(0, 0, 0))
+            back_support.scale(-1, 1, 1, center=(0, 0, 0))
 
-        return Group([cluster_group, lower_support, side_support, upper_support], name="thumb_assembly_" + suffix)
+        return Group([cluster_group, front_support, side_support, back_support], name="thumb_assembly_" + suffix)
 
     def place_header(self, header: Component, x: int, y: int):
         pin_size = min(header.size().x, header.size().y)
