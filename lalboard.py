@@ -19,13 +19,15 @@ by the various part scripts in the "parts" directory.
 
 import adsk.core
 import adsk.fusion
-import functools
+from adsk.core import Matrix3D, Point3D, Vector3D
 import inspect
 import math
 import pathlib
 import os
+from typing import Optional, Tuple
 
-from fscad import *
+import fscad.fscad
+from fscad.fscad import *
 
 key_thickness = 1.8
 post_width = 7.3
@@ -3087,10 +3089,11 @@ def run_design(design_func, message_box_on_error=False, print_runtime=True, docu
         document_name = pathlib.Path(filename).stem
 
     import fscad
-    if isinstance(context, fscad.MemoizableDesign):
-        fscad.run_design(design_func, message_box_on_error, print_runtime, document_name, design_args=[context])
+    if isinstance(context, MemoizableDesign):
+        fscad.fscad.run_design(design_func, message_box_on_error, print_runtime, document_name, design_args=[context])
     else:
-        fscad.run_design(design_func, message_box_on_error, print_runtime, document_name, design_args=[Lalboard()])
+        fscad.fscad.run_design(
+            design_func, message_box_on_error, print_runtime, document_name, design_args=[Lalboard()])
 
 
 

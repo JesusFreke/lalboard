@@ -14,7 +14,7 @@
 
 import adsk.core
 
-from fscad import *
+from fscad.fscad import *
 relative_import("../../lalboard.py")
 import lalboard
 

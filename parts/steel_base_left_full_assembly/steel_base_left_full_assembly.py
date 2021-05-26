@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import adsk.core
+from adsk.core import Point3D
 
-from fscad import *
+from fscad.fscad import *
 relative_import("../../lalboard.py")
 import lalboard
 

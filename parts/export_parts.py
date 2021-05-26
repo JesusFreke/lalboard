@@ -21,7 +21,7 @@ import tempfile
 import time
 import traceback
 
-from fscad import *
+from fscad.fscad import *
 relative_import("../lalboard.py")
 import lalboard
 
