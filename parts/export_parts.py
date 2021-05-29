@@ -28,8 +28,9 @@ import lalboard
 # List of the names of the parts to export. An empty list will export all parts.
 parts_to_export = []
 
-
 export_assembly_f3ds = False
+
+export_assemblies_to_cloud = False
 
 
 def run(_):
@@ -78,7 +79,8 @@ def run(_):
                 elif export_assembly:
                     with tempfile.TemporaryDirectory() as temp_dir:
                         f3d_file = export_f3d(temp_dir, file)
-                        export_to_fusion_cloud(file, f3d_file)
+                        if export_assemblies_to_cloud:
+                            export_to_fusion_cloud(file, f3d_file)
                         if export_assembly_f3ds:
                             shutil.copyfile(f3d_file,
                                             str(pathlib.Path(export_dir, file.name + ".f3d")))
