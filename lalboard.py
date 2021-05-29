@@ -17,14 +17,15 @@ This file contains the logic for generating all the various parts. This script i
 by the various part scripts in the "parts" directory.
 """
 
+import inspect
+import math
+import os
+import pathlib
+from typing import Optional, Tuple
+
 import adsk.core
 import adsk.fusion
 from adsk.core import Matrix3D, Point3D, Vector3D
-import inspect
-import math
-import pathlib
-import os
-from typing import Optional, Tuple
 
 import fscad.fscad
 from fscad.fscad import *
@@ -33,6 +34,7 @@ key_thickness = 1.8
 post_width = 7.3
 
 
+# noinspection PyMethodMayBeStatic
 class Lalboard(MemoizableDesign):
 
     def small_pin(self):
@@ -516,6 +518,9 @@ class Lalboard(MemoizableDesign):
 
     def ball_magnet(self):
         return Sphere(2.5, "ball_magnet")
+
+    def large_magnet(self):
+        return Box(3.175, 3.175, 1.5875, name="large_magnet")
 
     def underside_magnetic_attachment(self, base_height, name=None):
         """This is the design for the magnetic attachments on the normal and thumb clusters.
@@ -1212,7 +1217,7 @@ class Lalboard(MemoizableDesign):
         pcb, connector_legs_cutout = self.cluster_pcb(cluster, front, back)
 
         if tall_clip:
-            front_clip = self.cluster_front_mount_clip_tall(front)
+            front_clip = self.cluster_front_mount_clip_tall(front, name="cluster_front_mount_clip")
         else:
             front_clip = self.cluster_front_mount_clip(front)
 
@@ -1271,15 +1276,11 @@ class Lalboard(MemoizableDesign):
         return Group([
             support_base, standoff, nut, selected_screw, selected_screw.find_children("ball_magnet")[0]], name=name)
 
-    def positioned_cluster_assembly(
-            self, down_key_top_center: Point3D, rx: float, ry: float, rz: float, tall_clip=False):
+    def positioned_cluster_assembly(self, placement: 'AbsoluteFingerClusterPlacement', tall_clip=False):
         body_assembly = self.cluster_body_assembly(tall_clip=tall_clip)
         cluster = body_assembly.find_children("cluster", recursive=False)[0]
         pcb = body_assembly.find_children("pcb", recursive=False)[0]
-        front_clip_list = body_assembly.find_children("cluster_front_mount_clip", recursive=False)
-        if not front_clip_list:
-            front_clip_list = body_assembly.find_children("cluster_front_mount_clip_tall", recursive=False)
-        front_clip = front_clip_list[0]
+        front_clip = body_assembly.find_children("cluster_front_mount_clip", recursive=False)[0]
 
         south_key = self.cluster_key_short(name="south_key")
         south_key.rx(90).rz(180)
@@ -1368,17 +1369,22 @@ class Lalboard(MemoizableDesign):
                                back_left_magnet,
                                back_right_magnet), name="cluster")
 
-        cluster_group.rx(rx).ry(ry).rz(rz)
+        cluster_group.add_named_point("down_key_top_center", down_key_top.mid())
+
+        cluster_group.transform(placement.rotation_matrix)
+        rotation_matrix_array = placement.rotation_matrix.asArray()
 
         cluster_group.place(
-            ~down_key_top == down_key_top_center,
-            ~down_key_top == down_key_top_center,
-            ~down_key_top == down_key_top_center)
+            ~cluster_group.named_point("down_key_top_center") == placement.position,
+            ~cluster_group.named_point("down_key_top_center") == placement.position,
+            ~cluster_group.named_point("down_key_top_center") == placement.position)
 
         normal = down_key_top.get_plane().normal
 
         ball_magnet_center_vector = normal.copy()
         ball_magnet_center_vector.scaleBy(-ball_magnet_radius)
+
+        rz = math.degrees(math.atan2(rotation_matrix_array[4], rotation_matrix_array[0]))
 
         front_point = front_magnet.named_point("center_bottom").point
         front_point.translateBy(ball_magnet_center_vector)
@@ -2237,7 +2243,7 @@ class Lalboard(MemoizableDesign):
             ~key_pivot == ~base_pivot,
             -key_pivot == -base_pivot)
 
-    def positioned_thumb_assembly(self, front_mid_point: Point3D, rx: float, ry: float, rz: float, left_hand=False):
+    def positioned_thumb_assembly(self, placement: 'AbsoluteThumbClusterPlacement', left_hand=False):
         suffix = "left" if left_hand else "right"
         base = self.thumb_base("thumb_cluster_" + suffix)
 
@@ -2322,13 +2328,15 @@ class Lalboard(MemoizableDesign):
         # down_key was already part of another component, so cluster_group has a new copy of it.
         # we need to get a reference of this new copy instead
         down_key = cluster_group.find_children(down_key.name, recursive=False)[0]
-        cluster_group.rx(rx).ry(ry).rz(rz)
+        cluster_group.transform(placement.rotation_matrix )
+        rotation_matrix_array = placement.rotation_matrix .asArray()
+        rz = math.degrees(math.atan2(rotation_matrix_array[4], rotation_matrix_array[0]))
 
         front_upper_mid = down_key.named_point("front_upper_mid")
         cluster_group.place(
-            ~front_upper_mid == front_mid_point,
-            ~front_upper_mid == front_mid_point,
-            ~front_upper_mid == front_mid_point)
+            ~front_upper_mid == placement.position,
+            ~front_upper_mid == placement.position,
+            ~front_upper_mid == placement.position)
 
         normal = down_key_top.get_plane().normal
         normal.scaleBy(-1)
@@ -3096,4 +3104,645 @@ def run_design(design_func, message_box_on_error=False, print_runtime=True, docu
             design_func, message_box_on_error, print_runtime, document_name, design_args=[Lalboard()])
 
 
+class ClusterRotation(object):
+    """This is the superclass for the various Placement objects, which handles the common logic for rotation."""
 
+    def __init__(self, context: Lalboard):
+        super().__init__()
+        self._matrix = Matrix3D.create()
+        self._context = context
+
+    @property
+    def rotation_matrix(self) -> Matrix3D:
+        return self._matrix
+
+    def set_rotation_by_euler_angles(self, rx: float, ry: float, rz: float):
+        """Sets the rotation of the cluster by the given euler angles, applied in rx->ry->rz order.
+
+        :param rx: The rotation about the x axis.
+        :param ry: The rotation about the y axis.
+        :param rz: The rotation about the z axis.
+        :return: self.
+        """
+        self._matrix = Matrix3D.create()
+
+        matrix = Matrix3D.create()
+        matrix.setToRotation(math.radians(rx), Vector3D.create(1, 0, 0), Point3D.create(0, 0, 0))
+        self._matrix.transformBy(matrix)
+
+        matrix = Matrix3D.create()
+        matrix.setToRotation(math.radians(ry), Vector3D.create(0, 1, 0), Point3D.create(0, 0, 0))
+        self._matrix.transformBy(matrix)
+
+        matrix = Matrix3D.create()
+        matrix.setToRotation(math.radians(rz), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
+        self._matrix.transformBy(matrix)
+
+        return self
+
+    def _set_rotation_by_support_lengths(
+            self, lengths: Tuple[float, float, float], support_points: Tuple[Point3D, Point3D, Point3D], rz: float):
+        """Sets the rotation of the cluster by the lengths of the 3 supports, along with a z-axis rotation.
+
+        This actually over-specifies the rotation, by also specifying the height of the cluster. However, only the
+        rotation is actually used. The height is still specified by one of the absolute or relative positional methods,
+        even if it doesn't match the height based on the 3 supports here.
+
+        :param lengths: The lengths of the 3 supports
+        :param support_points: The centers of the ball magnets that attach to the bottom of the cluster, when it's in
+        an unrotated state.
+        :param rz: The rotation around the z-axis.
+        """
+        # just a placeholder object that we can attach named points to
+        placeholder = Box(1, 1, 1)
+
+        placeholder.add_named_point("point1", support_points[0])
+
+        placeholder.add_named_point("point2", support_points[1])
+
+        placeholder.add_named_point("point3", support_points[2])
+
+        # first, translate the whole thing up, so that the first point is at the correct height
+        placeholder.place(z=~placeholder.named_point("point1") == lengths[0])
+
+        # next, rotate about an axis that runs through the first point and third points, so that the second point is
+        # at the correct height.
+        # This assumes that the second point is not colinear with the first and third points.
+        first_rotation = self._context.rotate_to_height_matrix(
+            axis_point=placeholder.named_point("point1").point,
+            axis_vector=placeholder.named_point("point1").point.vectorTo(placeholder.named_point("point3").point),
+            target_point=placeholder.named_point("point2").point,
+            height=lengths[1])
+        placeholder.transform(first_rotation)
+
+        # finally, rotate about an axis that runs through the first and second support points, so that
+        # the third support point is at the correct height
+        second_rotation = self._context.rotate_to_height_matrix(
+            axis_point=placeholder.named_point("point1").point,
+            axis_vector=placeholder.named_point("point1").point.vectorTo(
+                placeholder.named_point("point2").point),
+            target_point=placeholder.named_point("point3").point,
+            height=lengths[2])
+
+        self._matrix = Matrix3D.create()
+        self._matrix.transformBy(first_rotation)
+        self._matrix.transformBy(second_rotation)
+
+        existing_rz = math.degrees(math.atan2(self._matrix.asArray()[4], self._matrix.asArray()[0]))
+
+        matrix = Matrix3D.create()
+        matrix.setToRotation(math.radians(rz - existing_rz), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
+        self._matrix.transformBy(matrix)
+
+    def set_rotation_matrix(self, matrix: Matrix3D):
+        """Sets the rotation of the cluster directly, from the given rotation matrix.
+
+        :param matrix: The rotation matrix to use.
+        :return: self
+        """
+        self._matrix = matrix.copy()
+        return self
+
+
+class FingerClusterRotation(ClusterRotation):
+
+    def set_rotation_by_support_lengths(
+            self, front: float, back_left: float, back_right: float, rz: float, tall_front_clip=False):
+        """Sets the rotation of the cluster by the lengths of the 3 supports, along with a z-axis rotation.
+
+        :param front: The length of the front support.
+        :param back_left: The length of the back left support.
+        :param back_right: The length of the back right support.
+        :param rz: The rotation around the z-axis.
+        :param tall_front_clip: If true, the length of the front support assumes that the "tall" front clip is being
+        used.
+        :return: self
+        """
+        self._set_rotation_by_support_lengths(
+            (front, back_left, back_right),
+            self._get_support_points(tall_front_clip),
+            rz)
+
+        return self
+
+    def _get_support_points(self, tall_front_clip):
+        cluster_body = self._context.cluster_body_assembly(tall_clip=tall_front_clip)
+
+        front_clip = cluster_body.find_children("cluster_front_mount_clip")[0]
+        back = cluster_body.find_children("cluster_back")[0]
+
+        front_magnet_cutout = front_clip.find_children("magnet_cutout")[0]
+        back_cutouts = sorted(back.find_children("magnet_cutout")[:2], key=lambda cutout: cutout.mid().x)
+        back_left_cutout = back_cutouts[0]
+        back_right_cutout = back_cutouts[1]
+
+        ball_magnet = self._context.ball_magnet()
+        large_magnet = self._context.large_magnet()
+        ball_center_offset = large_magnet.size().z + ball_magnet.size().z / 2
+
+        return (
+            Point3D.create(
+                front_magnet_cutout.mid().x,
+                front_magnet_cutout.mid().y,
+                front_magnet_cutout.max().z - ball_center_offset),
+            Point3D.create(
+                back_left_cutout.mid().x,
+                back_left_cutout.mid().y,
+                back_left_cutout.max().z - ball_center_offset),
+            Point3D.create(
+                back_right_cutout.mid().x,
+                back_right_cutout.mid().y,
+                back_right_cutout.max().z - ball_center_offset))
+
+
+class ThumbClusterRotation(ClusterRotation):
+
+    def set_rotation_by_support_lengths(
+            self, front: float, side: float, back: float, rz: float, left_hand=False):
+        """Sets the rotation of the cluster by the lengths of the 3 supports, along with a z-axis rotation.
+
+        :param front: The length of the front support.
+        :param side: The length of the side support.
+        :param back: The length of the back support.
+        :param rz: The rotation around the z-axis.
+        :param left_hand: Set the rotation for a right hand or left hand thumb
+        :return: self
+        """
+        self._set_rotation_by_support_lengths(
+            (front, side, back),
+            self._get_support_points(left_hand),
+            rz)
+
+        return self
+
+    def _get_support_points(self, left_hand=False):
+        base = self._context.thumb_base()
+        if left_hand:
+            base.scale(-1, 1, 1, center=base.mid())
+
+        front_cutout = base.find_children("front_attachment")[0].find_children("magnet_cutout")[0]
+        side_cutout = base.find_children("side_attachment")[0].find_children("magnet_cutout")[0]
+        back_cutout = base.find_children("back_attachment")[0].find_children("magnet_cutout")[0]
+
+        ball_magnet = self._context.ball_magnet()
+        large_magnet = self._context.large_magnet()
+        ball_center_offset = large_magnet.size().z + ball_magnet.size().z / 2
+
+        return (
+            Point3D.create(
+                front_cutout.mid().x,
+                front_cutout.mid().y,
+                front_cutout.max().z - ball_center_offset),
+            Point3D.create(
+                side_cutout.mid().x,
+                side_cutout.mid().y,
+                side_cutout.max().z - ball_center_offset),
+            Point3D.create(
+                back_cutout.mid().x,
+                back_cutout.mid().y,
+                back_cutout.max().z - ball_center_offset))
+
+
+class AbsoluteFingerClusterPlacement(FingerClusterRotation):
+    """Represents the absolute location and orientation of a finger cluster.
+
+    Position can be defined either by cartesian or cylindrical coordinates.
+
+    Rotation can be specified by rx, ry and rz euler angles (applied in that order), or by the lengths of the 3
+    supports.
+    """
+
+    def __init__(self, context):
+        super().__init__(context)
+        self._position = Point3D.create(0, 0, 0)
+
+    @property
+    def position(self) -> Point3D:
+        return self._position
+
+    def set_cartesian(self, x: float, y: float, z: float):
+        """Sets the position of the cluster by (x, y, z) cartesian coordinates.
+
+        This coordinate refers to the center of the top of the "down" key.
+
+        :param x: The x coordinate.
+        :param y: The y coordinate.
+        :param z: The z coordinate.
+        :return: self.
+        """
+        self._position = Point3D.create(x, y, z)
+        return self
+
+    def set_cylindrical(self, r: float, theta: float, z: float):
+        """Sets the position of the cluster by (r, theta, z) cylindrical coordinates.
+
+        This coordinate refers to the center of the top of the "down" key.
+
+        :param r: The r coordinate.
+        :param theta: The theta coordinate, in degrees. A theta of 0 refers to "straight ahead" (e.g. +y in cartesian).
+        :param z: The z coordinate.
+        :return: self.
+        """
+        self._position = Point3D.create(
+            r * math.sin(math.radians(theta)),
+            r * math.cos(math.radians(theta)),
+            z)
+        return self
+
+
+class RelativeFingerClusterPlacement(FingerClusterRotation):
+    """Represents the relative location and orientation of a finger cluster.
+
+    You can specify the position by either cylindrical or cartesian coordinates.
+
+    ### Relative cylindrical coordinates
+
+    For cylindrical coordinates, you specify the radius and height, and then the theta is chosen such that the cluster
+    is placed so that it's touching the previously added cluster. Or if it's the first cluster, the theta will be 0
+    degrees - meaning directly forward (see the "gap" section below, to change this)
+
+    ### Relative cartesian coordinates
+
+    For cartesian coordinates, you specify the y and z values, and the x value is chosen such that the cluster is placed
+    so that it's touching the previously added cluster. Or if it's the first cluster, x will be set to 0 (see the "gap"
+    section below, to change this).
+
+    ### Gap
+
+    In either case, you can specify a gap to leave between this cluster and the previous cluster. This will cause x or
+    theta to be chosen such that there is `gap` space between this cluster and the previous cluster. Or in case of the
+    first cluster, the gap specifies an offset from the default position of x=0 or theta=0.
+    """
+
+    def __init__(self, context):
+        super().__init__(context)
+        self._positioning = ("cartesian", 0, 0)
+        self._gap = 0
+
+    def set_cylindrical(self, r: float, z: float, gap=0.0):
+        """Defines the relative position of the cluster via cylindrical coordinates.
+
+        This coordinate refers to the center of the top of the center "down" key. The unspecified `theta` coordinate
+        will be chosen such that the distance between this cluster and the previous is `gap`.
+
+        :param r: The cylindrical radius.
+        :param z: The height.
+        :param gap: The gap to leave between this cluster and the previous. Or if this is the first cluster, this is an
+         offset from the default position of theta=0.
+        :return: self.
+        """
+        self._positioning = ("cylindrical", r, z)
+        self._gap = gap
+        return self
+
+    def set_cartesian(self, y: float, z: float, gap=0.0):
+        """Defines the relative position of the cluster via cartesian coordinates.
+
+        This coordinate refers to the center of the top of the center "down" key. The unspecified `x` coordinate will be
+        chosen such that the distance between this cluster and the previous is `gap`.
+
+        :param y: The y coordinate.
+        :param z: The z coordinate.
+        :param gap: The gap to leave between this cluster and the previous. Or if this is the first cluster, this is an
+         offset from the default position of x=0.
+        ;return: self.
+        """
+        self._positioning = ("cartesian", y, z)
+        self._gap = gap
+        return self
+
+    def resolve(self, previous_cluster: Optional[Component], left_hand=False) -> AbsoluteFingerClusterPlacement:
+        """Resolves this relative placement, based on the position of the given cluster.
+
+        :param previous_cluster: The assembly component returned by positioned_cluster_assembly for the previous
+        cluster. This should be None in case of the cluster for the first finger, in which case the position will be
+        resolved relative to the default position of x=0 or theta=0.
+        :param left_hand: True if this placement is for the left hand. This will cause the position to be resolved on
+        either the right side (left_hand=False) or left side (left_hand=True) of the given cluster_assembly.
+
+        :return: An AbsoluteFingerClusterPlacement for the resolved position.
+        """
+
+        if self._positioning[0] == "cartesian":
+            return self._resolve_cartesian(previous_cluster, left_hand)
+        else:
+            return self._resolve_cylindrical(previous_cluster, left_hand)
+
+    def _resolve_cartesian(self, previous_cluster: Optional[Component], left_hand=False):
+        cluster_body = self._context.cluster_body_assembly()
+
+        down_key = self._context.center_key()
+        center_key_magnet = down_key.find_children("magnet_cutout")[0]
+        center_cluster_magnet = cluster_body.find_children("central_magnet_cutout")[0]
+        down_key.rx(180).rz(180)
+        down_key.place(
+            ~center_key_magnet == ~center_cluster_magnet,
+            -center_key_magnet == +center_cluster_magnet,
+            ~center_key_magnet == ~center_cluster_magnet)
+
+        cluster_body.add_named_point("down_key_top_center", Point3D.create(
+            down_key.mid().x,
+            down_key.mid().y,
+            down_key.max().z))
+
+        cluster_body.transform(self.rotation_matrix)
+
+        if not previous_cluster:
+            cluster_body.place(~cluster_body.named_point("down_key_top_center") == 0)
+            alignment_direction = None
+        elif left_hand:
+            cluster_body.place(+cluster_body == -previous_cluster)
+            alignment_direction = Vector3D.create(1, 0, 0)
+        else:
+            cluster_body.place(-cluster_body == +previous_cluster)
+            alignment_direction = Vector3D.create(-1, 0, 0)
+
+        cluster_body.place(
+            y=~cluster_body.named_point("down_key_top_center") == self._positioning[1],
+            z=~cluster_body.named_point("down_key_top_center") == self._positioning[2])
+
+        if previous_cluster:
+            cluster_body.align_to(previous_cluster, alignment_direction)
+
+        if self._gap:
+            gap = self._gap
+            if left_hand:
+                gap *= -1
+            cluster_body.tx(gap)
+
+        absolute_placement = AbsoluteFingerClusterPlacement(self._context)
+        absolute_placement.set_cartesian(*cluster_body.named_point("down_key_top_center").point.asArray())
+        absolute_placement.set_rotation_matrix(self.rotation_matrix)
+
+        return absolute_placement
+
+    def _align_to_cylindrical(self, cluster: Component, cluster_point: Point3D, previous_cluster: Component, left_hand):
+        """Similar to fscad's Component.align_to, but performing the alignment by tweaking the cylindrical theta."""
+
+        cluster_point = cluster_point.copy()
+
+        cluster_occurrence = Union(
+            *[BRepComponent(body.brep) for body in cluster.bodies]).create_occurrence(create_children=False)
+        previous_cluster_occurrence = Union(
+            *[BRepComponent(body.brep) for body in previous_cluster.bodies]).create_occurrence(create_children=False)
+
+        try:
+            while True:
+                result = app().measureManager.measureMinimumDistance(
+                    cluster_occurrence, previous_cluster_occurrence)
+
+                if result.value < app().pointTolerance:
+                    break
+
+                closest_distance_vector = result.positionOne.vectorTo(result.positionTwo)
+
+                tangential_vector = Point3D.create(0, 0, 0).vectorTo(
+                    Point3D.create(result.positionOne.x, result.positionOne.y, 0)).crossProduct(Vector3D.create(0, 0, 1))
+                tangential_vector.normalize()
+
+                tangential_distance = closest_distance_vector.dotProduct(tangential_vector)
+
+                # We take the shortest distance vector, and find the projection of that in the tangential direction,
+                # and then calculate the angle that would result in that sector circumference, at the radius of the
+                # cluster point that we're using.
+                # This should be a slight underestimate of the required angle, due to the circumferential distance
+                # being slightly longer than the linear distance.
+
+                theta_delta = math.degrees(tangential_distance / self._positioning[1])
+
+                # now, calculate the translation needed in order to move the target point on the cluster in an arc
+                # with the given angle
+
+                cluster_point_radius = Vector3D.create(cluster_point.x, cluster_point.y, 0).length
+                cluster_point_theta = math.degrees(math.atan2(cluster_point.x, cluster_point.y))
+
+                new_point = Point3D.create(
+                    cluster_point_radius * math.sin(math.radians(cluster_point_theta + theta_delta)),
+                    cluster_point_radius * math.cos(math.radians(cluster_point_theta + theta_delta)),
+                    cluster_point.z)
+
+                translation_matrix = Matrix3D.create()
+                translation_matrix.translation = cluster_point.vectorTo(new_point)
+
+                transform = cluster_occurrence.transform
+                transform.transformBy(translation_matrix)
+                cluster_occurrence.transform = transform
+
+                cluster_point.transformBy(translation_matrix)
+
+            cluster.translate(*cluster_occurrence.transform.translation.asArray())
+        finally:
+            cluster_occurrence.deleteMe()
+            previous_cluster_occurrence.deleteMe()
+
+        return self
+
+    def _resolve_cylindrical(self, previous_cluster: Optional[Component], left_hand=False):
+        cluster_body = self._context.cluster_body_assembly()
+
+        down_key = self._context.center_key()
+        center_key_magnet = down_key.find_children("magnet_cutout")[0]
+        center_cluster_magnet = cluster_body.find_children("central_magnet_cutout")[0]
+        down_key.rx(180).rz(180)
+        down_key.place(
+            ~center_key_magnet == ~center_cluster_magnet,
+            -center_key_magnet == +center_cluster_magnet,
+            ~center_key_magnet == ~center_cluster_magnet)
+
+        cluster_body.add_named_point("down_key_top_center", Point3D.create(
+            down_key.mid().x,
+            down_key.mid().y,
+            down_key.max().z))
+
+        cluster_body.transform(self.rotation_matrix)
+
+        def circumferential_translation_matrix(point: Point3D, theta_delta):
+            translated_point = point.copy()
+
+            matrix = Matrix3D.create()
+            matrix.setToRotation(math.radians(theta_delta), Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
+            translated_point.transformBy(matrix)
+
+            matrix = Matrix3D.create()
+            matrix.translation = point.vectorTo(translated_point)
+            return matrix
+
+        def place_at_radius_matrix(point: Point3D, target_radius):
+            radial_vector = Point3D.create(0, 0, 0).vectorTo(Point3D.create(point.x, point.y, 0))
+
+            radial_translation = target_radius - radial_vector.length
+
+            radial_vector.normalize()
+            radial_vector.scaleBy(radial_translation)
+            matrix = Matrix3D.create()
+            matrix.translation = radial_vector
+            return matrix
+
+        if not previous_cluster:
+            cluster_body.place(
+                ~cluster_body.named_point("down_key_top_center") == 0,
+                ~cluster_body.named_point("down_key_top_center") == self._positioning[1],
+                ~cluster_body.named_point("down_key_top_center") == self._positioning[2])
+        elif left_hand:
+            cluster_body.place(
+                +cluster_body == -previous_cluster,
+                ~cluster_body == ~previous_cluster,
+                ~cluster_body.named_point("down_key_top_center") == self._positioning[2])
+            cluster_body.transform(
+                place_at_radius_matrix(cluster_body.named_point("down_key_top_center").point, self._positioning[1]))
+            while cluster_body.bounding_box.raw_bounding_box.intersects(
+                    previous_cluster.bounding_box.raw_bounding_box):
+                cluster_body.transform(
+                    circumferential_translation_matrix(cluster_body.named_point("down_key_top_center").point, 5))
+        else:
+            cluster_body.place(
+                -cluster_body == +previous_cluster,
+                ~cluster_body == ~previous_cluster,
+                ~cluster_body.named_point("down_key_top_center") == self._positioning[2])
+            cluster_body.transform(
+                place_at_radius_matrix(cluster_body.named_point("down_key_top_center").point, self._positioning[1]))
+            while cluster_body.bounding_box.raw_bounding_box.intersects(
+                    previous_cluster.bounding_box.raw_bounding_box):
+                cluster_body.transform(
+                    circumferential_translation_matrix(cluster_body.named_point("down_key_top_center").point, -5))
+
+        if previous_cluster:
+            self._align_to_cylindrical(
+                cluster_body, cluster_body.named_point("down_key_top_center").point, previous_cluster,
+                left_hand=left_hand)
+
+        if self._gap:
+            angle = math.atan2(self._gap, self._positioning[1])
+            if not left_hand:
+                angle *= -1
+            down_key_top_center = cluster_body.named_point("down_key_top_center").point
+            matrix = Matrix3D.create()
+            matrix.setToRotation(angle, Vector3D.create(0, 0, 1), Point3D.create(0, 0, 0))
+            rotated_down_key_top_center = down_key_top_center.copy()
+            rotated_down_key_top_center.transformBy(matrix)
+            cluster_body.translate(
+                *down_key_top_center.vectorTo(rotated_down_key_top_center).asArray())
+
+        absolute_placement = AbsoluteFingerClusterPlacement(self._context)
+        absolute_placement.set_cartesian(*cluster_body.named_point("down_key_top_center").point.asArray())
+        absolute_placement.set_rotation_matrix(self.rotation_matrix)
+
+        return absolute_placement
+
+
+class AbsoluteThumbClusterPlacement(ThumbClusterRotation):
+    """Represents the absolute location and orientation of a thumb cluster.
+
+    The position for the thumb cluster must be defined by cartesian coordinates.
+
+    Rotation can be specified by rx, ry and rz euler angles (applied in that order), or by the lengths of the 3
+    supports.
+    """
+
+    def __init__(self, context):
+        super().__init__(context)
+        self._position = Point3D.create(0, 0, 0)
+
+    @property
+    def position(self) -> Point3D:
+        return self._position
+
+    def set_cartesian(self, x: float, y: float, z: float):
+        """Sets the position of the cluster by (x, y, z) cartesian coordinates.
+
+        This coordinate refers to the center of the top back edge of the down key
+
+        :param x: The x coordinate.
+        :param y: The y coordinate.
+        :param z: The z coordinate.
+        :return: self.
+        """
+        self._position = Point3D.create(x, y, z)
+        return self
+
+
+class RelativeThumbClusterPlacement(ThumbClusterRotation):
+    """Represents the relative location and orientation of a thumb cluster.
+
+    Only cartensian coordinates are supported.
+
+    ### Relative cartesian coordinates
+
+    For cartesian coordinates, you specify the y and z values, and the x value is chosen such that the cluster is
+    placed so that it's touching the handrest.
+
+    ### Gap
+
+    You can also specify a gap to leave between the thumb cluster and the handrest. This will cause the x coordinate to
+    be chosen such that there is `gap` space between this cluster and the handrest.
+    """
+
+    def __init__(self, context):
+        super().__init__(context)
+        self._positioning = (0, 0)
+        self._gap = 0
+
+    def set_cartesian(self, y: float, z: float, gap=0.0):
+        """Defines the relative position of the cluster via cartesian coordinates.
+
+        This coordinate refers to the center of the top of the center "down" key. The unspecified `x` coordinate will be
+        chosen such that the distance between this cluster and the previous is `gap`.
+
+        :param y: The y coordinate.
+        :param z: The z coordinate.
+        :param gap: The gap to leave between this cluster and the previous. Or if this is the first cluster, this is an
+         offset from the default position of x=0.
+        ;return: self.
+        """
+        self._positioning = (y, z)
+        self._gap = gap
+        return self
+
+    def resolve(self, handrest: Component, left_hand=False) -> AbsoluteThumbClusterPlacement:
+        """Resolves this relative placement, based on the position of the given handrest.
+
+        :param handrest: The handrest component that the thumb cluster will be positioned relative to.
+        :param left_hand: True if this placement is for the left hand. This will cause the position to be resolved on
+        either the right side (left_hand=False) or left side (left_hand=True) of the given cluster_assembly.
+
+        :return: An AbsoluteThumbClusterPlacement for the resolved position.
+        """
+
+        body = self._context.thumb_base()
+
+        down_key = body.find_children("thumb_down_key")[0]
+
+        down_key.add_named_point("front_upper_mid", (
+            down_key.mid().x,
+            down_key.max().y,
+            down_key.max().z))
+
+        if left_hand:
+            body.scale(-1, 1, 1)
+
+        body.transform(self.rotation_matrix)
+
+        if left_hand:
+            body.place(-body == +handrest)
+            alignment_direction = Vector3D.create(-1, 0, 0)
+        else:
+            body.place(+body == -handrest)
+            alignment_direction = Vector3D.create(1, 0, 0)
+
+        body.place(
+            y=~down_key.named_point("front_upper_mid") == self._positioning[0],
+            z=~down_key.named_point("front_upper_mid") == self._positioning[1])
+
+        body.align_to(handrest, alignment_direction)
+
+        if self._gap:
+            gap = self._gap
+            if not left_hand:
+                gap *= -1
+            body.tx(gap)
+
+        absolute_placement = AbsoluteThumbClusterPlacement(self._context)
+        absolute_placement.set_cartesian(*down_key.named_point("front_upper_mid").point.asArray())
+        absolute_placement.set_rotation_matrix(self.rotation_matrix)
+
+        return absolute_placement

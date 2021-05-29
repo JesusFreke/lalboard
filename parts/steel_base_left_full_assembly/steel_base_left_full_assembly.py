@@ -16,12 +16,12 @@ import adsk.core
 from adsk.core import Point3D
 
 from fscad.fscad import *
+
 relative_import("../../lalboard.py")
 import lalboard
 
 
 def design(context: lalboard.Lalboard):
-
     base = context.steel_base(left_hand=True)
     steel_sheet = base.find_children("steel_sheet", recursive=True)[0]
     handrest = base.find_children("left_handrest")[0]
@@ -31,34 +31,37 @@ def design(context: lalboard.Lalboard):
     z_delta = handrest.min().z - steel_sheet.max().z
     base.tz(z_delta)
 
-    clusters = [
+    clusters = []
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(8.43, 116.23, 31.09 + z_delta),
-            rx=13.45,
-            ry=-.16,
-            rz=1.46),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(116.53, 31.09 + z_delta, gap=-8.44)
+                .set_rotation_by_euler_angles(13.45, -.16, 1.46)
+                .resolve(None, left_hand=True)))
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(-17.77, 120.09, 30.46 + z_delta),
-            rx=13.12,
-            ry=-2.05,
-            rz=14.03),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(121.40, 30.46 + z_delta)
+                .set_rotation_by_euler_angles(13.12, -2.05, 14.03)
+                .resolve(clusters[-1], left_hand=True)))
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(-43.61, 110.04, 27.73 + z_delta),
-            rx=12.75,
-            ry=-11.36,
-            rz=21.95),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(118.37, 27.73 + z_delta)
+                .set_rotation_by_euler_angles(12.75, -11.36, 21.95)
+                .resolve(clusters[-1], left_hand=True)))
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(-56.37, 85.04, 21.62 + z_delta),
-            rx=9.68,
-            ry=-12.95,
-            rz=41.31,
-            tall_clip=True),
-        context.positioned_thumb_assembly(
-            front_mid_point=Point3D.create(47.97893425529047, 81.74006227791716, 35.11242627971235 + z_delta),
-            rx=9.19,
-            ry=-2.67,
-            rz=14.28,
-            left_hand=True)]
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(102.03, 21.62 + z_delta)
+                .set_rotation_by_euler_angles(9.68, -12.95, 41.31)
+                .resolve(clusters[-1], left_hand=True),
+            tall_clip=True))
+    clusters.append(context.positioned_thumb_assembly(
+        lalboard.AbsoluteThumbClusterPlacement(context)
+            .set_cartesian(47.98, 81.74, 35.11 + z_delta)
+            .set_rotation_by_euler_angles(9.19, -2.67, 14.28),
+        left_hand=True))
 
     Group([*clusters, *base.children()]).tz(-z_delta).create_occurrence(scale=.1)
 

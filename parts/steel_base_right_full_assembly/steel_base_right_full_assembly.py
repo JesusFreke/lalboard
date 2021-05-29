@@ -22,8 +22,7 @@ import lalboard
 
 def design(context: lalboard.Lalboard):
     base = context.steel_base(left_hand=False)
-    steel_sheet = base.find_children("steel_sheet", recursive=False)[0]
-
+    steel_sheet = base.find_children("steel_sheet", recursive=True)[0]
     handrest = base.find_children("right_handrest")[0]
 
     # The coordinates below assume that the bottom of the clusters are even with the bottom of the handrest.
@@ -31,34 +30,38 @@ def design(context: lalboard.Lalboard):
     z_delta = handrest.min().z - steel_sheet.max().z
     base.tz(z_delta)
 
-    clusters = [
+    clusters = []
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(-20.79, 114.83, 30.37 + z_delta),
-            rx=13.74,
-            ry=3.31,
-            rz=-8.19),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(116.70, 30.37 + z_delta, gap=-21.12)
+                .set_rotation_by_euler_angles(13.74, 3.31, -8.19)
+                .resolve(None, left_hand=False)))
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(7.53, 121.52, 31.49 + z_delta),
-            rx=10.65,
-            ry=8.44,
-            rz=-17.92),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(121.75, 31.49 + z_delta)
+                .set_rotation_by_euler_angles(10.65, 8.44, -17.92)
+                .resolve(clusters[-1], left_hand=False)))
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(30.53, 111.16, 28.05 + z_delta),
-            rx=8.51,
-            ry=6.45,
-            rz=-25.54),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(115.28, 28.05 + z_delta)
+                .set_rotation_by_euler_angles(8.51, 6.45, -25.54)
+                .resolve(clusters[-1], left_hand=False)))
+    clusters.append(
         context.positioned_cluster_assembly(
-            down_key_top_center=Point3D.create(47.28, 89.18, 21.66 + z_delta),
-            rx=10.65,
-            ry=13.16,
-            rz=-37.05,
-            tall_clip=True),
+            lalboard.RelativeFingerClusterPlacement(context)
+                .set_cylindrical(100.94, 21.66 + z_delta)
+                .set_rotation_by_euler_angles(10.65, 13.16, -37.05)
+                .resolve(clusters[-1], left_hand=False),
+            tall_clip=True))
+    clusters.append(
         context.positioned_thumb_assembly(
-            front_mid_point=Point3D.create(-50.35, 83.96, 36.26 + z_delta),
-            rx=10.39,
-            ry=-1.44,
-            rz=-7.77,
-            left_hand=False)]
+            lalboard.AbsoluteThumbClusterPlacement(context)
+                .set_cartesian(-50.35, 83.96, 36.26 + z_delta)
+                .set_rotation_by_euler_angles(10.39, -1.44, -7.77),
+            left_hand=False))
 
     Group([*clusters, *base.children()]).tz(-z_delta).create_occurrence(scale=.1)
 
