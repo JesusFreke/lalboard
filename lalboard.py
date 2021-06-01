@@ -2324,14 +2324,17 @@ class Lalboard(MemoizableDesign):
         suffix = "left" if left_hand else "right"
         base = self.thumb_base("thumb_cluster")
 
+        pcb = self.thumb_pcb(base, name="thumb_pcb_" + suffix)
+        if left_hand:
+            base = base.scale(-1, 1, 1, center=base.mid())
+            pcb.scale(-1, 1, 1, center=base.mid())
+
         down_key = base.find_children("thumb_down_key", recursive=False)[0]
         down_key_top = down_key.named_faces("top")[0]
         down_key.add_named_point("front_upper_mid", (
             down_key.mid().x,
             down_key.max().y,
             down_key.max().z))
-        if left_hand:
-            base = base.scale(-1, 1, 1, center=base.mid())
 
         outer_lower_key = self.outer_lower_thumb_key()
         outer_lower_key.rx(90)
@@ -2350,8 +2353,6 @@ class Lalboard(MemoizableDesign):
         self._align_side_key(base.find_children("upper_key_base")[0], mode_key)
 
         insertion_tool = self.thumb_cluster_insertion_tool(base)
-
-        pcb = self.thumb_pcb(base, name="thumb_pcb_" + suffix)
 
         side_magnet_cutout = base.find_children("side_attachment")[0].find_children("magnet_cutout")[0]
         back_magnet_cutout = base.find_children("back_attachment")[0].find_children("magnet_cutout")[0]
