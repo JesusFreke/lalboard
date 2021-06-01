@@ -318,6 +318,22 @@ class Lalboard(MemoizableDesign):
             connector_legs_cutout,
             name="cluster")
 
+    @MemoizableDesign.MemoizeComponent
+    def cluster_silhouette(self):
+        cluster = self.cluster_design()
+
+        cluster_back = cluster.find_children("cluster_back")[0]
+
+        silhouette = Silhouette(
+            cluster,
+            adsk.core.Plane.create(Point3D.create(0, 0, 0), Vector3D.create(0, 0, 1)),
+            name="cluster_silhouette")
+        silhouette.place(z=~silhouette == -cluster_back)
+
+        # The silhouette seems to have some extraneous vertices, which cause the bounding box to be larger than
+        # expected. This removes the extraneous stuff, leaving on the single face geometry
+        return silhouette.faces[0].make_component(name="cluster_silhouette")
+
     def base_cluster_design(self):
         """
         The design of the main part of a cluster, not including the front or back extensions.
@@ -514,6 +530,9 @@ class Lalboard(MemoizableDesign):
 
         extruded_pcb = Extrude(pcb_silhouette, -1.6, name="pcb")
 
+        extruded_pcb.add_named_faces("top", *extruded_pcb.start_faces)
+
+        extruded_pcb.add_named_faces("bottom", *extruded_pcb.end_faces)
         return extruded_pcb, connector_legs_cutout
 
     def ball_magnet(self):
@@ -662,7 +681,7 @@ class Lalboard(MemoizableDesign):
             front_cutout.size().z, name="front_notch")
         front_notch.place(
             ~front_notch == ~front_cutout,
-            +front_notch == ~front_cutout,
+            +front_notch == +front_cutout,
             (+front_notch == +cluster) - 3)
 
         front_left_cut_corner = Point3D.create(
@@ -3115,6 +3134,165 @@ class Lalboard(MemoizableDesign):
         matrix.transformBy(translation_matrix)
 
         return matrix
+
+    def static_cluster_support(self, cluster: Component):
+        body_assembly = self.cluster_body_assembly()
+        cluster_front = body_assembly.find_children("cluster_front")[0]
+        cluster_back = body_assembly.find_children("cluster_back")[0]
+
+        silhouette = self.cluster_silhouette()
+
+        magnet_cutouts = cluster_back.find_children("magnet_cutout")[0:2]
+        magnet_thickness = self.large_magnet().size().z
+
+        base_magnet_cutouts = []
+        for magnet_cutout in magnet_cutouts:
+            base_magnet_cutout = self.vertical_large_thin_magnet_cutout(
+                depth=magnet_thickness * 2 - (magnet_cutout.max().z - cluster_back.min().z) + .2,
+                taper=0)
+            base_magnet_cutout.place(
+                ~base_magnet_cutout == ~magnet_cutout,
+                ~base_magnet_cutout == ~magnet_cutout,
+                +base_magnet_cutout == -cluster_back)
+            base_magnet_cutouts.append(base_magnet_cutout)
+
+        front_notch_silhouette_lower = Intersection(silhouette.copy(), cluster_front.find_children("front_notch")[0])
+        # offset the sides of the notch silhouette, for some clearance
+
+        for edge in list(front_notch_silhouette_lower.faces[0].edges):
+            if isinstance(edge.brep.geometry, adsk.core.Line3D) and edge.brep.geometry.asInfiniteLine().direction.x == 0:
+                front_notch_silhouette_lower = OffsetEdges(
+                    front_notch_silhouette_lower.faces[0],
+                    front_notch_silhouette_lower.find_edges(edge),
+                    -.2)
+
+        front_notch_silhouette_upper = front_notch_silhouette_lower.copy()
+        front_notch_silhouette_upper.place(
+            z=(~front_notch_silhouette_upper == +cluster_front.find_children("front_notch")[0]) - .2)
+
+        front_notch_top_surface = cluster_front.find_children("front_notch")[0].top.make_component()
+        front_notch_top_surface.tz(-.2)
+
+        pcb = body_assembly.find_children("pcb")[0]
+        pcb_back = pcb.find_children("pcb_back_box")[0]
+
+        pcb_cutout = Rect(
+            pcb.size().x * 2,
+            pcb_back.min().y - pcb.min().y + .4)
+        pcb_cutout.place(
+            ~pcb_cutout == ~pcb,
+            (-pcb_cutout == -pcb) - .3,
+            ~pcb_cutout == ~silhouette)
+
+        inner_void_silhouette = Hull(Intersection(pcb_cutout.copy(), silhouette.copy()))
+
+        inner_void_silhouette.add_named_edges(
+            "left_edges",
+            *[edge for edge in inner_void_silhouette.edges if edge.max().x < inner_void_silhouette.mid().x])
+        inner_void_silhouette.add_named_edges(
+            "right_edges",
+            *[edge for edge in inner_void_silhouette.edges if edge.min().x > inner_void_silhouette.mid().x])
+
+        pcb_back_cutout = Rect(
+            pcb_back.size().x + .6,
+            pcb_back.size().y + .6)
+        pcb_back_cutout.place(
+            ~pcb_back_cutout == ~pcb_back,
+            ~pcb_back_cutout == ~pcb_back,
+            ~pcb_back_cutout == ~pcb_cutout)
+
+        pcb_cutout_lower = Extrude(Union(pcb_cutout, pcb_back_cutout), -1 * (pcb.max().z - body_assembly.min().z + 1))
+        pcb_cutout_upper = Extrude(Union(pcb_cutout, pcb_back_cutout), body_assembly.size().z)
+        pcb_cutout = Union(pcb_cutout_lower, pcb_cutout_upper)
+
+        inner_void_silhouette.place(
+            z=~inner_void_silhouette == -pcb_cutout)
+
+        screw_hole = cluster_back.find_children("screw_hole")[0]
+        screw_head_hole = Cylinder(3.4, 3, name="screw_head_hole")
+        screw_head_hole.place(
+            ~screw_head_hole == ~screw_hole,
+            ~screw_head_hole == ~screw_hole,
+            +screw_head_hole == -pcb)
+        screw_head_hole_back = Box(
+            screw_head_hole.size().x, screw_head_hole.size().y * 2, screw_head_hole.size().z,
+            name="screw_head_hole_back")
+        screw_head_hole_back.place(
+            ~screw_head_hole_back == ~screw_head_hole,
+            -screw_head_hole_back == ~screw_head_hole,
+            -screw_head_hole_back == -screw_head_hole)
+        screw_head_hole = Union(screw_head_hole, screw_head_hole_back)
+
+        cluster_transform = cluster.find_children("cluster", recursive=False)[0].world_transform()
+
+        silhouette.transform(cluster_transform)
+        pcb_cutout.transform(cluster_transform)
+        front_notch_silhouette_lower.transform(cluster_transform)
+        front_notch_top_surface.transform(cluster_transform)
+        inner_void_silhouette.transform(cluster_transform)
+        screw_head_hole.transform(cluster_transform)
+
+        for cutout in base_magnet_cutouts:
+            cutout.transform(cluster_transform)
+
+        front_notch_silhouette_upper = front_notch_silhouette_lower.copy()
+        front_notch_silhouette_upper.align_to(
+            front_notch_top_surface,
+            Vector3D.create(0, 0, 1))
+
+        bottom_silhouette = Silhouette(
+            silhouette,
+            adsk.core.Plane.create(
+                Point3D.create(0, 0, 0),
+                Vector3D.create(0, 0, 1)))
+
+        inner_void_bottom_silhouette = Silhouette(
+            inner_void_silhouette,
+            bottom_silhouette.get_plane(),
+            named_edges={
+                "left_edges": inner_void_silhouette.named_edges("left_edges"),
+                "right_edges": inner_void_silhouette.named_edges("right_edges")
+            })
+
+        # offset the left side inward
+        # TODO: fix OffsetEdges in fscad so that it handles this case correctly. Currently, it creates a spurious extra
+        #  face that we have to exclude
+        offset_inner_void_bottom_silhouette = OffsetEdges(
+            inner_void_bottom_silhouette.faces[0],
+            inner_void_bottom_silhouette.named_edges("left_edges"),
+            -2).faces[1].make_component()
+
+        # and the right side
+        offset_inner_void_bottom_silhouette = OffsetEdges(
+            offset_inner_void_bottom_silhouette.faces[0],
+            offset_inner_void_bottom_silhouette.find_edges(inner_void_bottom_silhouette.named_edges("right_edges")),
+            -2)
+
+        inner_void_silhouette = Intersection(
+            Extrude(offset_inner_void_bottom_silhouette, cluster.max().z - offset_inner_void_bottom_silhouette.min().z),
+            inner_void_silhouette)
+
+        cluster_rz = math.degrees(math.atan2(cluster_transform.asArray()[4], cluster_transform.asArray()[0]))
+
+        cord_slot = Box(3, body_assembly.size().y / 2, cluster.max().z * 2)
+        cord_slot.place(
+            ~cord_slot == ~body_assembly,
+            -cord_slot == -body_assembly,
+            -cord_slot == 0)
+
+        cord_slot.translate(*cluster_transform.translation.asArray()[0:2], 0)
+        cord_slot.rz(cluster_rz, center=cord_slot.mid())
+
+        return Difference(
+            Union(
+                Loft(bottom_silhouette, silhouette),
+                Loft(front_notch_silhouette_lower, front_notch_silhouette_upper)),
+            pcb_cutout,
+            *base_magnet_cutouts,
+            Loft(offset_inner_void_bottom_silhouette, inner_void_silhouette),
+            screw_head_hole,
+            cord_slot,
+            name="static_support")
 
 
 def run_design(design_func, message_box_on_error=False, print_runtime=True, document_name=None, context=None):
