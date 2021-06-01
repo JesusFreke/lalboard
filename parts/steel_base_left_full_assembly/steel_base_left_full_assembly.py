@@ -63,7 +63,12 @@ def design(context: lalboard.Lalboard):
             .set_rotation_by_euler_angles(9.19, -2.67, 14.28),
         left_hand=True))
 
-    Group([*clusters, *base.children()]).tz(-z_delta).create_occurrence(scale=.1)
+    standoffs = []
+    for cluster in clusters[0:4]:
+        standoffs.append(context.add_standoffs(cluster))
+    standoffs.append(context.add_thumb_standoffs(clusters[4]))
+
+    Group([*clusters, *standoffs, *base.children()]).tz(-z_delta).create_occurrence(scale=.1)
 
 
 def run(context):

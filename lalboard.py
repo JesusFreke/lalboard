@@ -1276,7 +1276,47 @@ class Lalboard(MemoizableDesign):
         return Group([
             support_base, standoff, nut, selected_screw, selected_screw.find_children("ball_magnet")[0]], name=name)
 
-    def positioned_cluster_assembly(self, placement: 'AbsoluteFingerClusterPlacement', tall_clip=False):
+    def add_standoffs(self, cluster):
+        """Add standoffs to a cluster assembly
+
+        :param cluster: A cluster assembly, as returned by positioned_cluster_assembly
+        :return: A Group containing the 3 standoffs for the given cluster
+        """
+
+        front_magnet: Box = cluster.find_children("front_magnet")[0]
+        down_normal = front_magnet.bottom.get_plane().normal
+        ball_magnet_radius = self.ball_magnet().size().z / 2
+        down_normal.normalize()
+        down_normal.scaleBy(-ball_magnet_radius)
+        ball_magnet_center_vector = down_normal
+
+        cluster_transform = cluster.find_children("cluster", recursive=False)[0].world_transform()
+        cluster_transform_array = cluster_transform.asArray()
+
+        rz = math.degrees(math.atan2(cluster_transform_array[4], cluster_transform_array[0]))
+
+        front_point = cluster.find_children("front_magnet")[0].named_point("center_bottom").point
+        front_point.translateBy(ball_magnet_center_vector)
+        front_standoff = self.standoff_by_ball_center(front_point, name="front_standoff")
+        front_standoff.rz(rz, center=front_standoff.mid())
+
+        back_left_point = cluster.find_children("back_left_magnet")[0].named_point("center_bottom").point
+        back_left_point.translateBy(ball_magnet_center_vector)
+        back_left_standoff = self.standoff_by_ball_center(back_left_point, name="back_left_standoff")
+        back_left_standoff.rz(rz, center=back_left_standoff.mid())
+
+        back_right_point = cluster.find_children("back_right_magnet")[0].named_point("center_bottom").point
+        back_right_point.translateBy(ball_magnet_center_vector)
+        back_right_standoff = self.standoff_by_ball_center(back_right_point, name="back_right_standoff")
+        back_right_standoff.rz(rz, center=back_right_standoff.mid())
+
+        return Group([front_standoff, back_left_standoff, back_right_standoff], name="standoffs")
+
+    def positioned_cluster_assembly(
+            self,
+            placement: 'AbsoluteFingerClusterPlacement',
+            add_clip=True,
+            tall_clip=False):
         body_assembly = self.cluster_body_assembly(tall_clip=tall_clip)
         cluster = body_assembly.find_children("cluster", recursive=False)[0]
         pcb = body_assembly.find_children("pcb", recursive=False)[0]
@@ -1357,17 +1397,19 @@ class Lalboard(MemoizableDesign):
 
         ball_magnet_radius = self.ball_magnet().size().x / 2
 
-        cluster_group = Group((cluster,
-                               pcb,
-                               front_clip,
-                               south_key,
-                               east_key,
-                               west_key,
-                               north_key,
-                               down_key,
-                               front_magnet,
-                               back_left_magnet,
-                               back_right_magnet), name="cluster")
+        cluster_group_children = [cluster,
+                                  pcb,
+                                  south_key,
+                                  east_key,
+                                  west_key,
+                                  north_key,
+                                  down_key,
+                                  back_left_magnet,
+                                  back_right_magnet]
+        if add_clip:
+            cluster_group_children.append(front_clip)
+            cluster_group_children.append(front_magnet)
+        cluster_group = Group(cluster_group_children, name="cluster")
 
         cluster_group.add_named_point("down_key_top_center", down_key_top.mid())
 
@@ -1384,28 +1426,8 @@ class Lalboard(MemoizableDesign):
         ball_magnet_center_vector = normal.copy()
         ball_magnet_center_vector.scaleBy(-ball_magnet_radius)
 
-        rz = math.degrees(math.atan2(rotation_matrix_array[4], rotation_matrix_array[0]))
-
-        front_point = front_magnet.named_point("center_bottom").point
-        front_point.translateBy(ball_magnet_center_vector)
-        front_standoff = self.standoff_by_ball_center(front_point, name="front_standoff")
-        front_standoff.rz(rz, center=front_standoff.mid())
-
-        back_left_point = back_left_magnet.named_point("center_bottom").point
-        back_left_point.translateBy(ball_magnet_center_vector)
-        back_left_standoff = self.standoff_by_ball_center(back_left_point, name="back_left_standoff")
-        back_left_standoff.rz(rz, center=back_left_standoff.mid())
-
-        back_right_point = back_right_magnet.named_point("center_bottom").point
-        back_right_point.translateBy(ball_magnet_center_vector)
-        back_right_standoff = self.standoff_by_ball_center(back_right_point, name="back_right_standoff")
-        back_right_standoff.rz(rz, center=back_right_standoff.mid())
-
         cluster_group = Group(
-            [*cluster_group.children(),
-             front_standoff,
-             back_left_standoff,
-             back_right_standoff],
+            [*cluster_group.children()],
             name="cluster_assembly")
 
         return cluster_group
@@ -2243,9 +2265,45 @@ class Lalboard(MemoizableDesign):
             ~key_pivot == ~base_pivot,
             -key_pivot == -base_pivot)
 
+    def add_thumb_standoffs(self, thumb_cluster):
+        """Add standoffs to a thumb cluster assembly
+
+        :param thumb_cluster: A thumb cluster assembly, as returned by positioned_thumb_assembly
+        :return: A Group containing the 3 standoffs for the given cluster
+        """
+
+        front_magnet: Box = thumb_cluster.find_children("front_magnet")[0]
+        down_normal = front_magnet.bottom.get_plane().normal
+        ball_magnet_radius = self.ball_magnet().size().z / 2
+        down_normal.normalize()
+        down_normal.scaleBy(-ball_magnet_radius)
+        ball_magnet_center_vector = down_normal
+
+        cluster_transform = thumb_cluster.find_children("thumb_cluster", recursive=False)[0].world_transform()
+        cluster_transform_array = cluster_transform.asArray()
+
+        rz = math.degrees(math.atan2(cluster_transform_array[4], cluster_transform_array[0]))
+
+        front_point = thumb_cluster.find_children("front_magnet")[0].named_point("center_bottom").point
+        front_point.translateBy(ball_magnet_center_vector)
+        front_standoff = self.standoff_by_ball_center(front_point, name="front_standoff")
+        front_standoff.rz(rz, center=front_standoff.mid())
+
+        side_point = thumb_cluster.find_children("side_magnet")[0].named_point("center_bottom").point
+        side_point.translateBy(ball_magnet_center_vector)
+        side_standoff = self.standoff_by_ball_center(side_point, name="side_standoff")
+        side_standoff.rz(rz, center=side_standoff.mid())
+
+        back_point = thumb_cluster.find_children("back_magnet")[0].named_point("center_bottom").point
+        back_point.translateBy(ball_magnet_center_vector)
+        back_standoff = self.standoff_by_ball_center(back_point, name="back_standoff")
+        back_standoff.rz(rz, center=back_standoff.mid())
+
+        return Group([front_standoff, side_standoff, back_standoff], name="standoffs")
+
     def positioned_thumb_assembly(self, placement: 'AbsoluteThumbClusterPlacement', left_hand=False):
         suffix = "left" if left_hand else "right"
-        base = self.thumb_base("thumb_cluster_" + suffix)
+        base = self.thumb_base("thumb_cluster")
 
         down_key = base.find_children("thumb_down_key", recursive=False)[0]
         down_key_top = down_key.named_faces("top")[0]
@@ -2338,35 +2396,8 @@ class Lalboard(MemoizableDesign):
             ~front_upper_mid == placement.position,
             ~front_upper_mid == placement.position)
 
-        normal = down_key_top.get_plane().normal
-        normal.scaleBy(-1)
-
-        ball_magnet_radius = self.ball_magnet().size().z / 2
-
-        ball_magnet_center_vector = normal.copy()
-        ball_magnet_center_vector.scaleBy(-ball_magnet_radius)
-
-        side_point = side_magnet.named_point("center_bottom").point
-        side_point.translateBy(ball_magnet_center_vector)
-        side_standoff = self.standoff_by_ball_center(side_point, name="side_standoff")
-        side_standoff.rz(rz, center=side_standoff.mid())
-        side_standoff.rz(90, center=side_standoff.mid())
-
-        back_point = back_magnet.named_point("center_bottom").point
-        back_point.translateBy(ball_magnet_center_vector)
-        back_standoff = self.standoff_by_ball_center(back_point, name="back_standoff")
-        back_standoff.rz(rz, center=back_standoff.mid())
-
-        front_point = front_magnet.named_point("center_bottom").point
-        front_point.translateBy(ball_magnet_center_vector)
-        front_standoff = self.standoff_by_ball_center(front_point, name="front_standoff")
-        front_standoff.rz(rz, center=front_standoff.mid())
-
         cluster_group = Group(
-            [*cluster_group.children(),
-             side_standoff,
-             back_standoff,
-             front_standoff],
+            cluster_group.children(),
             name="thumb_cluster_assembly")
 
         return cluster_group
