@@ -29,6 +29,7 @@ from adsk.core import Matrix3D, Point3D, Vector3D
 
 import fscad.fscad
 from fscad.fscad import *
+from fscad.fscad import Component
 
 key_thickness = 1.8
 post_width = 7.3
@@ -2081,10 +2082,12 @@ class Lalboard(MemoizableDesign):
         thumb_body.rz(side_angle, center=(0, 0, 0))
 
         nut_cutout = Box(
-            6.1,
             5.8,
+            6.1,
             2.8,
             name="nut_cutout")
+        # rotate the nut so that the back face faces outwards
+        nut_cutout.rz(-90)
 
         nut_cutout.place(
             +nut_cutout == +angled_side,
@@ -2168,6 +2171,21 @@ class Lalboard(MemoizableDesign):
         screw_hole.rz(side_angle, center=(0, 0, 0))
 
         return (nut_cutout, screw_hole), (nut_cutout_ceiling,)
+
+    @MemoizableDesign.MemoizeComponent
+    def thumb_silhouette(self):
+        thumb_base = self.thumb_base()
+
+        silhouette = Hull(Silhouette(
+            thumb_base,
+            adsk.core.Plane.create(Point3D.create(0, 0, 0), Vector3D.create(0, 0, 1)),
+            name="thumb_cluster_silhouette"))
+        silhouette.place(z=~silhouette == -thumb_base.find_children("body")[0])
+
+        # The silhouette seems to have some extraneous vertices, which cause the bounding box to be larger than
+        # expected. This removes the extraneous stuff, leaving on the single face geometry
+        return silhouette.faces[0].make_component(name="thumb_cluster_silhouette")
+
 
     def thumb_pcb(self, thumb_cluster: Component, name="thumb_pcb"):
         hole_size = .35
@@ -2264,6 +2282,7 @@ class Lalboard(MemoizableDesign):
         pcb_silhouette = Difference(pcb_silhouette, legs, connector_holes, side_screw_hole, back_screw_hole)
 
         pcb = Extrude(pcb_silhouette, -1.6, name=name)
+        pcb.add_named_faces("top", *pcb.start_faces)
 
         return pcb
 
@@ -3136,6 +3155,18 @@ class Lalboard(MemoizableDesign):
 
         return matrix
 
+    @MemoizableDesign.MemoizeComponent
+    def _screw_head_cutout(self):
+        screw_head = Cylinder(3.4*2, 3, name="screw_head")
+        screw_head_extension = Box(
+            screw_head.size().x, screw_head.size().y * 2, screw_head.size().z,
+            name="screw_head_extension")
+        screw_head_extension.place(
+            ~screw_head_extension == ~screw_head,
+            -screw_head_extension == ~screw_head,
+            -screw_head_extension == -screw_head)
+        return Union(screw_head, screw_head_extension, name="screw_head_cutout")
+
     def static_cluster_support(self, cluster: Component):
         body_assembly = self.cluster_body_assembly()
         cluster_front = body_assembly.find_children("cluster_front")[0]
@@ -3210,19 +3241,12 @@ class Lalboard(MemoizableDesign):
             z=~inner_void_silhouette == -pcb_cutout)
 
         screw_hole = cluster_back.find_children("screw_hole")[0]
-        screw_head_hole = Cylinder(3.4, 3, name="screw_head_hole")
-        screw_head_hole.place(
-            ~screw_head_hole == ~screw_hole,
-            ~screw_head_hole == ~screw_hole,
-            +screw_head_hole == -pcb)
-        screw_head_hole_back = Box(
-            screw_head_hole.size().x, screw_head_hole.size().y * 2, screw_head_hole.size().z,
-            name="screw_head_hole_back")
-        screw_head_hole_back.place(
-            ~screw_head_hole_back == ~screw_head_hole,
-            -screw_head_hole_back == ~screw_head_hole,
-            -screw_head_hole_back == -screw_head_hole)
-        screw_head_hole = Union(screw_head_hole, screw_head_hole_back)
+        screw_head_cutout = self._screw_head_cutout()
+        screw_head = screw_head_cutout.find_children("screw_head")[0]
+        screw_head_cutout.place(
+            ~screw_head == ~screw_hole,
+            ~screw_head == ~screw_hole,
+            ~screw_head_cutout == -pcb)
 
         cluster_transform = cluster.find_children("cluster", recursive=False)[0].world_transform()
 
@@ -3231,7 +3255,7 @@ class Lalboard(MemoizableDesign):
         front_notch_silhouette_lower.transform(cluster_transform)
         front_notch_top_surface.transform(cluster_transform)
         inner_void_silhouette.transform(cluster_transform)
-        screw_head_hole.transform(cluster_transform)
+        screw_head_cutout.transform(cluster_transform)
 
         for cutout in base_magnet_cutouts:
             cutout.transform(cluster_transform)
@@ -3291,8 +3315,180 @@ class Lalboard(MemoizableDesign):
             pcb_cutout,
             *base_magnet_cutouts,
             Loft(offset_inner_void_bottom_silhouette, inner_void_silhouette),
-            screw_head_hole,
+            screw_head_cutout,
             cord_slot,
+            name="static_support")
+
+    @staticmethod
+    def _is_matrix_mirrored(matrix: Matrix3D):
+        _, x_vector, y_vector, z_vector = matrix.getAsCoordinateSystem()
+        return x_vector.crossProduct(y_vector).dotProduct(z_vector) < 0
+
+    def static_thumb_support(self, thumb_cluster: Component):
+        thumb_base = self.thumb_base()
+        pcb = self.thumb_pcb(thumb_base)
+
+        cluster_transform = thumb_cluster.find_children("thumb_cluster", recursive=False)[0].world_transform()
+        left_hand = self._is_matrix_mirrored(cluster_transform)
+
+        down_key_magnet_extension = thumb_base.find_children("down_key_magnet_extension")[0]
+
+        upper_key_base = thumb_base.find_children("upper_key_base")[0]
+        upper_key_base_outer_face: Face = upper_key_base.find_children("key_well")[0].front
+
+        side_attachment = thumb_base.find_children("side_attachment")[0]
+        side_magnet_cutout = side_attachment.find_children("magnet_cutout")[0]
+        back_attachment = thumb_base.find_children("back_attachment")[0]
+        back_magnet_cutout = back_attachment.find_children("magnet_cutout")[0]
+        front_attachment = thumb_base.find_children("front_attachment")[0]
+        front_magnet_cutout = front_attachment.find_children("magnet_cutout")[0]
+        magnet_cutouts = (side_magnet_cutout, back_magnet_cutout, front_magnet_cutout)
+
+        cord_slot = Box(3, thumb_cluster.size().x / 2, thumb_cluster.max().z * 10)
+
+        matrix = Matrix3D.create()
+        matrix.setToRotateTo(Vector3D.create(0, 1, 0), upper_key_base_outer_face.get_plane().normal)
+        cord_slot.transform(matrix)
+
+        cord_slot.place(
+            ~cord_slot == ~upper_key_base_outer_face,
+            ~cord_slot == ~upper_key_base_outer_face,
+            -cord_slot == 0)
+
+        screw_head_cutouts = []
+        nut_cutout: Box
+        for nut_cutout in thumb_base.find_children("nut_cutout"):
+            screw_head_cutout = self._screw_head_cutout()
+
+            matrix = Matrix3D.create()
+            matrix.setToRotateTo(
+                Vector3D.create(0, 1, 0),
+                nut_cutout.back.get_plane().normal,
+                Vector3D.create(0, 0, 1))
+
+            screw_head_cutout.transform(matrix)
+            screw_head = screw_head_cutout.find_children("screw_head")[0]
+            screw_head_cutout.place(
+                ~screw_head == ~nut_cutout,
+                ~screw_head == ~nut_cutout,
+                ~screw_head_cutout == -pcb)
+            screw_head_cutouts.append(screw_head_cutout)
+        screw_head_cutouts = Group(screw_head_cutouts)
+
+        silhouette = self.thumb_silhouette()
+
+        inner_void_extent = Rect(
+            thumb_base.max().x - side_attachment.max().x + .4,
+            back_attachment.min().y - down_key_magnet_extension.max().y + .4)
+        inner_void_extent.place(
+            +inner_void_extent == +thumb_base,
+            -inner_void_extent == +down_key_magnet_extension,
+            ~inner_void_extent == ~silhouette)
+
+        thumb_body = thumb_base.find_children("body")[0]
+
+        magnet_thickness = self.large_magnet().size().z
+
+        base_magnet_cutouts = []
+        for magnet_cutout in magnet_cutouts:
+            base_magnet_cutout = self.vertical_large_thin_magnet_cutout(
+                depth=magnet_thickness * 2 - (magnet_cutout.max().z - thumb_body.min().z) + .2,
+                taper=0)
+            base_magnet_cutout.place(
+                ~base_magnet_cutout == ~magnet_cutout,
+                ~base_magnet_cutout == ~magnet_cutout,
+                +base_magnet_cutout == -thumb_body)
+            base_magnet_cutouts.append(base_magnet_cutout)
+
+        pcb_silhouette = Silhouette(
+            pcb.named_faces("top")[0].outer_edges,
+            silhouette.get_plane())
+        pcb_cutout_profile = OffsetEdges(pcb_silhouette.faces[0], pcb_silhouette.faces[0].edges, .4)
+
+        pcb_cutout = Extrude(
+            pcb_cutout_profile,
+            -pcb.size().z - 1.4)
+
+        pcb_cutout = Union(pcb_cutout, Thicken(pcb_cutout.find_faces(
+            Extrude(
+                Hull(pcb_cutout_profile),
+                -pcb_cutout.size().z).side_faces), 5))
+
+        key_well_bottom_finder = thumb_base.bounding_box.make_box()
+        key_well_bottom_finder.place(z=+key_well_bottom_finder == -thumb_base)
+        key_well_silhouettes = []
+        for keywell_bottom_face in thumb_base.find_faces(key_well_bottom_finder):
+            key_well_silhouettes.append(OffsetEdges(keywell_bottom_face, keywell_bottom_face.edges, .4))
+
+        down_key_bottom_protrusions = Group([
+            down_key_magnet_extension,
+            thumb_base.find_children("down_key_slot")[0]])
+        down_key_bottom_protrusions_silhouette = Rect(
+            down_key_bottom_protrusions.size().x + .8,
+            down_key_bottom_protrusions.size().y + .4)
+        down_key_bottom_protrusions_silhouette.place(
+            ~down_key_bottom_protrusions_silhouette == ~down_key_bottom_protrusions,
+            -down_key_bottom_protrusions_silhouette == -down_key_bottom_protrusions,
+            ~down_key_bottom_protrusions_silhouette == -down_key_bottom_protrusions)
+
+        inner_void_outer_profile = Intersection(inner_void_extent, silhouette.copy())
+        # offset the outer edge, to form the wall. The other 3 sides are already at the correct location
+        inner_void_profile = OffsetEdges(
+            inner_void_outer_profile.faces[0],
+            [edge for edge in inner_void_outer_profile.faces[0].edges if
+             edge.brep.geometry.startPoint.x > thumb_base.mid().x and
+             edge.brep.geometry.endPoint.x > thumb_base.mid().x],
+            -2)
+        inner_void_profile.place(z=~inner_void_profile == ~key_well_silhouettes[0])
+
+        silhouette.transform(cluster_transform)
+        pcb_cutout.transform(cluster_transform)
+        inner_void_profile.transform(cluster_transform)
+
+        for cutout in base_magnet_cutouts:
+            cutout.transform(cluster_transform)
+
+        screw_head_cutouts.transform(cluster_transform)
+
+        bottom_silhouette = Silhouette(
+            silhouette,
+            adsk.core.Plane.create(
+                Point3D.create(0, 0, 0),
+                Vector3D.create(0, 0, 1)))
+
+        inner_void_bottom_silhouette = Silhouette(
+            inner_void_profile,
+            bottom_silhouette.get_plane())
+
+        key_well_cutouts = []
+        for key_well_silhouette in key_well_silhouettes:
+            key_well_silhouette.transform(cluster_transform)
+            key_well_cutouts.append(Extrude(key_well_silhouette, -thumb_cluster.max().z * 2))
+
+        down_key_bottom_protrusions_silhouette.transform(cluster_transform)
+
+        cluster_rz = math.degrees(math.atan2(cluster_transform.asArray()[4], cluster_transform.asArray()[0]))
+
+        rotated_upper_key_base_external_face = thumb_cluster.find_children(
+            "upper_key_base")[0].find_children("key_well")[0].front
+        if left_hand:
+            cord_slot.scale(-1, 1, 1)
+        cord_slot.rz(cluster_rz)
+        cord_slot.place(
+            ~cord_slot == ~rotated_upper_key_base_external_face,
+            ~cord_slot == ~rotated_upper_key_base_external_face)
+
+        return Difference(
+            Union(
+                Loft(bottom_silhouette, silhouette)),
+            *base_magnet_cutouts,
+            pcb_cutout,
+            *key_well_cutouts,
+            Extrude(down_key_bottom_protrusions_silhouette, thumb_cluster.max().z * 2),
+            Loft(inner_void_bottom_silhouette, inner_void_profile),
+            Extrude(inner_void_profile, silhouette.mid().z - thumb_base.min().z),
+            cord_slot,
+            screw_head_cutouts,
             name="static_support")
 
 
