@@ -2390,6 +2390,8 @@ class Lalboard(MemoizableDesign):
 
         mode_key = self.thumb_mode_key("thumb_mode_key_" + suffix)
         mode_key.rx(90)
+        if left_hand:
+            mode_key.scale(-1, 1, 1)
         self._align_side_key(base.find_children("upper_key_base")[0], mode_key)
 
         insertion_tool = self.thumb_cluster_insertion_tool(base)
