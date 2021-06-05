@@ -21,7 +21,7 @@ import inspect
 import math
 import os
 import pathlib
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
 import adsk.core
 import adsk.fusion
@@ -78,6 +78,27 @@ class Lalboard(MemoizableDesign):
                     ~taper == ~base,
                     -taper == +base)
         return Union(base, taper, name=name)
+
+    def deep_large_thin_magnet_cutout(self, name="magnet_cutout", depth=2.375, bottom_flare=.4):
+        """The cutout for a magnet that is inserted deeper than the surface of the part.
+
+        This can be used in conjuction with a magnet sticking out a bit on the mating part. That magnet will insert
+        into the remaining part of the hole for this magnet. This holds the part down magnetically, and keeps it
+        from sliding around due to the mechanical constraint of the magnet inserted into the hole.
+        """
+
+        # Add a flare to the bottom of the hole, to avoid glue from squeezing out above the magnet
+        lower_taper = self.tapered_box(
+            3.35 + bottom_flare, 3.35 + bottom_flare, 3.35, 3.35,
+            height=.8, name=name + "_taper")
+
+        base = Box(3.35, 3.35, depth - .8, name=name + "_base")
+        base.place(
+            ~base == ~lower_taper,
+            ~base == ~lower_taper,
+            -base == +lower_taper)
+        return Union(lower_taper, base, name=name)
+
 
     def vertical_large_thin_magnet_cutout(self, name="magnet_cutout", depth=1.8, taper=.15):
         upper_taper = self.tapered_box(3.35, 3.35, 3.35 + taper, 3.35 + taper, min(.7, depth), name=name + "_taper")
@@ -3094,6 +3115,73 @@ class Lalboard(MemoizableDesign):
             pcb_spacer],
             name="steel_base")
 
+    def static_base(self, finger_clusters: Sequence[Component], thumb_cluster: Component, left_hand=True):
+        handrest = self.handrest_design(left_hand)
+
+        supports = []
+        for finger_cluster in finger_clusters:
+            supports.append(self.static_cluster_support(finger_cluster).copy(copy_children=False))
+        supports.append(self.static_thumb_support(thumb_cluster).copy(copy_children=False))
+
+        # get the handrest without the magnet holes or inner void
+        full_handrest = handrest.find_children("handrest")[0]
+
+        pcb = handrest.find_children("central_pcb")[0].copy()
+
+        temp_group = Group([*supports, full_handrest])
+
+        bottom_finder = temp_group.bounding_box.make_box()
+        bottom_finder.place(z=+bottom_finder == -temp_group)
+
+        bottom_faces = Group([face.make_component() for face in temp_group.find_faces(bottom_finder)])
+        base = Extrude(Hull(bottom_faces), -3)
+
+        def screw_and_nut():
+            nut = Box(6, 6, 2, name="nut")
+            shaft = Cylinder(5.8, 3.1/2, name="shaft")
+            # the shaft is slightly disconnected form the nut, so that there will be a single sacrifical solid layer
+            # above the nut to avoid having to use supports for the underside-hole for the nut.
+            shaft.place(
+                ~shaft == ~nut,
+                ~shaft == ~nut,
+                (-shaft == +nut) + .2)
+            nut_hole_ceiling = Box(nut.size().x, nut.size().y, .2, name="nut_hole_ceiling")
+            nut_hole_ceiling.place(
+                ~nut_hole_ceiling == ~nut,
+                ~nut_hole_ceiling == ~nut,
+                -nut_hole_ceiling == +nut)
+            return Group([Union(nut, shaft, name="screw")], [nut_hole_ceiling])
+
+        pcb_screw_holes = pcb.find_children("screw_hole")
+        screws = []
+        for screw_hole in pcb_screw_holes:
+            screw = screw_and_nut()
+            screw.place(
+                ~screw == ~screw_hole,
+                ~screw == ~screw_hole,
+                -screw.find_children("nut")[0] == -base)
+            screws.append(screw)
+        screws = Group(screws, name="screws")
+
+        handrest_magnet_cutouts = []
+        for magnet in handrest.find_children("bottom_magnet"):
+            magnet_cutout = self.deep_large_thin_magnet_cutout()
+            magnet_cutout.place(
+                ~magnet_cutout == ~magnet,
+                ~magnet_cutout == ~magnet,
+                +magnet_cutout == -magnet)
+            handrest_magnet_cutouts.append(magnet_cutout)
+
+        return Group([
+            Union(
+                Difference(
+                    base,
+                    screws,
+                    *handrest_magnet_cutouts),
+                *screws.find_children("nut_hole_ceiling"),
+                *supports),
+            handrest])
+
     def rotate_to_height_matrix(self, axis_point: Point3D, axis_vector: Vector3D, target_point: Point3D, height: float):
         """Rotate target point around the axis defined by axis_point and axis_vector, such that its final height is
         the specific height.
@@ -3179,9 +3267,7 @@ class Lalboard(MemoizableDesign):
 
         base_magnet_cutouts = []
         for magnet_cutout in magnet_cutouts:
-            base_magnet_cutout = self.vertical_large_thin_magnet_cutout(
-                depth=magnet_thickness * 2 - (magnet_cutout.max().z - cluster_back.min().z) + .2,
-                taper=0)
+            base_magnet_cutout = self.deep_large_thin_magnet_cutout()
             base_magnet_cutout.place(
                 ~base_magnet_cutout == ~magnet_cutout,
                 ~base_magnet_cutout == ~magnet_cutout,
@@ -3280,18 +3366,26 @@ class Lalboard(MemoizableDesign):
             })
 
         # offset the left side inward
-        # TODO: fix OffsetEdges in fscad so that it handles this case correctly. Currently, it creates a spurious extra
-        #  face that we have to exclude
         offset_inner_void_bottom_silhouette = OffsetEdges(
             inner_void_bottom_silhouette.faces[0],
             inner_void_bottom_silhouette.named_edges("left_edges"),
-            -2).faces[1].make_component()
+            -2)
+
+        # TODO: fix OffsetEdges in fscad so that it handles this case correctly. Currently, it creates a spurious extra
+        #  face that we have to exclude
+        if len(offset_inner_void_bottom_silhouette.faces) > 1:
+            offset_inner_void_bottom_silhouette = offset_inner_void_bottom_silhouette.faces[1].make_component()
 
         # and the right side
         offset_inner_void_bottom_silhouette = OffsetEdges(
             offset_inner_void_bottom_silhouette.faces[0],
             offset_inner_void_bottom_silhouette.find_edges(inner_void_bottom_silhouette.named_edges("right_edges")),
             -2)
+
+        # TODO: fix OffsetEdges in fscad so that it handles this case correctly. Currently, it creates a spurious extra
+        #  face that we have to exclude
+        if len(offset_inner_void_bottom_silhouette.faces) > 1:
+            offset_inner_void_bottom_silhouette = offset_inner_void_bottom_silhouette.faces[1].make_component()
 
         inner_void_silhouette = Intersection(
             Extrude(offset_inner_void_bottom_silhouette, cluster.max().z - offset_inner_void_bottom_silhouette.min().z),
@@ -3305,8 +3399,8 @@ class Lalboard(MemoizableDesign):
             -cord_slot == -body_assembly,
             -cord_slot == 0)
 
+        cord_slot.rz(cluster_rz)
         cord_slot.translate(*cluster_transform.translation.asArray()[0:2], 0)
-        cord_slot.rz(cluster_rz, center=cord_slot.mid())
 
         return Difference(
             Union(
@@ -3387,13 +3481,9 @@ class Lalboard(MemoizableDesign):
 
         thumb_body = thumb_base.find_children("body")[0]
 
-        magnet_thickness = self.large_magnet().size().z
-
         base_magnet_cutouts = []
         for magnet_cutout in magnet_cutouts:
-            base_magnet_cutout = self.vertical_large_thin_magnet_cutout(
-                depth=magnet_thickness * 2 - (magnet_cutout.max().z - thumb_body.min().z) + .2,
-                taper=0)
+            base_magnet_cutout = self.deep_large_thin_magnet_cutout()
             base_magnet_cutout.place(
                 ~base_magnet_cutout == ~magnet_cutout,
                 ~base_magnet_cutout == ~magnet_cutout,
