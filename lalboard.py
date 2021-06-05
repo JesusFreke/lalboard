@@ -1328,7 +1328,7 @@ class Lalboard(MemoizableDesign):
         down_normal = front_magnet.bottom.get_plane().normal
         ball_magnet_radius = self.ball_magnet().size().z / 2
         down_normal.normalize()
-        down_normal.scaleBy(-ball_magnet_radius)
+        down_normal.scaleBy(ball_magnet_radius)
         ball_magnet_center_vector = down_normal
 
         cluster_transform = cluster.find_children("cluster", recursive=False)[0].world_transform()
