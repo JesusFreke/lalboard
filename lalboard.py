@@ -60,9 +60,6 @@ class Lalboard(MemoizableDesign):
     def horizontal_tiny_magnet_cutout(self, depth=1.3, name="magnet_cutout"):
         return self.tapered_box(.9, 1.2, 1.1, 1.2, depth, name=name).rx(90)
 
-    def horizontal_large_thin_magnet_cutout(self, depth=1.8, name="magnet_cutout"):
-        return self.tapered_box(1.45*2, 1.8*2, 1.7*2, 1.8*2, depth, name=name).rx(90)
-
     def vertical_magnet_cutout(self, depth=1.6, name="magnet_cutout"):
         return self.tapered_box(1.55, 1.55, 1.7, 1.7, depth, name)
 
@@ -70,14 +67,6 @@ class Lalboard(MemoizableDesign):
         result = self.tapered_box(1.7, 1.7, 1.8, 1.8, depth, name).rz(45)
         result.add_named_faces("front", result.top)
         return result
-
-    def vertical_large_magnet_cutout(self, name="magnet_cutout"):
-        base = Box(2.9, 2.9, 2, name=name + "_base")
-        taper = self.tapered_box(2.9, 2.9, 3.1, 3.1, 1.3, name=name + "_taper")
-        taper.place(~taper == ~base,
-                    ~taper == ~base,
-                    -taper == +base)
-        return Union(base, taper, name=name)
 
     def deep_large_thin_magnet_cutout(self, name="magnet_cutout", depth=2.375, bottom_flare=.4):
         """The cutout for a magnet that is inserted deeper than the surface of the part.
@@ -98,7 +87,6 @@ class Lalboard(MemoizableDesign):
             ~base == ~lower_taper,
             -base == +lower_taper)
         return Union(lower_taper, base, name=name)
-
 
     def vertical_large_thin_magnet_cutout(self, name="magnet_cutout", depth=1.8, taper=.15):
         upper_taper = self.tapered_box(3.35, 3.35, 3.35 + taper, 3.35 + taper, min(.7, depth), name=name + "_taper")
@@ -590,75 +578,6 @@ class Lalboard(MemoizableDesign):
         negatives = Union(magnet_hole, name="negatives")
 
         return Difference(base, negatives, name=name or "attachment")
-
-    def magnetic_attachment(self, ball_depth, rectangular_depth, radius=None, name="attachment"):
-        """This is the design for the magnetic attachments on the normal and thumb clusters.
-
-        It consists of an upper part that holds a small rectangular magnet, and then a lower part that is a spherical
-        indentation for a 5mm ball magnet.
-        """
-        ball = self.ball_magnet()
-        ball_radius = ball.size().x / 2
-
-        test_base = Cylinder(ball_depth, ball_radius*2)
-
-        # place the bottom at the height where the sphere's tangent is 45 degrees
-        test_base.place(
-            ~test_base == ~ball,
-            ~test_base == ~ball,
-            (-test_base == ~ball) + (ball.size().z/2) * math.sin(math.radians(45)))
-
-        test_base_bottom = BRepComponent(test_base.bottom.brep)
-        cone_bottom = Intersection(ball, test_base_bottom)
-
-        cone_bottom_radius = cone_bottom.size().x / 2
-
-        # create a 45 degree cone that starts where the sphere's tangent is 45 degrees
-        cone_height = ball.max().z - test_base.min().z
-        cone = Cylinder(cone_height, cone_bottom_radius, cone_bottom_radius - cone_height)
-        cone.place(
-            ~cone == ~ball,
-            ~cone == ~ball,
-            +cone == +ball)
-
-        # now place the test base to match where the actual cluster base will be
-        test_base.place(
-            ~test_base == ~ball,
-            ~test_base == ~ball,
-            +test_base == +ball)
-
-        magnet_hole = self.vertical_large_thin_magnet_cutout(depth=rectangular_depth)
-
-        if radius is None:
-            radius = Intersection(ball, test_base).size().x/2 + .8
-
-        base = Cylinder(ball_depth + rectangular_depth, radius)
-        base.place(
-            ~base == ~ball,
-            ~base == ~ball,
-            (-base == +ball) - ball_depth)
-
-        magnet_hole.place(
-            ~magnet_hole == ~ball,
-            ~magnet_hole == ~ball,
-            -magnet_hole == +ball)
-
-        negatives = Union(ball, cone, magnet_hole, name="negatives")
-
-        return Difference(base, negatives, name=name)
-
-    def find_tangent_intersection_on_circle(self, circle: Circle, point: Point3D):
-        left_point_to_mid = point.vectorTo(circle.mid())
-        left_point_to_mid.scaleBy(.5)
-        midpoint = point.copy()
-        midpoint.translateBy(left_point_to_mid)
-        intersecting_circle = Circle(left_point_to_mid.length)
-        intersecting_circle.place(~intersecting_circle == midpoint,
-                                  ~intersecting_circle == midpoint,
-                                  ~intersecting_circle == midpoint)
-
-        vertices = list(Intersection(circle, intersecting_circle).bodies[0].brep.vertices)
-        return vertices
 
     def cluster_front(self, cluster: Component):
         front_base = cluster.find_children("south_base")[0]
@@ -1603,27 +1522,6 @@ class Lalboard(MemoizableDesign):
             front_support,
             back_left_support,
             back_right_support], name="cluster_assembly")
-
-    def male_thread_chamfer_tool(self, end_radius, angle):
-        negative = Cylinder(
-            end_radius * 10,
-            end_radius,
-            end_radius + (end_radius * 10 * math.tan(math.radians(angle))),
-            name="negative")
-
-        positive = Cylinder(end_radius * 10, end_radius * 2, end_radius * 2, name="positive")
-        positive.place(
-            ~positive == ~negative,
-            ~positive == ~negative,
-            (+positive == -negative) + end_radius)
-        chamfer_tool = Difference(positive, negative, name="chamfer_tool")
-
-        chamfer_tool.add_named_point("end_point", Point3D.create(
-            negative.mid().x,
-            negative.mid().y,
-            negative.min().z))
-
-        return chamfer_tool
 
     def screw_thread_profile(self, pitch=1.4, angle=37.5, flat_height=.2):
         sloped_side_height = (pitch - flat_height*2)/2
@@ -2620,135 +2518,6 @@ class Lalboard(MemoizableDesign):
             Union(base, antenna_extension), upper_left_screw_hole, lower_right_screw_hole, name="central_pcb")
         pcb.add_named_faces("bottom", *pcb.find_faces(base.bottom))
         return pcb
-
-    @MemoizableDesign.MemoizeComponent
-    def central_pcb_sketch(self):
-        pcb = self.central_pcb()
-
-        pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep)
-
-        rects = []
-        for edge in pcb_bottom.bodies[0].brep.edges:
-            if not isinstance(edge.geometry, adsk.core.Circle3D):
-                continue
-
-            if edge.geometry.radius < .4:
-                rect_size = (1.25, 1.25)
-            else:
-                rect_size = (2, 2)
-
-            rect = Rect(*rect_size)
-            rect.place(~rect == edge.geometry.center,
-                       ~rect == edge.geometry.center,
-                       ~rect == edge.geometry.center)
-            rects.append(rect)
-        split_face = SplitFace(pcb_bottom, Union(*rects), name="central_pcb_sketch")
-        occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
-        sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
-        sketch.name = "central_pcb_sketch"
-        for face in occurrence.bRepBodies[0].faces:
-            sketch.include(face)
-
-        return sketch
-
-    def central_pcb_tray(self):
-        pcb = self.central_pcb()
-
-        bottom_thickness = 1.2
-        base = Box(pcb.size().x + 2.3*2,
-                   pcb.size().y + 2.3*2,
-                   10)
-
-        base.place(~base == ~pcb,
-                   ~base == ~pcb,
-                   (-base == -pcb) - bottom_thickness)
-
-        back_magnet = self.horizontal_large_thin_magnet_cutout(name="back_cutout")
-        back_magnet.rz(180)
-        back_magnet.place(~back_magnet == ~base,
-                          +back_magnet == +base,
-                          +back_magnet == 8)
-
-        left_magnet = self.horizontal_large_thin_magnet_cutout(name="left_cutout")
-        left_magnet.rz(-90)
-        left_magnet.place(-left_magnet == -base,
-                          (-left_magnet == -base) + 5,
-                          +left_magnet == 8)
-
-        right_magnet = self.horizontal_large_thin_magnet_cutout(name="left_cutout")
-        right_magnet.rz(90)
-        right_magnet.place(+right_magnet == +base,
-                           (-right_magnet == -base) + 5,
-                           +right_magnet == 8)
-
-        hollow = Box(pcb.bounding_box.size().x+.2,
-                     pcb.bounding_box.size().y+.2,
-                     base.size().z)
-        hollow.place(~hollow == ~pcb,
-                     ~hollow == ~pcb,
-                     -hollow == -pcb)
-
-        front_opening = Box(pcb.bounding_box.size().x + .2,
-                            pcb.bounding_box.size().y,
-                            base.size().z)
-        front_opening.place(~front_opening == ~base,
-                            ~front_opening == -base,
-                            (-front_opening == -base) + 1.2 + 2)
-
-        return Difference(base, back_magnet, left_magnet, right_magnet, hollow, front_opening, name="central_pcb_tray")
-
-    @MemoizableDesign.MemoizeComponent
-    def key_breakout_pcb(self):
-        base = Box(20, 13, 1.2)
-
-        upper_connector_holes = self.hole_array(.35, 1.5, 7)
-        upper_connector_holes.place(~upper_connector_holes == ~base,
-                                    (~upper_connector_holes == +base) - 2.2,
-                                    -upper_connector_holes == -base)
-
-        lower_connector_holes = upper_connector_holes.copy()
-        lower_connector_holes.place(y=(~lower_connector_holes == -base) + 2.2)
-
-        header_holes = self.hole_array(.40, 2.54, 7)
-        header_holes.place(~header_holes == ~base,
-                           ~header_holes == ~base,
-                           -header_holes == -base)
-
-        all_holes = Union(upper_connector_holes, lower_connector_holes, header_holes)
-        all_holes = ExtrudeTo(all_holes, base)
-
-        result = Difference(base, all_holes)
-        result.add_named_faces("bottom", *result.find_faces(base.bottom))
-        return result
-
-    @MemoizableDesign.MemoizeComponent
-    def key_breakout_pcb_sketch(self):
-        pcb = self.key_breakout_pcb()
-
-        pcb_bottom = BRepComponent(pcb.named_faces("bottom")[0].brep)
-
-        rects = []
-        for edge in pcb_bottom.bodies[0].brep.edges:
-            if not isinstance(edge.geometry, adsk.core.Circle3D):
-                continue
-
-            if edge.geometry.radius < .4:
-                rect_size = (1.25, 1.25)
-            else:
-                rect_size = (2, 2)
-
-            rect = Rect(*rect_size)
-            rect.place(~rect == edge.geometry.center,
-                       ~rect == edge.geometry.center,
-                       ~rect == edge.geometry.center)
-            rects.append(rect)
-        split_face = SplitFace(pcb_bottom, Union(*rects))
-        occurrence = split_face.scale(.1, .1, .1).create_occurrence(False)
-        sketch = occurrence.component.sketches.add(occurrence.bRepBodies[0].faces[0])
-        for face in occurrence.bRepBodies[0].faces:
-            sketch.include(face)
-
-        return sketch
 
     @MemoizableDesign.MemoizeComponent
     def handrest_design(self, left_hand=False):
