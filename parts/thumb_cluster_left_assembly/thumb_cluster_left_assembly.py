@@ -19,6 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
+EXPORT = False
+
+
 def design(context: lalboard.Lalboard):
     assembly = context.thumb_assembly(left_hand=True)
     assembly.create_occurrence(scale=.1)

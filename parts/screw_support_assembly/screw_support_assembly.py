@@ -19,6 +19,9 @@ relative_import("../../lalboard.py")
 import lalboard
 
 
+EXPORT = False
+
+
 def design(context: lalboard.Lalboard):
     assembly = context.screw_support_assembly(7, 8, 4, name="screw_support_assembly")
     assembly.create_occurrence(scale=.1)
