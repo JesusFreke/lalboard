@@ -20,9 +20,7 @@ import lalboard
 
 
 def design(context: lalboard.Lalboard):
-    base = context.steel_base(left_hand=True)
-    spacer = base.find_children("pcb_spacer")[0]
-    spacer.create_occurrence(scale=.1)
+    context.central_pcb_spacer().create_occurrence(scale=.1)
 
 
 def run(context):

@@ -64,7 +64,19 @@ def design(context: lalboard.Lalboard):
         thumb_cluster,
         left_hand=True)
 
-    Group([*finger_clusters, thumb_cluster, *static_base.children()]).create_occurrence(scale=.1)
+    central_pcb = static_base.find_children("central_pcb")[0]
+    central_pcb_spacer = context.central_pcb_spacer()
+    central_pcb_spacer.place(
+        ~central_pcb_spacer == ~central_pcb,
+        +central_pcb_spacer == +central_pcb,
+        +central_pcb_spacer == -central_pcb)
+
+    Group([
+        *finger_clusters,
+        thumb_cluster,
+        *static_base.children(),
+        central_pcb,
+        central_pcb_spacer]).create_occurrence(scale=.1)
 
 
 def run(context):

@@ -2779,7 +2779,7 @@ class Lalboard(MemoizableDesign):
         pcb.place(
             ~pcb == ~pcb_slot,
             (+pcb == -pcb_slot_front_cut_face) - 5,
-            (-pcb == -handrest_model) + 1.5)
+            (-pcb == -handrest_model) + 2.4)
 
         pcb_slot.place(
             y=(-pcb_slot == -pcb) + 20)
@@ -2888,7 +2888,9 @@ class Lalboard(MemoizableDesign):
         hull = Hull(group, name="exposed_steel")
         return OffsetEdges(hull.faces[0], hull.faces[0].edges, 5, name="sheet_sheet")
 
-    def central_pcb_spacer(self, central_pcb: Component, thickness):
+    def central_pcb_spacer(self, thickness=2.4):
+        central_pcb = self.central_pcb()
+
         bottom_face = central_pcb.named_faces("bottom")[0]
         spacer = Extrude(bottom_face.make_component(), thickness)
 
@@ -3030,7 +3032,7 @@ class Lalboard(MemoizableDesign):
             screws.append(screw)
 
         pcb = handrest.find_children("central_pcb")[0]
-        pcb_spacer = self.central_pcb_spacer(pcb, 10 - (upper_base.max().z - lower_base.min().z) - 1.6)
+        pcb_spacer = self.central_pcb_spacer()
         pcb_spacer.place(
             ~pcb_spacer == ~pcb,
             +pcb_spacer == +pcb,
