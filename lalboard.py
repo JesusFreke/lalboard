@@ -3044,7 +3044,7 @@ class Lalboard(MemoizableDesign):
         magnet_riser_cutouts = []
         handrest_magnet_cutouts = []
         for magnet in handrest.find_children("bottom_magnet"):
-            magnet_cutout = self.vertical_large_thin_magnet_cutout(depth=2.3, taper=0)
+            magnet_cutout = self.deep_large_thin_magnet_cutout()
             magnet_cutout.place(
                 ~magnet_cutout == ~magnet,
                 ~magnet_cutout == ~magnet,
