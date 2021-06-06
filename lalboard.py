@@ -1903,7 +1903,7 @@ class Lalboard(MemoizableDesign):
             down_key_right_stop.max().x,
             down_key_right_stop.mid().y,
             down_key_right_stop.max().z))
-        down_key_right_stop.rx(-9, center=(
+        down_key_right_stop.rx(-7, center=(
             down_key_body_hole.max().x,
             down_key_body_hole.min().y,
             down_key_body_hole.max().z))
@@ -2104,7 +2104,6 @@ class Lalboard(MemoizableDesign):
         # The silhouette seems to have some extraneous vertices, which cause the bounding box to be larger than
         # expected. This removes the extraneous stuff, leaving on the single face geometry
         return silhouette.faces[0].make_component(name="thumb_cluster_silhouette")
-
 
     def thumb_pcb(self, thumb_cluster: Component, name="thumb_pcb"):
         hole_size = .35
