@@ -71,7 +71,7 @@ class Lalboard(MemoizableDesign):
     def deep_large_thin_magnet_cutout(self, name="magnet_cutout", depth=2.375, bottom_flare=.4):
         """The cutout for a magnet that is inserted deeper than the surface of the part.
 
-        This can be used in conjuction with a magnet sticking out a bit on the mating part. That magnet will insert
+        This can be used in conjunction with a magnet sticking out a bit on the mating part. That magnet will insert
         into the remaining part of the hole for this magnet. This holds the part down magnetically, and keeps it
         from sliding around due to the mechanical constraint of the magnet inserted into the hole.
         """
@@ -81,7 +81,27 @@ class Lalboard(MemoizableDesign):
             3.35 + bottom_flare, 3.35 + bottom_flare, 3.35, 3.35,
             height=.8, name=name + "_taper")
 
-        base = Box(3.35, 3.35, depth - .8, name=name + "_base")
+        base = Box(3.35, 3.35, depth - lower_taper.size().z, name=name + "_base")
+        base.place(
+            ~base == ~lower_taper,
+            ~base == ~lower_taper,
+            -base == +lower_taper)
+        return Union(lower_taper, base, name=name)
+
+    def shallow_large_thin_magnet_cutout(self, name="magnet_cutout", depth=1, bottom_flare=.4):
+        """The cutout for a magnet that sticks out from the surface of the part.
+
+        This can be used in conjunction with a magnet that is embedded down a bit on the mating part. this magnet will
+        insert the remaining part of the hole for the mating magnet. This holds the part down magnetically, and keeps it
+        from sliding around due to the mechanical constraint of the magnet inserted into the hole.
+        """
+
+        # Add a flare to the bottom of the hole, to avoid glue from squeezing out above the magnet
+        lower_taper = self.tapered_box(
+            3.35 + bottom_flare, 3.35 + bottom_flare, 3.35, 3.35,
+            height=.6, name=name + "_taper")
+
+        base = Box(3.35, 3.35, depth - lower_taper.size().z, name=name + "_base")
         base.place(
             ~base == ~lower_taper,
             ~base == ~lower_taper,
@@ -565,7 +585,7 @@ class Lalboard(MemoizableDesign):
 
         # A bit shallower than the thickness of the magnet, so the magnet sticks out a bit. The mating part will have
         # a hole that fits over the extending part of the magnet, to keep it from sliding.
-        magnet_hole = self.vertical_large_thin_magnet_cutout(depth=1)
+        magnet_hole = self.shallow_large_thin_magnet_cutout()
         magnet_hole.rx(180)
 
         base = Cylinder(base_height, 3.5)
