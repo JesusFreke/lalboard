@@ -26,17 +26,6 @@ F 4 "PMBT2222A,215" H 9300 2850 50  0001 C CNN "Part"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x07 J1
-U 1 1 6072BBC9
-P 9600 2250
-F 0 "J1" H 9680 2292 50  0000 L CNN
-F 1 "Conn_01x07" H 9680 2201 50  0000 L CNN
-F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 2250 50  0001 C CNN
-F 3 "~" H 9600 2250 50  0001 C CNN
-	1    9600 2250
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:GND #PWR019
 U 1 1 60735286
 P 9400 3050
@@ -89,17 +78,6 @@ F 2 "Package_TO_SOT_SMD:SOT-23_Handsoldering" H 9500 4550 50  0001 C CNN
 F 3 "~" H 9300 4450 50  0001 C CNN
 F 4 "PMBT2222A,215" H 9300 4450 50  0001 C CNN "Part"
 	1    9300 4450
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector_Generic:Conn_01x07 J2
-U 1 1 6077F203
-P 9600 3850
-F 0 "J2" H 9680 3892 50  0000 L CNN
-F 1 "Conn_01x07" H 9680 3801 50  0000 L CNN
-F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 3850 50  0001 C CNN
-F 3 "~" H 9600 3850 50  0001 C CNN
-	1    9600 3850
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -166,7 +144,7 @@ F 1 "Conn_01x07" H 9680 5401 50  0000 L CNN
 F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 5450 50  0001 C CNN
 F 3 "~" H 9600 5450 50  0001 C CNN
 	1    9600 5450
-	1    0    0    -1  
+	1    0    0    1   
 $EndComp
 $Comp
 L power:GND #PWR023
@@ -232,7 +210,7 @@ F 1 "Conn_01x07" H 9680 7001 50  0000 L CNN
 F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 7050 50  0001 C CNN
 F 3 "~" H 9600 7050 50  0001 C CNN
 	1    9600 7050
-	1    0    0    -1  
+	1    0    0    1   
 $EndComp
 $Comp
 L power:GND #PWR025
@@ -298,7 +276,7 @@ F 1 "Conn_01x07" H 9680 8601 50  0000 L CNN
 F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 8650 50  0001 C CNN
 F 3 "~" H 9600 8650 50  0001 C CNN
 	1    9600 8650
-	1    0    0    -1  
+	1    0    0    1   
 $EndComp
 $Comp
 L power:GND #PWR027
@@ -1661,4 +1639,26 @@ Wire Notes Line
 	5500 8200 5500 9250
 Wire Notes Line
 	7350 8200 7350 9250
+$Comp
+L Connector_Generic:Conn_01x07 J1
+U 1 1 60C302B6
+P 9600 2250
+F 0 "J1" H 9680 2292 50  0000 L CNN
+F 1 "Conn_01x07" H 9680 2201 50  0000 L CNN
+F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 2250 50  0001 C CNN
+F 3 "~" H 9600 2250 50  0001 C CNN
+	1    9600 2250
+	1    0    0    1   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x07 J2
+U 1 1 6077F203
+P 9600 3850
+F 0 "J2" H 9680 3892 50  0000 L CNN
+F 1 "Conn_01x07" H 9680 3801 50  0000 L CNN
+F 2 "lalboard:JST_ZH_B7B-ZR_1x07_P1.50mm_Vertical" H 9600 3850 50  0001 C CNN
+F 3 "~" H 9600 3850 50  0001 C CNN
+	1    9600 3850
+	1    0    0    1   
+$EndComp
 $EndSCHEMATC
