@@ -3075,7 +3075,6 @@ class Lalboard(MemoizableDesign):
         silhouette = self.cluster_silhouette()
 
         magnet_cutouts = cluster_back.find_children("magnet_cutout")[0:2]
-        magnet_thickness = self.large_magnet().size().z
 
         base_magnet_cutouts = []
         for magnet_cutout in magnet_cutouts:
@@ -3171,37 +3170,13 @@ class Lalboard(MemoizableDesign):
 
         inner_void_bottom_silhouette = Silhouette(
             inner_void_silhouette,
-            bottom_silhouette.get_plane(),
-            named_edges={
-                "left_edges": inner_void_silhouette.named_edges("left_edges"),
-                "right_edges": inner_void_silhouette.named_edges("right_edges")
-            })
+            bottom_silhouette.get_plane())
 
-        # offset the left side inward
-        offset_inner_void_bottom_silhouette = OffsetEdges(
-            inner_void_bottom_silhouette.faces[0],
-            inner_void_bottom_silhouette.named_edges("left_edges"),
-            -2)
+        support = Loft(bottom_silhouette, silhouette)
 
-        # TODO: fix OffsetEdges in fscad so that it handles this case correctly. Currently, it creates a spurious extra
-        #  face that we have to exclude
-        if len(offset_inner_void_bottom_silhouette.faces) > 1:
-            offset_inner_void_bottom_silhouette = offset_inner_void_bottom_silhouette.faces[1].make_component()
-
-        # and the right side
-        offset_inner_void_bottom_silhouette = OffsetEdges(
-            offset_inner_void_bottom_silhouette.faces[0],
-            offset_inner_void_bottom_silhouette.find_edges(inner_void_bottom_silhouette.named_edges("right_edges")),
-            -2)
-
-        # TODO: fix OffsetEdges in fscad so that it handles this case correctly. Currently, it creates a spurious extra
-        #  face that we have to exclude
-        if len(offset_inner_void_bottom_silhouette.faces) > 1:
-            offset_inner_void_bottom_silhouette = offset_inner_void_bottom_silhouette.faces[1].make_component()
-
-        inner_void_silhouette = Intersection(
-            Extrude(offset_inner_void_bottom_silhouette, cluster.max().z - offset_inner_void_bottom_silhouette.min().z),
-            inner_void_silhouette)
+        inner_void = Difference(
+            Loft(inner_void_silhouette, inner_void_bottom_silhouette),
+            Thicken(support.sides, -2))
 
         cluster_rz = math.degrees(math.atan2(cluster_transform.asArray()[4], cluster_transform.asArray()[0]))
 
@@ -3216,11 +3191,11 @@ class Lalboard(MemoizableDesign):
 
         return Difference(
             Union(
-                Loft(bottom_silhouette, silhouette),
+                support,
                 Loft(front_notch_silhouette_lower, front_notch_silhouette_upper)),
             pcb_cutout,
             *base_magnet_cutouts,
-            Loft(offset_inner_void_bottom_silhouette, inner_void_silhouette),
+            inner_void,
             screw_head_cutout,
             cord_slot,
             name="static_support")
