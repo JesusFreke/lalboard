@@ -147,7 +147,7 @@ class Lalboard(MemoizableDesign):
         leg.place(~leg == ~body, (~leg == ~body) + 2.54/2, +leg == -body)
         leg2 = leg.copy().ty(-2.54)
         legs = Union(leg, leg2, name="legs")
-        cavity = SplitFace(cavity, legs)
+        cavity = SplitFace(cavity, legs, name=name)
 
         cavity.add_named_faces("legs", *cavity.find_faces((leg, leg2)))
 
@@ -1123,6 +1123,8 @@ class Lalboard(MemoizableDesign):
         upper_outer_base = self._thumb_upper_outer_base()
         cluster_body_thickness = upper_outer_base.find_children("upper_base")[0].size().z
 
+        lens_hole = upper_outer_base.find_children("led_cavity")[0].named_faces("lens_hole")[0]
+
         pressed_angle = 7
 
         key_base = Box(14.5, 29, 2.5)
@@ -1171,6 +1173,16 @@ class Lalboard(MemoizableDesign):
                      +magnet == +post,
                      (~magnet == +post) - 1.9)
 
+        interruptor = Box(
+            key_base.size().x,
+            lens_hole.size().y * 2,
+            (upper_outer_base.max().z - lens_hole.max().z) - .2,
+            name="interruptor")
+        interruptor.place(
+            ~interruptor == ~key_base,
+            (~interruptor == -angled_back) + 15.85,
+            -interruptor == +key_base)
+
         length_from_pivot = key_base.max().y - angled_back.min().y
 
         key_stop_length = (cluster_body_thickness - length_from_pivot * math.sin(
@@ -1206,7 +1218,7 @@ class Lalboard(MemoizableDesign):
                 key_base.shared_edges([key_base.back], [key_base.left, key_base.right])), 1)
 
         assembly = Difference(
-            Union(filleted_key_base, key_base_extension, post, angled_back),
+            Union(filleted_key_base, key_base_extension, post, angled_back, interruptor),
             magnet, name="thumb_down_key")
 
         assembly.add_named_edges("pivot", assembly.shared_edges(
@@ -2002,7 +2014,7 @@ class Lalboard(MemoizableDesign):
         upper_outer_led_cavity = upper_outer_base.find_children("led_cavity")[0]
         down_key_led_cavity.place(
             (-down_key_led_cavity == ~down_key) + 8.55,
-            (~down_key_led_cavity == -down_key_void) + 16,
+            ~down_key_led_cavity == ~down_key.find_children("interruptor")[0],
             +down_key_led_cavity == +upper_outer_led_cavity)
 
         down_key_led_cavity = ExtrudeTo(
@@ -2012,7 +2024,7 @@ class Lalboard(MemoizableDesign):
         down_key_pt_cavity = self.make_bottom_entry_led_cavity("down_key_pt_cavity")
         down_key_pt_cavity.place(
             (+down_key_pt_cavity == ~down_key) - 8.55,
-            ~down_key_pt_cavity == ~down_key_led_cavity,
+            ~down_key_pt_cavity == ~down_key.find_children("interruptor")[0],
             +down_key_pt_cavity == +upper_outer_led_cavity)
 
         down_key_pt_cavity = ExtrudeTo(
