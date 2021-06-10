@@ -1120,9 +1120,12 @@ class Lalboard(MemoizableDesign):
 
     @MemoizableDesign.MemoizeComponent
     def thumb_down_key(self):
-        key_base = Box(14.5, 29, 2.5)
+        upper_outer_base = self._thumb_upper_outer_base()
+        cluster_body_thickness = upper_outer_base.find_children("upper_base")[0].size().z
 
-        filleted_key_base = Fillet(key_base.shared_edges([key_base.back], [key_base.left, key_base.right]), 1)
+        pressed_angle = 7
+
+        key_base = Box(14.5, 29, 2.5)
 
         post = Box(7.3, 2.6, 9, name="post")
         post.place(~post == ~key_base,
@@ -1140,7 +1143,7 @@ class Lalboard(MemoizableDesign):
             ~angled_back_base == ~key_base,
             (-angled_back_base == +post) + 2.75,
             -angled_back_base == +key_base)
-        angled_back_base.rx(-9, center=(
+        angled_back_base.rx(-pressed_angle, center=(
             angled_back_base.mid().x,
             angled_back_base.min().y,
             angled_back_base.min().z))
@@ -1168,6 +1171,40 @@ class Lalboard(MemoizableDesign):
                      +magnet == +post,
                      (~magnet == +post) - 1.9)
 
+        length_from_pivot = key_base.max().y - angled_back.min().y
+
+        key_stop_length = (cluster_body_thickness - length_from_pivot * math.sin(
+            math.radians(pressed_angle))) / math.cos(
+            math.radians(pressed_angle))
+        key_stop = Box(
+            key_base.size().x,
+            2,
+            key_stop_length*2)
+        key_stop.place(
+            ~key_stop == ~key_base,
+            +key_stop == +key_base,
+            -key_stop == +key_base)
+
+        # This sets the length of the key stop, and provides an angled bottom, so it's flat when it rotates down and
+        # hits the PCB
+        key_stop_enlengthifier = Box(
+            key_stop.size().x,
+            key_stop.size().y * 2,
+            key_stop.size().z)
+        key_stop_enlengthifier.place(
+            ~key_stop_enlengthifier == ~key_stop,
+            +key_stop_enlengthifier == +key_stop,
+            (-key_stop_enlengthifier == +key_base) + key_stop_length)
+        key_stop_enlengthifier.rx(
+            -pressed_angle,
+            center=(key_stop.mid().x, key_stop.max().y, key_stop_enlengthifier.min().z))
+
+        key_base_with_stop = Union(key_base, Difference(key_stop, key_stop_enlengthifier))
+
+        filleted_key_base = Fillet(
+            key_base_with_stop.find_edges(
+                key_base.shared_edges([key_base.back], [key_base.left, key_base.right])), 1)
+
         assembly = Difference(
             Union(filleted_key_base, key_base_extension, post, angled_back),
             magnet, name="thumb_down_key")
@@ -1176,9 +1213,7 @@ class Lalboard(MemoizableDesign):
             assembly.find_faces(angled_back_base.front),
             assembly.find_faces(key_base.top))[0])
 
-        assembly.add_named_edges("back_lower_edge", assembly.shared_edges(
-            assembly.find_faces(key_base.top),
-            assembly.find_faces(key_base.back))[0])
+        assembly.add_named_faces("back_face", *assembly.find_faces(key_base.back))
 
         assembly.add_named_faces("pivot_back_face", assembly.find_faces(
             angled_back_back_tool.front)[0])
@@ -1762,32 +1797,50 @@ class Lalboard(MemoizableDesign):
             support_base,
             ball], name=name)
 
-    def _down_key_hole(self):
+    def _down_key_void(self):
         """The hole in the thumb cluster body underneath the down key"""
 
         down_key = self.thumb_down_key()
 
-        y_size = (down_key.named_edges("back_lower_edge")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55
+        y_size = (down_key.named_faces("back_face")[0].mid().y - down_key.named_edges("pivot")[0].mid().y) + .55
 
         # make the back of the hole a bit wider, to avoid the key scraping on it, if the key is pressed off-center on
         # that side
-        nominal_x_size = down_key.size().x + 1
+        nominal_x_size = down_key.size().x + .5
 
         builder = Builder2D((0, 0))
-        builder.line_to((-1, y_size))
-        builder.line_to((nominal_x_size + 1, y_size))
+        builder.line_to((-.5, y_size))
+        builder.line_to((nominal_x_size + .5, y_size))
         builder.line_to((nominal_x_size, 0))
         builder.line_to((0, 0))
-        return Extrude(builder.build(), 100, name="down_key_body_hole")
+        return Extrude(builder.build(), 100, name="down_key_void")
+
+    @MemoizableDesign.MemoizeComponent
+    def _thumb_upper_outer_base(self):
+        return self.vertical_key_base(
+            extra_height=4, pressed_key_angle=7, fillet_back_keywell_corners=True, name="upper_outer_base")
+
+    @MemoizableDesign.MemoizeComponent
+    def _thumb_lower_outer_base(self):
+        return self.vertical_key_base(
+            extra_height=4, pressed_key_angle=4.2, fillet_back_keywell_corners=True, name="lower_outer_base")
+
+    @MemoizableDesign.MemoizeComponent
+    def _thumb_inner_base(self):
+        return self.vertical_key_base(
+            extra_height=4, pressed_key_angle=7, fillet_back_keywell_corners=True, name="inner_key_base")
+
+    @MemoizableDesign.MemoizeComponent
+    def _thumb_upper_base(self):
+        return self.vertical_key_base(
+            extra_height=4, pressed_key_angle=7, name="upper_key_base")
 
     @MemoizableDesign.MemoizeComponent
     def thumb_base(self, name=None):
         down_key = self.thumb_down_key()
         down_key.ry(180)
 
-        upper_outer_base = self.vertical_key_base(
-            extra_height=4, pressed_key_angle=7, fillet_back_keywell_corners=True, name="upper_outer_base")
-
+        upper_outer_base = self._thumb_upper_outer_base()
         upper_outer_base_magnet_front = upper_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
         upper_outer_base_negatives = upper_outer_base.find_children("negatives")[0]
         upper_outer_base.rz(-90)
@@ -1796,14 +1849,13 @@ class Lalboard(MemoizableDesign):
             (~upper_outer_base_magnet_front == +down_key) - 3.55,
             (+upper_outer_base == -down_key.named_edges("pivot")[0]))
 
-        down_key_body_hole = self._down_key_hole()
-        down_key_body_hole.place(
-            ~down_key_body_hole == ~down_key,
-            (-down_key_body_hole == ~down_key.named_edges("pivot")[0]) - .15,
-            +down_key_body_hole == +upper_outer_base)
+        down_key_void = self._down_key_void()
+        down_key_void.place(
+            ~down_key_void == ~down_key,
+            (-down_key_void == ~down_key.named_edges("pivot")[0]) - .15,
+            +down_key_void == +upper_outer_base)
 
-        lower_outer_base = self.vertical_key_base(
-            extra_height=4, pressed_key_angle=4.2, fillet_back_keywell_corners=True, name="lower_outer_base")
+        lower_outer_base = self._thumb_lower_outer_base()
         lower_outer_base_magnet_front = lower_outer_base.find_children("magnet_cutout")[0].named_faces("front")[0]
         lower_outer_base_negatives = lower_outer_base.find_children("negatives")[0]
         lower_outer_base.rz(-90)
@@ -1812,8 +1864,7 @@ class Lalboard(MemoizableDesign):
             (-lower_outer_base_magnet_front == +down_key) - 30.65,
             +lower_outer_base == +upper_outer_base)
 
-        inner_base = self.vertical_key_base(
-            extra_height=4, pressed_key_angle=7, fillet_back_keywell_corners=True, name="inner_key_base")
+        inner_base = self._thumb_inner_base()
         inner_base_magnet_front = inner_base.find_children("magnet_cutout")[0].named_faces("front")[0]
         inner_base_negatives = inner_base.find_children("negatives")[0]
         inner_base.rz(90 + 20)
@@ -1822,8 +1873,7 @@ class Lalboard(MemoizableDesign):
             (~inner_base_magnet_front == +down_key) - 3.2,
             +inner_base == +upper_outer_base)
 
-        upper_base = self.vertical_key_base(
-            extra_height=4, pressed_key_angle=7, name="upper_key_base")
+        upper_base = self._thumb_upper_base()
         upper_base_magnet_front = upper_base.find_children("magnet_cutout")[0].named_faces("front")[0]
         upper_base_negatives = upper_base.find_children("negatives")[0]
         key_base_upper = upper_base.find_children("upper_base")[0]
@@ -1888,7 +1938,7 @@ class Lalboard(MemoizableDesign):
         back_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="back_attachment")
         back_attachment.place(
             ~back_attachment == ~down_key,
-            (-back_attachment == +down_key_body_hole) + 2,
+            (-back_attachment == +down_key_void) + 2,
             +back_attachment == +upper_outer_base)
 
         side_attachment = self.underside_magnetic_attachment(key_base_upper.size().z, name="side_attachment")
@@ -1926,35 +1976,9 @@ class Lalboard(MemoizableDesign):
             +down_key_slot == +down_key.find_children("magnet")[0],
             +down_key_slot == +body)
 
-        down_key_right_stop = body.bounding_box.make_box()
-        down_key_right_stop.place(
-            +down_key_right_stop == +down_key_body_hole,
-            ~down_key_right_stop == ~body,
-            +down_key_right_stop == +body)
-
-        down_key_right_stop.ry(-45, center=(
-            down_key_right_stop.max().x,
-            down_key_right_stop.mid().y,
-            down_key_right_stop.max().z))
-        down_key_right_stop.rx(-7, center=(
-            down_key_body_hole.max().x,
-            down_key_body_hole.min().y,
-            down_key_body_hole.max().z))
-
-        down_key_right_stop_bounds_tool = down_key_right_stop.bounding_box.make_box()
-        down_key_right_stop_bounds_tool .place(
-            (-down_key_right_stop_bounds_tool == +down_key_body_hole) - 2,
-            (-down_key_right_stop_bounds_tool == ~down_key.named_faces("pivot_back_face")[0]) + .2,
-            ~down_key_right_stop_bounds_tool == ~down_key_right_stop)
-
-        down_key_right_stop = Intersection(down_key_right_stop, down_key_right_stop_bounds_tool)
-        down_key_right_stop.tz(1)
-
-        down_key_left_stop = down_key_right_stop.copy().scale(-1, 1, 1, center=down_key_body_hole.mid())
-
         down_key_magnet_extension = Box(
             down_key_slot.size().x,
-            (down_key_body_hole.min().y - down_key.find_children("magnet")[0].max().y),
+            (down_key_void.min().y - down_key.find_children("magnet")[0].max().y),
             body.min().z - down_key.min().z,
             name="down_key_magnet_extension")
         down_key_magnet_extension.place(
@@ -1977,23 +2001,23 @@ class Lalboard(MemoizableDesign):
         down_key_led_cavity.rz(180)
         upper_outer_led_cavity = upper_outer_base.find_children("led_cavity")[0]
         down_key_led_cavity.place(
-            (-down_key_led_cavity == +down_key_body_hole) -.2,
-            (~down_key_led_cavity == -down_key_body_hole) + 16,
+            (-down_key_led_cavity == ~down_key) + 8.55,
+            (~down_key_led_cavity == -down_key_void) + 16,
             +down_key_led_cavity == +upper_outer_led_cavity)
 
-        down_key_led_cavity = Extrude(
+        down_key_led_cavity = ExtrudeTo(
             down_key_led_cavity.named_faces("lens_hole"),
-            down_key_led_cavity.named_faces("lens_hole")[0].min().x - down_key_right_stop.min().x)
+            down_key_void)
 
         down_key_pt_cavity = self.make_bottom_entry_led_cavity("down_key_pt_cavity")
         down_key_pt_cavity.place(
-            (+down_key_pt_cavity == -down_key_body_hole) + .2,
+            (+down_key_pt_cavity == ~down_key) - 8.55,
             ~down_key_pt_cavity == ~down_key_led_cavity,
             +down_key_pt_cavity == +upper_outer_led_cavity)
 
-        down_key_pt_cavity = Extrude(
+        down_key_pt_cavity = ExtrudeTo(
             down_key_pt_cavity.named_faces("lens_hole"),
-            down_key_left_stop.max().x - down_key_pt_cavity.named_faces("lens_hole")[0].max().x)
+            down_key_void)
 
         side_nut_negatives, side_nut_positives = self._thumb_side_nut(body, upper_base, front_attachment)
 
@@ -2008,7 +2032,7 @@ class Lalboard(MemoizableDesign):
                 *back_attachment.find_children("negatives"),
                 *side_attachment.find_children("negatives"),
                 down_key_slot, down_key_magnet, down_key_led_cavity, down_key_pt_cavity,
-                Difference(down_key_body_hole, down_key_right_stop, down_key_left_stop,  name="down_key_void"),
+                down_key_void,
                 *side_nut_negatives,
                 *back_nut_negatives),
             *side_nut_positives,
@@ -2226,12 +2250,12 @@ class Lalboard(MemoizableDesign):
         legs.place(
             z=~legs == ~pcb_silhouette)
 
-        down_key_body_hole = thumb_cluster.find_children("down_key_body_hole")[0]
+        down_key_void = thumb_cluster.find_children("down_key_void")[0]
 
         connector_holes = self.hole_array(hole_size, 1.5, 7)
         connector_holes.rz(90)
-        connector_holes.place(~connector_holes == ~down_key_body_hole,
-                              ~connector_holes == ~down_key_body_hole,
+        connector_holes.place(~connector_holes == ~down_key_void,
+                              ~connector_holes == ~down_key_void,
                               ~connector_holes == ~pcb_silhouette)
 
         side_screw_hole = thumb_cluster.find_children("side_screw_hole")[0]
