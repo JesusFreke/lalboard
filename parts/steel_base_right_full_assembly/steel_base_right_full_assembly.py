@@ -35,32 +35,37 @@ def design(context: lalboard.Lalboard):
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(116.70, 30.37 + z_delta, gap=-21.12)
-                .set_rotation_by_euler_angles(13.74, 3.31, -8.19)
+                .set_rotation_by_support_lengths(22.57, 28.50, 27.47, rz=-8.19)
+                #.set_rotation_by_euler_angles(13.74, 3.31, -8.19)
                 .resolve(None, left_hand=False)))
     clusters.append(
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(121.75, 31.49 + z_delta)
-                .set_rotation_by_euler_angles(10.65, 8.44, -17.92)
+                .set_rotation_by_support_lengths(24.83, 29.25, 26.62, rz=-17.92)
+                #.set_rotation_by_euler_angles(10.65, 8.44, -17.92)
                 .resolve(clusters[-1], left_hand=False)))
     clusters.append(
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(115.28, 28.05 + z_delta)
-                .set_rotation_by_euler_angles(8.51, 6.45, -25.54)
+                .set_rotation_by_support_lengths(22.06, 24.60, 22.59, rz=-25.54)
+                #.set_rotation_by_euler_angles(8.51, 6.45, -25.54)
                 .resolve(clusters[-1], left_hand=False)))
     clusters.append(
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(100.94, 21.66 + z_delta)
-                .set_rotation_by_euler_angles(10.65, 13.16, -37.05)
+                .set_rotation_by_support_lengths(17.68, 20.29, 16.21, rz=-37.05, tall_front_clip=True)
+                #.set_rotation_by_euler_angles(10.65, 13.16, -37.05)
                 .resolve(clusters[-1], left_hand=False),
             tall_clip=True))
     clusters.append(
         context.positioned_thumb_assembly(
             lalboard.AbsoluteThumbClusterPlacement(context)
                 .set_cartesian(-50.35, 83.96, 36.26 + z_delta)
-                .set_rotation_by_euler_angles(10.39, -1.44, -7.77),
+                .set_rotation_by_support_lengths(24.60, 27.24, 31.63, rz=-7.77),
+                #.set_rotation_by_euler_angles(10.39, -1.44, -7.77),
             left_hand=False))
 
     standoffs = []
