@@ -1084,7 +1084,7 @@ class Lalboard(MemoizableDesign):
 
         cluster.transform(matrix)
 
-        right_plier_void = Box(5, 6, upper_base_upper_base.size().z)
+        right_plier_void = Box(5, 4, upper_base_upper_base.size().z, name="right_plier_void")
         right_plier_void.place(
             (+right_plier_void == ~face) - 12,
             ~right_plier_void == ~face,
@@ -1109,7 +1109,7 @@ class Lalboard(MemoizableDesign):
         tool_base.transform(matrix)
         right_plier_void.transform(matrix)
 
-        left_plier_void = right_plier_void.copy(copy_children=False)
+        left_plier_void = right_plier_void.copy(copy_children=False, name="left_plier_void")
         left_plier_void.scale(-1, 1, 1, center=tool_base.mid())
 
         result = Difference(tool_base, right_plier_void, left_plier_void, name="thumb_cluster_insertion_tool")
