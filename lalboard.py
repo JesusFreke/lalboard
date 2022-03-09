@@ -528,10 +528,12 @@ class Lalboard(MemoizableDesign):
             Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool),
             pcb_back)
 
-        for loop in pcb_silhouette.faces[0].loops:
+        # We're assuming that the OffsetEdges operations won't change the number or ordering of loops
+        for i in range(len(pcb_silhouette.faces[0].loops)):
+            loop = pcb_silhouette.faces[0].loops[i]
             offset_amount = -.2
-            pcb_silhouette = OffsetEdges(pcb_silhouette.faces[0],
-                                         pcb_silhouette.find_edges(loop.edges),
+            pcb_silhouette = OffsetEdges(loop.face,
+                                         loop.edges,
                                          offset_amount)
 
         connector_holes = self.hole_array(hole_size, 1.5, 7)
