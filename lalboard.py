@@ -785,7 +785,7 @@ class Lalboard(MemoizableDesign):
         key_rim_height = .5
         key_thickness = 2
         post_length = 7.9 + 2
-        key_travel = 1.9
+        key_travel = 1.7
 
         fillet_radius = 1.2
 
