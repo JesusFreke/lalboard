@@ -408,21 +408,29 @@ class Lalboard(MemoizableDesign):
 
         combined_cluster = Union(base, *key_bases, name="combined_cluster")
 
-        center_hole = Box(5, 5, combined_cluster.size().z, name="center_hole")
-        center_hole.place(~center_hole == ~base,
-                          ~center_hole == ~base,
-                          -center_hole == -base)
+        center_key_left_hole = Cylinder(combined_cluster.size().z, 2, name="center_key_left_hole")
+        center_key_left_hole.place(
+            (~center_key_left_hole == ~base) - 4.1,
+            ~center_key_left_hole == ~base,
+            -center_key_left_hole == -base)
 
-        center_nub_hole = Box(center_hole.size().x, 2.6, 4.6)
+        center_key_right_hole = center_key_left_hole.copy(name="center_key_right_hole")
+        center_key_right_hole.place(
+            (~center_key_left_hole == ~base) + 4.1)
+
+        center_key_holes = Group([center_key_left_hole, center_key_right_hole], name="center_key_holes")
+
+        center_nub_hole = Box(2.5, 2.5, 3)
         center_nub_hole.place(
-            ~center_nub_hole == ~base,
-            (-center_nub_hole == +center_hole) + .8,
-            +center_nub_hole == +combined_cluster)
+            ~center_nub_hole == ~center_key_holes,
+            ~center_nub_hole == ~center_key_holes,
+            +center_nub_hole == +base)
 
-        central_magnet_cutout = self.horizontal_magnet_cutout(name="central_magnet_cutout")
-        central_magnet_cutout.place(~central_magnet_cutout == ~center_hole,
-                                    +central_magnet_cutout == -center_hole,
-                                    (~central_magnet_cutout == +combined_cluster) - 3.5)
+        central_magnet_cutout = self.vertical_magnet_cutout(name="central_magnet_cutout")
+
+        central_magnet_cutout.place(~central_magnet_cutout == ~center_key_holes,
+                                    ~central_magnet_cutout == ~center_key_holes,
+                                    -central_magnet_cutout == -base)
 
         west_cavity = west_base.find_children("negatives")[0]
         west_pt_cavity = west_cavity.find_children("pt_cavity")[0]
@@ -430,21 +438,22 @@ class Lalboard(MemoizableDesign):
         east_led_cavity = east_cavity.find_children("led_cavity")[0]
 
         central_led_cavity = self.make_bottom_entry_led_cavity(name="led_cavity")
-        central_led_cavity.rz(180)
-        central_led_cavity.place(+central_led_cavity == -east_led_cavity,
-                                 +central_led_cavity == +east_led_cavity,
+        central_led_cavity.rz(90)
+        central_led_cavity.place(~central_led_cavity == ~center_key_holes,
+                                 (+central_led_cavity == -center_key_holes) - 1.5,
                                  +central_led_cavity == +east_led_cavity)
 
         central_pt_cavity = self.make_bottom_entry_led_cavity(name="pt_cavity")
-        central_pt_cavity.place(-central_pt_cavity == +west_pt_cavity,
-                                +central_pt_cavity == +west_pt_cavity,
+        central_pt_cavity.rz(270)
+        central_pt_cavity.place(~central_pt_cavity == ~center_key_holes,
+                                (-central_pt_cavity == +center_key_holes) + 1.5,
                                 +central_pt_cavity == +west_pt_cavity)
 
-        extruded_led_cavity = ExtrudeTo(central_led_cavity.named_faces("lens_hole"), central_pt_cavity.copy(False))
-        extruded_pt_cavity = ExtrudeTo(central_pt_cavity.named_faces("lens_hole"), central_led_cavity.copy(False))
+        extruded_led_cavity = ExtrudeTo(central_led_cavity.named_faces("lens_hole"), center_nub_hole.copy(False))
+        extruded_pt_cavity = ExtrudeTo(central_pt_cavity.named_faces("lens_hole"), center_nub_hole.copy(False))
 
-        result = Difference(combined_cluster, *key_base_negatives, center_hole, center_nub_hole, central_magnet_cutout,
-                            extruded_led_cavity, extruded_pt_cavity)
+        result = Difference(combined_cluster, *key_base_negatives, center_key_holes, central_magnet_cutout,
+                            center_nub_hole, extruded_led_cavity, extruded_pt_cavity)
 
         result.add_named_point("lower_left_corner", [west_base.min().x, west_base.min().y, 0])
         result.add_named_point("lower_right_corner", [east_base.max().x, east_base.min().y, 0])
@@ -461,12 +470,7 @@ class Lalboard(MemoizableDesign):
             ~pcb_plane == ~cluster,
             +pcb_plane == -back)
 
-        center_hole: Box = cluster.find_children("center_hole")[0]
-        full_cluster = Fillet(
-            full_cluster.shared_edges(
-                full_cluster.find_faces([center_hole.left, center_hole.right]),
-                full_cluster.find_faces([center_hole.front, center_hole.back])),
-            .8)
+        center_holes: Component = cluster.find_children("center_key_holes")[0]
 
         pcb_silhouette = Silhouette(full_cluster, pcb_plane.get_plane())
 
@@ -500,6 +504,16 @@ class Lalboard(MemoizableDesign):
             (-back_trim_tool == -back) + 5,
             ~back_trim_tool == ~pcb_silhouette)
 
+        center_rectangle = Box(center_holes.size().x, 5, 1)
+        center_rectangle = Fillet(
+            center_rectangle.shared_edges([center_rectangle.front, center_rectangle.back],
+                                          [center_rectangle.left, center_rectangle.right]),
+            .8)
+        center_rectangle.place(
+            ~center_rectangle == ~center_holes,
+            ~center_rectangle == ~center_holes,
+            -center_rectangle == ~pcb_silhouette)
+
         pcb_back_box = Box(
             8,
             back.max().y - back_trim_tool.min().y,
@@ -525,7 +539,7 @@ class Lalboard(MemoizableDesign):
             pcb_back_connection)
 
         pcb_silhouette = Union(
-            Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool),
+            Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool, center_rectangle),
             pcb_back)
 
         # We're assuming that the OffsetEdges operations won't change the number or ordering of loops
@@ -784,13 +798,13 @@ class Lalboard(MemoizableDesign):
         key_radius = 7.5
         key_rim_height = .5
         key_thickness = 2
-        post_length = 7.9 + 2
         key_travel = 1.7
+        post_length = 6.2 + key_travel
 
-        fillet_radius = 1.2
+        fillet_radius = .5
 
         key = Cylinder(key_thickness, key_radius, name="key")
-        key_rim = Cylinder(key_rim_height, key_radius)
+        key_rim = Cylinder(key_rim_height, key_radius, name="key_rim")
         key_rim.place(~key_rim == ~key,
                       ~key_rim == ~key,
                       -key_rim == +key)
@@ -800,39 +814,41 @@ class Lalboard(MemoizableDesign):
                              -key_rim_hollow == -key_rim)
         key_rim = Difference(key_rim, key_rim_hollow)
 
-        center_post = Box(5 - .2, 5 - .1, post_length + key_rim_height, name="center_post")
-        center_post = Fillet(
-            center_post.shared_edges(
-                [center_post.front, center_post.back],
-                [center_post.right, center_post.left]),
-            .8)
+        left_post = Cylinder(post_length + key_rim_height, 1.75, name="left_post")
+        left_post.place(
+            (~left_post == ~key) - 4.1,
+            ~left_post == ~key,
+            -left_post == +key)
+        left_post_magnet = self.vertical_magnet_cutout()
+        left_post_magnet.place(
+            ~left_post_magnet == ~left_post,
+            ~left_post_magnet == ~left_post,
+            +left_post_magnet == +left_post)
 
-        center_post.place(
-            ~center_post == ~key,
-            (~center_post == ~key) + .05,
-            -center_post == +key)
+        right_post = Cylinder(post_length + key_rim_height, 1.75, name="right_post")
+        right_post.place(
+            (~right_post == ~key) + 4.1,
+            ~right_post == ~key,
+            -right_post == +key)
 
-        interruptor_post = Box(3.5, 2, .65 + key_travel + key_rim_height, name="interruptor_post")
+        right_post_magnet = left_post_magnet.copy()
+        right_post_magnet.place(
+            ~right_post_magnet == ~right_post,
+            ~right_post_magnet == ~right_post,
+            +right_post_magnet == +right_post)
+
+        interruptor_post = Box(2, 2, .8 + key_travel + key_rim_height, name="interruptor_post")
         interruptor_post.place(
             ~interruptor_post == ~key,
-            (-interruptor_post == +center_post) + 1.2,
+            ~interruptor_post == ~key,
             -interruptor_post == +key)
         fillet_edges = interruptor_post.shared_edges(
-            [interruptor_post.top, interruptor_post.back, interruptor_post.right, interruptor_post.left],
-            [interruptor_post.top, interruptor_post.back, interruptor_post.right, interruptor_post.left])
+            [interruptor_post.front, interruptor_post.back],
+            [interruptor_post.left, interruptor_post.right])
         interruptor_post = Fillet(fillet_edges, fillet_radius)
 
-        bounding_cylinder = Cylinder(center_post.max().z - key.min().z, key_radius)
-        bounding_cylinder.place(~bounding_cylinder == ~key,
-                                ~bounding_cylinder == ~key,
-                                -bounding_cylinder == -key)
-
-        magnet = self.horizontal_tiny_magnet_cutout(1.3)
-        magnet.place(~magnet == ~center_post,
-                     -magnet == -center_post,
-                     (~magnet == +key_rim) + 3.5 + key_travel)
-
-        result = Difference(Union(key, key_rim, center_post, interruptor_post), magnet, name="center_key")
+        result = Difference(Union(key, key_rim, interruptor_post, left_post, right_post),
+                            left_post_magnet, right_post_magnet, name="center_key")
 
         return result
 
@@ -1366,13 +1382,18 @@ class Lalboard(MemoizableDesign):
         self._align_side_key(cluster.find_children("west_base")[0], west_key)
         self._align_side_key(cluster.find_children("north_base")[0], north_key)
 
-        center_key_magnet = down_key.find_children("magnet_cutout")[0]
         center_cluster_magnet = cluster.find_children("central_magnet_cutout")[0]
         down_key.rx(180).rz(180)
         down_key.place(
-            ~center_key_magnet == ~center_cluster_magnet,
-            -center_key_magnet == +center_cluster_magnet,
-            ~center_key_magnet == ~center_cluster_magnet)
+            ~down_key == ~center_cluster_magnet,
+            ~down_key == ~center_cluster_magnet,
+            -down_key == +pcb)
+
+        nickel_strip = Box(10, 5, .2)
+        nickel_strip.place(
+            ~nickel_strip == ~center_cluster_magnet,
+            ~nickel_strip == ~center_cluster_magnet,
+            +nickel_strip == +pcb)
 
         down_key_top_finder = down_key.bounding_box.make_box()
         down_key_top_finder.place(
@@ -1428,6 +1449,7 @@ class Lalboard(MemoizableDesign):
 
         cluster_group_children = [cluster,
                                   pcb,
+                                  nickel_strip,
                                   south_key,
                                   east_key,
                                   west_key,
@@ -1483,13 +1505,18 @@ class Lalboard(MemoizableDesign):
         self._align_side_key(cluster.find_children("west_base")[0], west_key)
         self._align_side_key(cluster.find_children("north_base")[0], north_key)
 
-        center_key_magnet = down_key.find_children("magnet_cutout")[0]
-        center_cluster_magnet = cluster.find_children("central_magnet_cutout")[0]
+        center_key_holes = cluster.find_children("center_key_holes")[0]
         down_key.rx(180).rz(180)
         down_key.place(
-            ~center_key_magnet == ~center_cluster_magnet,
-            -center_key_magnet == +center_cluster_magnet,
-            ~center_key_magnet == ~center_cluster_magnet)
+            ~down_key == ~center_key_holes,
+            ~down_key == ~center_key_holes,
+            -down_key == +pcb)
+
+        nickel_strip = Box(10, 5, .2)
+        nickel_strip.place(
+            ~nickel_strip == ~center_key_holes,
+            ~nickel_strip == ~center_key_holes,
+            +nickel_strip == +pcb)
 
         front_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="front_magnet")
         back_left_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_left_magnet")
@@ -1529,6 +1556,7 @@ class Lalboard(MemoizableDesign):
         back_right_ball_magnet = back_right_support.find_children("ball_magnet")[0]
 
         cluster_group = Group((cluster,
+                               nickel_strip,
                                pcb,
                                front_clip,
                                south_key,
@@ -3417,7 +3445,6 @@ def run_design(design_func, message_box_on_error=False, print_runtime=True, docu
         filename = module.__file__
         document_name = pathlib.Path(filename).stem
 
-    import fscad
     if isinstance(context, MemoizableDesign):
         fscad.fscad.run_design(design_func, message_box_on_error, print_runtime, document_name, design_args=[context])
     else:
@@ -3753,13 +3780,12 @@ class RelativeFingerClusterPlacement(FingerClusterRotation):
         cluster_body = self._context.cluster_body_assembly()
 
         down_key = self._context.center_key()
-        center_key_magnet = down_key.find_children("magnet_cutout")[0]
         center_cluster_magnet = cluster_body.find_children("central_magnet_cutout")[0]
         down_key.rx(180).rz(180)
         down_key.place(
-            ~center_key_magnet == ~center_cluster_magnet,
-            -center_key_magnet == +center_cluster_magnet,
-            ~center_key_magnet == ~center_cluster_magnet)
+            ~down_key == ~center_cluster_magnet,
+            ~down_key == ~center_cluster_magnet,
+            -down_key == -center_cluster_magnet)
 
         cluster_body.add_named_point("down_key_top_center", Point3D.create(
             down_key.mid().x,
@@ -3862,13 +3888,12 @@ class RelativeFingerClusterPlacement(FingerClusterRotation):
         cluster_body = self._context.cluster_body_assembly()
 
         down_key = self._context.center_key()
-        center_key_magnet = down_key.find_children("magnet_cutout")[0]
         center_cluster_magnet = cluster_body.find_children("central_magnet_cutout")[0]
         down_key.rx(180).rz(180)
         down_key.place(
-            ~center_key_magnet == ~center_cluster_magnet,
-            -center_key_magnet == +center_cluster_magnet,
-            ~center_key_magnet == ~center_cluster_magnet)
+            ~down_key == ~center_cluster_magnet,
+            ~down_key == ~center_cluster_magnet,
+            -down_key == -center_cluster_magnet)
 
         cluster_body.add_named_point("down_key_top_center", Point3D.create(
             down_key.mid().x,
