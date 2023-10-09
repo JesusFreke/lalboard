@@ -36,31 +36,32 @@ def design(context: lalboard.Lalboard):
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(116.53, 31.09 + z_delta, gap=-8.44)
-                .set_rotation_by_support_lengths(23.36, 28.55, 28.60, rz=1.46)
+                .set_rotation_by_support_lengths(20.09, 28.65, 28.70, rz=1.46)
                 #.set_rotation_by_euler_angles(13.45, -.16, 1.46)
                 .resolve(None, left_hand=True)))
     clusters.append(
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(121.40, 30.46 + z_delta)
-                .set_rotation_by_support_lengths(22.84, 27.49, 28.13, rz=14.03)
+                .set_rotation_by_support_lengths(19.55, 27.60, 28.24, rz=14.03)
                 #.set_rotation_by_euler_angles(13.12, -2.05, 14.03)
                 .resolve(clusters[-1], left_hand=True)))
     clusters.append(
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(118.37, 27.73 + z_delta)
-                .set_rotation_by_support_lengths(20.49, 23.33, 26.86, rz=21.95)
+                .set_rotation_by_support_lengths(17.01, 23.39, 26.92, rz=21.95)
                 #.set_rotation_by_euler_angles(12.75, -11.36, 21.95)
                 .resolve(clusters[-1], left_hand=True)))
     clusters.append(
         context.positioned_cluster_assembly(
             lalboard.RelativeFingerClusterPlacement(context)
                 .set_cylindrical(102.03, 21.62 + z_delta)
-                .set_rotation_by_support_lengths(17.97, 15.81, 19.83, rz=41.31, tall_front_clip=True)
+                .set_rotation_by_support_lengths(15.07, 15.89, 19.90, rz=41.31, add_clip=True, tall_front_clip=False)
                 #.set_rotation_by_euler_angles(9.68, -12.95, 41.31)
                 .resolve(clusters[-1], left_hand=True),
-            tall_clip=True))
+            add_clip=True,
+            tall_clip=False))
     clusters.append(context.positioned_thumb_assembly(
         lalboard.AbsoluteThumbClusterPlacement(context)
             .set_cartesian(47.98, 81.74, 35.11 + z_delta)

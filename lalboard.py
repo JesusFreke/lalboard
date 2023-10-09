@@ -25,7 +25,7 @@ from typing import Optional, Sequence, Tuple
 
 import adsk.core
 import adsk.fusion
-from adsk.core import Matrix3D, Point3D, Vector3D
+from adsk.core import Matrix3D, Point3D, Vector3D, Plane
 
 import fscad.fscad
 from fscad.fscad import *
@@ -618,17 +618,19 @@ class Lalboard(MemoizableDesign):
     def cluster_front(self, cluster: Component):
         front_base = cluster.find_children("south_base")[0]
         upper_base = front_base.find_children("upper_base")[0]
-        front_key_well = front_base.find_children("key_well")[0]
-
-        front_length = 4
-        front_width = 13
 
         left_point = cluster.named_point("lower_left_corner").point
         right_point = cluster.named_point("lower_right_corner").point
 
+        attachment = self.underside_magnetic_attachment(upper_base.size().z)
+
+        attachment.place(~attachment == ~cluster,
+                         (+attachment == -cluster),
+                         +attachment == +front_base)
+
         front_nose = Box(
-            front_width,
-            front_length,
+            attachment.size().x,
+            (cluster.min().y - attachment.min().y),
             upper_base.size().z)
         front_nose.place(
             ~front_nose == ~cluster,
@@ -642,24 +644,6 @@ class Lalboard(MemoizableDesign):
             front_nose.min().z)
 
         front_base = Extrude(Polygon(front_left_point, front_right_point, right_point, left_point), upper_base.size().z)
-
-        front_cutout = Box(
-            front_key_well.size().x,
-            front_length - 1,
-            cluster.size().z, name="front_cutout")
-        front_cutout.place(
-            ~front_cutout == ~cluster,
-            +front_cutout == -cluster,
-            (+front_cutout == +cluster) - 1)
-
-        front_notch = Box(
-            front_cutout.size().x,
-            front_cutout.size().y * 10,
-            front_cutout.size().z, name="front_notch")
-        front_notch.place(
-            ~front_notch == ~front_cutout,
-            +front_notch == +front_cutout,
-            (+front_notch == +cluster) - 3)
 
         front_left_cut_corner = Point3D.create(
             cluster.min().x,
@@ -679,8 +663,18 @@ class Lalboard(MemoizableDesign):
         cluster = Difference(
             cluster, left_cut, right_cut)
 
-        return cluster, Difference(
-            front_base, cluster.bounding_box.make_box(), front_cutout, front_notch, name="cluster_front")
+        front = Difference(
+            Union(front_base, attachment), cluster.bounding_box.make_box(),
+            *attachment.find_children("negatives"), name="cluster_front")
+
+        fillet_edges = []
+        for edge in front.find_faces(front_nose.front)[0].edges:
+            if edge.bounding_box.size().x == 0 and edge.bounding_box.size().y == 0:
+                fillet_edges.append(edge)
+
+        front = Fillet(fillet_edges, attachment.size().x/2, name="cluster_front")
+
+        return cluster, front
 
     def cluster_back(self, cluster: Component):
         upper_base = cluster.find_children("upper_base")[0]
@@ -737,39 +731,34 @@ class Lalboard(MemoizableDesign):
             name="cluster_back")
 
     def cluster_front_mount_clip(self, front, extra_height=0.0, name="cluster_front_mount_clip"):
-        cutout = front.find_children("front_cutout")[0]
-        notch = front.find_children("front_notch")[0]
+        attachment = front.find_children("attachment")[0]
+        front_magnet_cutout = front.find_children("magnet_cutout")[0]
 
-        insert = Box(
-            cutout.size().x - .2,
-            cutout.size().y - .2,
-            (cutout.max().z - notch.max().z) - .2)
-        insert.place(
-            ~insert == ~cutout,
-            ~insert == ~cutout,
-            (+insert == +cutout) - .2)
+        cutout = self.deep_large_thin_magnet_cutout()
+        cutout.rx(180)
+        cutout.place(
+            ~cutout == ~front_magnet_cutout,
+            ~cutout == ~front_magnet_cutout,
+            +cutout == -front)
 
-        bottom = Box(
-            insert.size().x,
-            (insert.max().y - front.min().y) + 1.6,
-            1)
-        bottom.place(
-            ~bottom == ~insert,
-            +bottom == +insert,
-            +bottom == -insert)
+        front_attachment = Box(attachment.size().x, attachment.size().y, cutout.size().z + 1)
+        front_attachment.place(
+            ~front_attachment == ~attachment,
+            ~front_attachment == ~attachment,
+            +front_attachment == -attachment)
 
         front_riser = Box(
-            insert.size().x,
+            front_attachment.size().x,
             1.5,
-            front.max().z - bottom.max().z + extra_height)
+            front.max().z - front_attachment.min().z + extra_height)
         front_riser.place(
-            ~front_riser == ~insert,
-            -front_riser == -bottom,
-            -front_riser == +bottom)
+            ~front_riser == ~front_attachment,
+            +front_riser == -front_attachment,
+            -front_riser == -front_attachment)
 
         attachment = self.underside_magnetic_attachment(1.4)
         attachment.place(
-            ~attachment == ~insert,
+            ~attachment == ~front_attachment,
             +attachment == -front_riser,
             +attachment == +front_riser)
 
@@ -786,8 +775,8 @@ class Lalboard(MemoizableDesign):
             -attachment.size().z)
 
         return Difference(
-            Union(insert, bottom, front_riser, attachment, attachment_attachment),
-            *attachment.find_children("negatives"),
+            Union(front_attachment, front_riser, attachment, attachment_attachment),
+            cutout, *attachment.find_children("negatives"),
             name=name)
 
     def cluster_front_mount_clip_tall(self, front, name="cluster_front_mount_clip_tall"):
@@ -1255,19 +1244,22 @@ class Lalboard(MemoizableDesign):
         return assembly
 
     @MemoizableDesign.MemoizeComponent
-    def cluster_body_assembly(self, tall_clip=False):
+    def cluster_body_assembly(self, add_clip=False, tall_clip=False):
         cluster = self.base_cluster_design()
         cluster, front = self.cluster_front(cluster)
         back = self.cluster_back(cluster)
         pcb, connector_legs_cutout = self.cluster_pcb(cluster, front, back)
 
-        if tall_clip:
-            front_clip = self.cluster_front_mount_clip_tall(front, name="cluster_front_mount_clip")
-        else:
-            front_clip = self.cluster_front_mount_clip(front)
+        clip_body = []
+        if add_clip:
+            if tall_clip:
+                front_clip = self.cluster_front_mount_clip_tall(front, name="cluster_front_mount_clip")
+            else:
+                front_clip = self.cluster_front_mount_clip(front)
+            clip_body.append(front_clip)
 
         cluster = Difference(Union(cluster, front, back), connector_legs_cutout, name="cluster")
-        return Group([cluster, pcb, front_clip], name="cluster_body_assembly")
+        return Group([pcb, cluster, *clip_body], name="cluster_body_assembly")
 
     def standoff_by_ball_center(self, point, name="standoff"):
         """Generate a standoff sub-assembly with the center of the ball magnet at the specified point."""
@@ -1360,12 +1352,15 @@ class Lalboard(MemoizableDesign):
     def positioned_cluster_assembly(
             self,
             placement: 'AbsoluteFingerClusterPlacement',
-            add_clip=True,
+            add_clip=False,
             tall_clip=False):
-        body_assembly = self.cluster_body_assembly(tall_clip=tall_clip)
+        body_assembly = self.cluster_body_assembly(add_clip=add_clip, tall_clip=tall_clip)
         cluster = body_assembly.find_children("cluster", recursive=False)[0]
         pcb = body_assembly.find_children("pcb", recursive=False)[0]
-        front_clip = body_assembly.find_children("cluster_front_mount_clip", recursive=False)[0]
+
+        front_clip = None
+        if add_clip:
+            front_clip = body_assembly.find_children("cluster_front_mount_clip", recursive=False)[0]
 
         south_key = self.cluster_key_short(name="south_key")
         south_key.rx(90).rz(180)
@@ -1406,11 +1401,16 @@ class Lalboard(MemoizableDesign):
         back_left_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_left_magnet")
         back_right_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_right_magnet")
 
-        front_clip_magnet_cutout = front_clip.find_children("magnet_cutout")[0]
+        if add_clip:
+            front_magnet_cutout = front_clip.find_children("attachment")[0].find_children("magnet_cutout")[0]
+        else:
+            front = cluster.find_children("cluster_front")[0]
+            front_magnet_cutout = front.find_children("magnet_cutout")[0]
+
         front_magnet.place(
-            ~front_magnet == ~front_clip_magnet_cutout,
-            ~front_magnet == ~front_clip_magnet_cutout,
-            +front_magnet == +front_clip_magnet_cutout)
+            ~front_magnet == ~front_magnet_cutout,
+            ~front_magnet == ~front_magnet_cutout,
+            +front_magnet == +front_magnet_cutout)
         front_magnet.add_named_point("center_bottom",
                                      Point3D.create(
                                          front_magnet.mid().x,
@@ -1457,9 +1457,11 @@ class Lalboard(MemoizableDesign):
                                   down_key,
                                   back_left_magnet,
                                   back_right_magnet]
+
         if add_clip:
             cluster_group_children.append(front_clip)
-            cluster_group_children.append(front_magnet)
+
+        cluster_group_children.append(front_magnet)
         cluster_group = Group(cluster_group_children, name="cluster")
 
         cluster_group.add_named_point("down_key_top_center", down_key_top.mid())
@@ -1485,7 +1487,7 @@ class Lalboard(MemoizableDesign):
 
     @MemoizableDesign.MemoizeComponent
     def cluster_assembly(self):
-        body_assembly = self.cluster_body_assembly()
+        body_assembly = self.cluster_body_assembly(tall_clip=True)
         cluster = body_assembly.find_children("cluster", recursive=False)[0]
         pcb = body_assembly.find_children("pcb", recursive=False)[0]
         front_clip = body_assembly.find_children("cluster_front_mount_clip", recursive=False)[0]
@@ -1522,7 +1524,7 @@ class Lalboard(MemoizableDesign):
         back_left_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_left_magnet")
         back_right_magnet = Box((1/8) * 25.4, (1/8) * 25.4, (1/16) * 25.4, name="back_right_magnet")
 
-        front_clip_magnet_cutout = front_clip.find_children("magnet_cutout")[0]
+        front_clip_magnet_cutout = front_clip.find_children("attachment")[0].find_children("magnet_cutout")[0]
         front_magnet.place(
             ~front_magnet == ~front_clip_magnet_cutout,
             ~front_magnet == ~front_clip_magnet_cutout,
@@ -1546,7 +1548,7 @@ class Lalboard(MemoizableDesign):
             ~back_right_magnet == ~back_right_magnet_cutout,
             +back_right_magnet == +back_right_magnet_cutout)
 
-        front_support = self.screw_support_assembly(7, 4, 0, name="front_support")
+        front_support = self.screw_support_assembly(7, 4, 2.6, name="front_support")
         front_ball_magnet = front_support.find_children("ball_magnet")[0]
 
         back_left_support = self.screw_support_assembly(13, 8, 0, name="back_left_support")
@@ -2997,8 +2999,12 @@ class Lalboard(MemoizableDesign):
         handrest = self.handrest_design(left_hand)
 
         supports = []
-        for finger_cluster in finger_clusters:
-            supports.append(self.static_cluster_support(finger_cluster).copy(copy_children=False))
+        for i, finger_cluster in enumerate(finger_clusters):
+            cord_slot_on_left = False
+            if (left_hand and i < 2) or (not left_hand and i > 1):
+                cord_slot_on_left = True
+            supports.append(self.static_cluster_support(
+                finger_cluster, cord_slot_on_left=cord_slot_on_left).copy(copy_children=False))
         supports.append(self.static_thumb_support(thumb_cluster).copy(copy_children=False))
 
         # get the handrest without the magnet holes or inner void
@@ -3133,14 +3139,15 @@ class Lalboard(MemoizableDesign):
             -screw_head_extension == -screw_head)
         return Union(screw_head, screw_head_extension, name="screw_head_cutout")
 
-    def static_cluster_support(self, cluster: Component):
+    def static_cluster_support(self, cluster: Component, cord_slot_on_left=True):
         body_assembly = self.cluster_body_assembly()
         cluster_front = body_assembly.find_children("cluster_front")[0]
         cluster_back = body_assembly.find_children("cluster_back")[0]
 
         silhouette = self.cluster_silhouette()
 
-        magnet_cutouts = cluster_back.find_children("magnet_cutout")[0:2]
+        magnet_cutouts = [*cluster_back.find_children("magnet_cutout")[0:2]]
+        magnet_cutouts.append(cluster_front.find_children("magnet_cutout")[0])
 
         base_magnet_cutouts = []
         for magnet_cutout in magnet_cutouts:
@@ -3150,23 +3157,6 @@ class Lalboard(MemoizableDesign):
                 ~base_magnet_cutout == ~magnet_cutout,
                 +base_magnet_cutout == -cluster_back)
             base_magnet_cutouts.append(base_magnet_cutout)
-
-        front_notch_silhouette_lower = Intersection(silhouette.copy(), cluster_front.find_children("front_notch")[0])
-        # offset the sides of the notch silhouette, for some clearance
-
-        for edge in list(front_notch_silhouette_lower.faces[0].edges):
-            if isinstance(edge.brep.geometry, adsk.core.Line3D) and edge.brep.geometry.asInfiniteLine().direction.x == 0:
-                front_notch_silhouette_lower = OffsetEdges(
-                    front_notch_silhouette_lower.faces[0],
-                    front_notch_silhouette_lower.find_edges(edge),
-                    -.2)
-
-        front_notch_silhouette_upper = front_notch_silhouette_lower.copy()
-        front_notch_silhouette_upper.place(
-            z=(~front_notch_silhouette_upper == +cluster_front.find_children("front_notch")[0]) - .2)
-
-        front_notch_top_surface = cluster_front.find_children("front_notch")[0].top.make_component()
-        front_notch_top_surface.tz(-.2)
 
         pcb = body_assembly.find_children("pcb")[0]
         pcb_back = pcb.find_children("pcb_back_box")[0]
@@ -3215,18 +3205,11 @@ class Lalboard(MemoizableDesign):
 
         silhouette.transform(cluster_transform)
         pcb_cutout.transform(cluster_transform)
-        front_notch_silhouette_lower.transform(cluster_transform)
-        front_notch_top_surface.transform(cluster_transform)
         inner_void_silhouette.transform(cluster_transform)
         screw_head_cutout.transform(cluster_transform)
 
         for cutout in base_magnet_cutouts:
             cutout.transform(cluster_transform)
-
-        front_notch_silhouette_upper = front_notch_silhouette_lower.copy()
-        front_notch_silhouette_upper.align_to(
-            front_notch_top_surface,
-            Vector3D.create(0, 0, 1))
 
         bottom_silhouette = Silhouette(
             silhouette,
@@ -3247,18 +3230,23 @@ class Lalboard(MemoizableDesign):
         cluster_rz = math.degrees(math.atan2(cluster_transform.asArray()[4], cluster_transform.asArray()[0]))
 
         cord_slot = Box(3, body_assembly.size().y / 2, cluster.max().z * 2)
-        cord_slot.place(
-            ~cord_slot == ~body_assembly,
-            -cord_slot == -body_assembly,
-            -cord_slot == 0)
+
+        if cord_slot_on_left:
+            cord_slot.place(
+                (+cord_slot == -magnet_cutouts[-1]) - 1,
+                -cord_slot == -body_assembly,
+                -cord_slot == 0)
+        else:
+            cord_slot.place(
+                (-cord_slot == +magnet_cutouts[-1]) + 1,
+                -cord_slot == -body_assembly,
+                -cord_slot == 0)
 
         cord_slot.rz(cluster_rz)
         cord_slot.translate(*cluster_transform.translation.asArray()[0:2], 0)
 
         return Difference(
-            Union(
-                support,
-                Loft(front_notch_silhouette_lower, front_notch_silhouette_upper)),
+            support,
             pcb_cutout,
             *base_magnet_cutouts,
             inner_void,
@@ -3555,7 +3543,7 @@ class ClusterRotation(object):
 class FingerClusterRotation(ClusterRotation):
 
     def set_rotation_by_support_lengths(
-            self, front: float, back_left: float, back_right: float, rz: float, tall_front_clip=False):
+            self, front: float, back_left: float, back_right: float, rz: float, add_clip=False, tall_front_clip=False):
         """Sets the rotation of the cluster by the lengths of the 3 supports, along with a z-axis rotation.
 
         :param front: The length of the front support.
@@ -3568,18 +3556,22 @@ class FingerClusterRotation(ClusterRotation):
         """
         self._set_rotation_by_support_lengths(
             (front, back_left, back_right),
-            self._get_support_points(tall_front_clip),
+            self._get_support_points(add_clip, tall_front_clip),
             rz)
 
         return self
 
-    def _get_support_points(self, tall_front_clip):
-        cluster_body = self._context.cluster_body_assembly(tall_clip=tall_front_clip)
+    def _get_support_points(self, add_clip=False, tall_clip=True):
+        cluster_body = self._context.cluster_body_assembly(add_clip=add_clip, tall_clip=tall_clip)
 
-        front_clip = cluster_body.find_children("cluster_front_mount_clip")[0]
         back = cluster_body.find_children("cluster_back")[0]
 
-        front_magnet_cutout = front_clip.find_children("magnet_cutout")[0]
+        if add_clip:
+            front_clip = cluster_body.find_children("cluster_front_mount_clip")[0]
+            front_magnet_cutout = front_clip.find_children("attachment")[0].find_children("magnet_cutout")[0]
+        else:
+            front_magnet_cutout = cluster_body.find_children("cluster_front")[0].find_children("magnet_cutout")[0]
+
         back_cutouts = sorted(back.find_children("magnet_cutout")[:2], key=lambda cutout: cutout.mid().x)
         back_left_cutout = back_cutouts[0]
         back_right_cutout = back_cutouts[1]
