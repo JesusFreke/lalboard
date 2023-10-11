@@ -408,7 +408,7 @@ class Lalboard(MemoizableDesign):
 
         combined_cluster = Union(base, *key_bases, name="combined_cluster")
 
-        center_key_left_hole = Cylinder(combined_cluster.size().z, 2, name="center_key_left_hole")
+        center_key_left_hole = Box(4, 4, combined_cluster.size().z, name="center_key_left_hole")
         center_key_left_hole.place(
             (~center_key_left_hole == ~base) - 4.1,
             ~center_key_left_hole == ~base,
@@ -420,11 +420,14 @@ class Lalboard(MemoizableDesign):
 
         center_key_holes = Group([center_key_left_hole, center_key_right_hole], name="center_key_holes")
 
-        center_nub_hole = Box(2.5, 2.5, 3)
-        center_nub_hole.place(
-            ~center_nub_hole == ~center_key_holes,
-            ~center_nub_hole == ~center_key_holes,
-            +center_nub_hole == +base)
+        center_recess = Box(
+            center_key_right_hole.max().x - center_key_left_hole.min().x,
+            center_key_right_hole.size().y,
+            3)
+        center_recess.place(
+            ~center_recess == ~center_key_holes,
+            ~center_recess == ~center_key_holes,
+            +center_recess == +base)
 
         central_magnet_cutout = self.vertical_magnet_cutout(name="central_magnet_cutout")
 
@@ -449,11 +452,11 @@ class Lalboard(MemoizableDesign):
                                 (-central_pt_cavity == +center_key_holes) + 1.5,
                                 +central_pt_cavity == +west_pt_cavity)
 
-        extruded_led_cavity = ExtrudeTo(central_led_cavity.named_faces("lens_hole"), center_nub_hole.copy(False))
-        extruded_pt_cavity = ExtrudeTo(central_pt_cavity.named_faces("lens_hole"), center_nub_hole.copy(False))
+        extruded_led_cavity = ExtrudeTo(central_led_cavity.named_faces("lens_hole"), center_recess.copy(False))
+        extruded_pt_cavity = ExtrudeTo(central_pt_cavity.named_faces("lens_hole"), center_recess.copy(False))
 
         result = Difference(combined_cluster, *key_base_negatives, center_key_holes, central_magnet_cutout,
-                            center_nub_hole, extruded_led_cavity, extruded_pt_cavity)
+                            center_recess, extruded_led_cavity, extruded_pt_cavity)
 
         result.add_named_point("lower_left_corner", [west_base.min().x, west_base.min().y, 0])
         result.add_named_point("lower_right_corner", [east_base.max().x, east_base.min().y, 0])
@@ -504,7 +507,7 @@ class Lalboard(MemoizableDesign):
             (-back_trim_tool == -back) + 5,
             ~back_trim_tool == ~pcb_silhouette)
 
-        center_rectangle = Box(center_holes.size().x, 5, 1)
+        center_rectangle = Box(center_holes.size().x + .4, 5.4, 1)
         center_rectangle = Fillet(
             center_rectangle.shared_edges([center_rectangle.front, center_rectangle.back],
                                           [center_rectangle.left, center_rectangle.right]),
@@ -538,8 +541,12 @@ class Lalboard(MemoizableDesign):
             filleted_pcb_back.find_faces(pcb_back_box.bottom)[0].make_component(name="pcb_back"),
             pcb_back_connection)
 
+        # we fill in the center holes here, and then remove the center rectangle after doing the offset
+        # to avoid a weird glitch where the offset at the 2 ends doesn't meet up with the
+        # filleted corners
         pcb_silhouette = Union(
-            Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool, center_rectangle),
+            Difference(pcb_silhouette, key_wells, front_cut_out, back_trim_tool),
+            Silhouette(center_rectangle, pcb_silhouette.get_plane()),
             pcb_back)
 
         # We're assuming that the OffsetEdges operations won't change the number or ordering of loops
@@ -572,7 +579,7 @@ class Lalboard(MemoizableDesign):
 
         screw_hole = back.find_children("screw_hole")[0]
 
-        pcb_silhouette = Difference(pcb_silhouette, connector_holes, legs, screw_hole)
+        pcb_silhouette = Difference(pcb_silhouette, center_rectangle, connector_holes, legs, screw_hole)
 
         extruded_pcb = Extrude(pcb_silhouette, -1.6, name="pcb")
 
@@ -1487,7 +1494,7 @@ class Lalboard(MemoizableDesign):
 
     @MemoizableDesign.MemoizeComponent
     def cluster_assembly(self):
-        body_assembly = self.cluster_body_assembly(tall_clip=True)
+        body_assembly = self.cluster_body_assembly(add_clip=True, tall_clip=True)
         cluster = body_assembly.find_children("cluster", recursive=False)[0]
         pcb = body_assembly.find_children("pcb", recursive=False)[0]
         front_clip = body_assembly.find_children("cluster_front_mount_clip", recursive=False)[0]
