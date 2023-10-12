@@ -60,8 +60,8 @@ class Lalboard(MemoizableDesign):
     def horizontal_tiny_magnet_cutout(self, depth=1.3, name="magnet_cutout"):
         return self.tapered_box(.9, 1.2, 1.1, 1.2, depth, name=name).rx(90)
 
-    def vertical_magnet_cutout(self, depth=1.6, name="magnet_cutout"):
-        return self.tapered_box(1.55, 1.55, 1.7, 1.7, depth, name)
+    def vertical_magnet_cutout(self, depth=1.6, extra=0.0, name="magnet_cutout"):
+        return self.tapered_box(1.55+extra, 1.55+extra, 1.7+extra, 1.7+extra, depth, name)
 
     def vertical_rotated_magnet_cutout(self, depth=1.6, name="magnet_cutout"):
         result = self.tapered_box(1.7, 1.7, 1.8, 1.8, depth, name).rz(45)
@@ -810,18 +810,21 @@ class Lalboard(MemoizableDesign):
                              -key_rim_hollow == -key_rim)
         key_rim = Difference(key_rim, key_rim_hollow)
 
-        left_post = Cylinder(post_length + key_rim_height, 1.75, name="left_post")
+        left_post = Box(3.5, 3.5, post_length + key_rim_height, name="left_post")
+        left_post = Fillet(
+            left_post.shared_edges([left_post.front, left_post.back], [left_post.left, left_post.right]),
+            .8)
         left_post.place(
             (~left_post == ~key) - 4.1,
             ~left_post == ~key,
             -left_post == +key)
-        left_post_magnet = self.vertical_magnet_cutout()
+        left_post_magnet = self.vertical_magnet_cutout(extra=.2)
         left_post_magnet.place(
             ~left_post_magnet == ~left_post,
             ~left_post_magnet == ~left_post,
             +left_post_magnet == +left_post)
 
-        right_post = Cylinder(post_length + key_rim_height, 1.75, name="right_post")
+        right_post = left_post.copy(name="right_post")
         right_post.place(
             (~right_post == ~key) + 4.1,
             ~right_post == ~key,
@@ -833,15 +836,14 @@ class Lalboard(MemoizableDesign):
             ~right_post_magnet == ~right_post,
             +right_post_magnet == +right_post)
 
-        interruptor_post = Box(2, 2, .8 + key_travel + key_rim_height, name="interruptor_post")
+        interruptor_post = Box(
+            right_post.mid().x - left_post.mid().x,
+            left_post.size().y,
+            .8 + key_travel + key_rim_height, name="interruptor_post")
         interruptor_post.place(
             ~interruptor_post == ~key,
             ~interruptor_post == ~key,
             -interruptor_post == +key)
-        fillet_edges = interruptor_post.shared_edges(
-            [interruptor_post.front, interruptor_post.back],
-            [interruptor_post.left, interruptor_post.right])
-        interruptor_post = Fillet(fillet_edges, fillet_radius)
 
         result = Difference(Union(key, key_rim, interruptor_post, left_post, right_post),
                             left_post_magnet, right_post_magnet, name="center_key")
