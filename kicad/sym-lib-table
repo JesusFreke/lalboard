@@ -1,3 +1,4 @@
 (sym_lib_table
-  (lib (name lalboard)(type Legacy)(uri ${KIPRJMOD}/lalboard.lib)(options "")(descr ""))
+  (version 7)
+  (lib (name "lalboard")(type "KiCad")(uri "${KIPRJMOD}/lalboard.kicad_sym")(options "")(descr ""))
 )
