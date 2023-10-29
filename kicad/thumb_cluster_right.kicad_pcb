@@ -1424,7 +1424,7 @@
     (stroke (width 0.2) (type solid)) (layer "Edge.Cuts") (tstamp f0884523-fb65-4edb-989c-7dd2e4089356))
   (gr_line (start 125.475 83.798958) (end 131.475 83.798958)
     (stroke (width 0.2) (type solid)) (layer "Edge.Cuts") (tstamp f28c186a-7671-447c-a06c-167f78addb2a))
-  (gr_text "lalboard.com\nright thumb cluster\nv2.5" (at 144.95 73) (layer "B.SilkS") (tstamp 00000000-0000-0000-0000-0000605851ae)
+  (gr_text "lalboard.com\nright thumb cluster\nv2.5.0" (at 144.95 73) (layer "B.SilkS") (tstamp 00000000-0000-0000-0000-0000605851ae)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
 

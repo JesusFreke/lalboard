@@ -1411,7 +1411,7 @@
     (stroke (width 0.2) (type solid)) (layer "Edge.Cuts") (tstamp 00000000-0000-0000-0000-00006058697e))
   (gr_line (start 174.524999 91.198958) (end 168.525 91.198959)
     (stroke (width 0.2) (type solid)) (layer "Edge.Cuts") (tstamp 00000000-0000-0000-0000-00006058697f))
-  (gr_text "lalboard.com\nleft thumb cluster\nv2.5" (at 154.978349 72.71453) (layer "B.SilkS") (tstamp 00000000-0000-0000-0000-0000605868de)
+  (gr_text "lalboard.com\nleft thumb cluster\nv2.5.0" (at 154.978349 72.71453) (layer "B.SilkS") (tstamp 00000000-0000-0000-0000-0000605868de)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
   (gr_text "Coords for import: (100, 150)" (at 150.000001 101.9) (layer "Dwgs.User") (tstamp 00000000-0000-0000-0000-00006058310e)
