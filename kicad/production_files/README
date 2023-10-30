@@ -1,0 +1,10 @@
+For generating gerbers: https://jlcpcb.com/help/article/362-how-to-generate-gerber-and-drill-files-in-kicad-7
+For generating BOM/CPL: https://dubiouscreations.com/2019/10/21/using-kicad-with-jlcpcb-assembly-service/
+
+tweaks to CPL file:
+
+J1-J7 - remove
+J8, J9 - 180 degrees, subtract 1.75 from Y position
+U6, U7 - check rotation
+U2 - check rotation
+Y1 - check rotation
