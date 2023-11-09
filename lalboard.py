@@ -2679,25 +2679,25 @@ class Lalboard(MemoizableDesign):
             (-shorter_pcb_slot == -pcb) - 2,
             -shorter_pcb_slot == -handrest_model)
 
-        front_left_bottom_magnet = self.vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+        front_left_bottom_magnet = self.deep_large_thin_magnet_cutout(depth=2.6, name="bottom_magnet")
         front_left_bottom_magnet.rx(180)
         front_left_bottom_magnet.place((~front_left_bottom_magnet == ~handrest_model) + 27.778,
                                        (~front_left_bottom_magnet == ~handrest_model) + 13.2784,
                                        -front_left_bottom_magnet == -handrest_model)
 
-        front_right_bottom_magnet = self.vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+        front_right_bottom_magnet = self.deep_large_thin_magnet_cutout(depth=2.6, name="bottom_magnet")
         front_right_bottom_magnet.rx(180)
         front_right_bottom_magnet.place((~front_right_bottom_magnet == ~handrest_model) - 29.829,
                                         (~front_right_bottom_magnet == ~handrest_model) + 13.2782,
                                         -front_right_bottom_magnet == -handrest_model)
 
-        back_right_bottom_magnet = self.vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+        back_right_bottom_magnet = self.deep_large_thin_magnet_cutout(depth=2.6, name="bottom_magnet")
         back_right_bottom_magnet.rx(180)
         back_right_bottom_magnet.place((~back_right_bottom_magnet == ~handrest_model) - 29.829,
                                        (~back_right_bottom_magnet == ~handrest_model) - 37.7218,
                                        -back_right_bottom_magnet == -handrest_model)
 
-        back_left_bottom_magnet = self.vertical_large_thin_magnet_cutout(depth=1, name="bottom_magnet")
+        back_left_bottom_magnet = self.deep_large_thin_magnet_cutout(depth=2.6, name="bottom_magnet")
         back_left_bottom_magnet.rx(180)
         back_left_bottom_magnet.place((~back_left_bottom_magnet == ~handrest_model) + 27.778,
                                       (~back_left_bottom_magnet == ~handrest_model) - 37.7218,
