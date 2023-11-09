@@ -85,7 +85,7 @@ def run(_):
                             shutil.copyfile(f3d_file,
                                             str(pathlib.Path(export_dir, file.name + ".f3d")))
                 else:
-                    export_stl(export_dir, file)
+                    export_3mf(export_dir, file)
 
                 app().activeDocument.close(saveChanges=False)
 
@@ -100,6 +100,16 @@ def export_stl(export_dir, file):
     options = design().exportManager.createSTLExportOptions(
         root(),
         str(pathlib.Path(export_dir, file.name + ".stl")))
+    options.meshRefinement = adsk.fusion.MeshRefinementSettings.MeshRefinementHigh
+    options.sendToPrintUtility = False
+
+    design().exportManager.execute(options)
+
+
+def export_3mf(export_dir, file):
+    options = design().exportManager.createC3MFExportOptions(
+        root(),
+        str(pathlib.Path(export_dir, file.name + ".3mf")))
     options.meshRefinement = adsk.fusion.MeshRefinementSettings.MeshRefinementHigh
     options.sendToPrintUtility = False
 
