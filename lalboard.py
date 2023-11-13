@@ -2800,25 +2800,7 @@ class Lalboard(MemoizableDesign):
             +usb_port_cutout == +spacer,
             -usb_port_cutout == -spacer)
 
-        buttons_cutout = Box(
-            10,
-            21,
-            spacer.size().z)
-        buttons_cutout.place(
-            -buttons_cutout == -spacer,
-            (+buttons_cutout == +spacer) - 16.5,
-            -buttons_cutout == -spacer)
-
-        esp_cutout = Box(
-            6,
-            6,
-            spacer.size().z)
-        esp_cutout.place(
-            (~esp_cutout == -spacer) + 15,
-            (~esp_cutout == -spacer) + 9.5,
-            -esp_cutout == -spacer)
-
-        spacer = Difference(spacer, connector_cutout, usb_port_cutout, buttons_cutout, esp_cutout, name="pcb_spacer")
+        spacer = Difference(spacer, connector_cutout, usb_port_cutout, name="pcb_spacer")
         return spacer
 
     @MemoizableDesign.MemoizeComponent
