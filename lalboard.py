@@ -507,11 +507,11 @@ class Lalboard(MemoizableDesign):
             (-back_trim_tool == -back) + 5,
             ~back_trim_tool == ~pcb_silhouette)
 
-        center_rectangle = Box(center_holes.size().x + .4, 5.4, 1)
+        center_rectangle = Box(center_holes.size().x + .4, 7, 1)
         center_rectangle = Fillet(
             center_rectangle.shared_edges([center_rectangle.front, center_rectangle.back],
                                           [center_rectangle.left, center_rectangle.right]),
-            .8)
+            1.6)
         center_rectangle.place(
             ~center_rectangle == ~center_holes,
             ~center_rectangle == ~center_holes,
