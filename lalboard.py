@@ -2775,7 +2775,7 @@ class Lalboard(MemoizableDesign):
         hull = Hull(group, name="exposed_steel")
         return OffsetEdges(hull.faces[0], hull.faces[0].edges, 5, name="sheet_sheet")
 
-    def central_pcb_spacer(self, thickness=2.4):
+    def central_pcb_spacer(self, thickness=3.8):
         central_pcb = self.central_pcb()
 
         bottom_face = central_pcb.named_faces("bottom")[0]
